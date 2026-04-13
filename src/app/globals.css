@@ -1,0 +1,24 @@
+/* 1. Importar o Bootstrap */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+/* 2. As nossas fontes editoriais */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap');
+
+/* 3. Regras Globais da Andromeda */
+body {
+  background-color: #0B0D0F; /* Fundo Obsidiana */
+  color: #ffffff;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* 4. Classes auxiliares de Luxo para usar com o Bootstrap */
+.font-serif { font-family: 'Playfair Display', serif; }
+.font-sans { font-family: 'Inter', sans-serif; }
+.text-gold { color: #D4AF37 !important; }
+.border-gold { border-color: rgba(212, 175, 55, 0.3) !important; }
+.border-gold:hover { border-color: rgba(212, 175, 55, 0.8) !important; }
+.bg-glass { background-color: rgba(0, 0, 0, 0.5) !important; }

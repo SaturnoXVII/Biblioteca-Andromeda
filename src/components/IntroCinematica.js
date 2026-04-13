@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Stars, MeshDistortMaterial, Float } from '@react-three/drei';
@@ -11,7 +11,6 @@ import * as THREE from 'three';
 function CenaCosmica({ stage }) {
   const moonRef = useRef();
   const portalRef = useRef();
-  const cameraRef = useRef();
 
   useFrame((state, delta) => {
     // Rotação suave constante da lua
@@ -109,10 +108,11 @@ export default function IntroCinematica({ onPortalOpen }) {
             transition={{ duration: 1 }}
             className="relative z-10 flex flex-col items-center justify-center w-full h-full pointer-events-none"
           >
-            {/* Título de Luxo */}
+            {/* Título de Luxo - AJUSTADO PARA BOOTSTRAP */}
             <motion.h1 
               animate={stage === 'dance' ? { y: -150, opacity: 0 } : { y: 0, opacity: 1 }}
-              className="text-6xl font-serif tracking-[0.3em] text-gold uppercase mb-8"
+              className="font-serif text-gold text-uppercase mb-4 text-center display-4"
+              style={{ letterSpacing: '0.2em' }}
             >
               Biblioteca Andromeda
             </motion.h1>
@@ -144,10 +144,11 @@ export default function IntroCinematica({ onPortalOpen }) {
               </motion.div>
             </motion.div>
 
-            {/* Instrução Inicial */}
+            {/* Instrução Inicial - AJUSTADO PARA BOOTSTRAP */}
             <motion.p 
               animate={stage === 'dance' ? { opacity: 0 } : { opacity: 0.5 }}
-              className="absolute bottom-20 text-sm tracking-[0.5em] uppercase font-sans text-silver"
+              className="position-absolute bottom-0 mb-5 text-uppercase font-sans text-white text-center w-100"
+              style={{ letterSpacing: '0.3em', fontSize: '0.8rem' }}
             >
               Clique para despertar os guardiões
             </motion.p>
