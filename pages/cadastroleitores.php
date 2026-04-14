@@ -39,9 +39,9 @@ if (isset($_POST['email'])) {
     <section class="text-center my-4 " id="Cadastro">
 
         <h1>Bem vindo a Andromeda, se identifique para explorar o acervo!</h1>
-        <div class="formulario card shadow border-0 rounded-4  p-4 m-4 mt-3" >
+        <div class="formulario card border rounded-4 m-4 mt-3 mx-auto">
           
-            <form class="d-grid" method="POST" action="">
+            <form class="" method="POST" action="">
                 <div class="row ">
 
                   <div class="col-md-6 mb-3"><input type="text" name="nome" class="form-control" placeholder="Nome" required></div>
@@ -66,7 +66,7 @@ if (isset($_POST['email'])) {
                 <!-- <input type="text" name="Username" class="form-control" placeholder="Username"> -->
                 <input type="password" name="senha" class="form-control mb-3" placeholder="Senha" required>
                
-                <button type="submit" class="btn btn-primary">Cadastrar</button>
+                <button type="submit" class="btn">Cadastrar</button>
             </form>
 
         </div>
