@@ -1,10 +1,40 @@
-/* Apliquei esse CSS provisório só pra ver como fica */
+
 
 body {
-    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-    color: white; 
+   background: black;
 }
 
 .card {
     color: #333; 
+ 
 }
+
+
+input::placeholder {
+    font-size: 12px;         
+    font-weight: 300;        
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.5px;    
+}
+
+
+input::-webkit-input-placeholder { font-size: 12px; }
+input::-moz-placeholder { font-size: 12px; }
+input:-ms-input-placeholder { font-size: 12px; }
+
+
+select.form-control {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.formulario.card {
+    max-width: 600px;    
+    margin: auto;      
+    padding: 1.5rem !important; 
+}
+
+
+
+
+
