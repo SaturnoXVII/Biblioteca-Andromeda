@@ -39,6 +39,7 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
             $usuario = $result->fetch_assoc();
 
             //    A função do PHP password_verify compara a senha digitada pelo usuário com a senha criptofrafada do banco, se forem iguais ele conecta o usuário, se não, ele mostra a mensagem de erro. Isso é mais seguro do que armazenar as senhas em texto puro no banco, igual eu estava fazendo, porque mesmo que alguém consiga acessar o banco, ele não vai conseguir ver as senhas dos usuários
+            // Ela é usada em conjunto com a função password_hash, sem ela não é possivel decodificar a senha, porque o password_hash gera uma string diferente a cada vez que é executada, mesmo que a senha seja a mesma, por isso é necessário usar o password_verify para comparar a senha digitada com a senha criptofrafada do banco
             if (password_verify($senha, $usuario['senha'])) {
 
                 // Inicia a sessão para "lembrar" do usuário nas outras páginas
@@ -63,3 +64,35 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
         }
     }
 }
+
+
+?>
+
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link href="../assets/css/cadastro.css" rel="stylesheet">
+
+</head>
+
+<body>
+    <h2>Olá!!</h2>
+    <div class="subtitulo">Se identifique para ter acesso ao acervo.</div>
+<div class="container">
+
+    <form method="POST" action="">
+        <input type="text" name="email" placeholder="E-mail" required><br>
+        <input type="password" name="senha" placeholder="Senha" required><br>
+        <a href="">Esqueceu sua senha?</a>
+        <button value="Entrar" type="submit">Explorar</button>
+    </form>
+
+</div>
+
+</body>
+
+</html>
