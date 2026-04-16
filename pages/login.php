@@ -1,7 +1,7 @@
 <?php
 session_start();
 include "../config/conexao.php";
-include "../config/crud.php";
+
 
 // http://10.68.49.32/Biblioteca-Andromeda/
 
@@ -52,7 +52,7 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
                 $_SESSION['tipo'] = $usuario['tipo'];
 
                 // Redireciona para o catalogo ou painel, dependendo do tipo do usuário
-                header("Location: painel.php");
+                header("Location: catalogo.php");
                 exit;
             } else {
                 // Se a senha estiver incorreta
@@ -75,24 +75,39 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
-    <link href="../assets/css/cadastro.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="../assets/css/cadastro.css">
 
 </head>
 
 <body>
+    <!-- Fundo cósmico -->
+    <div id="estrelas"></div>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+<section class="text-center my-4 " id="Cadastro">
+
     <h2>Olá!!</h2>
     <div class="subtitulo">Se identifique para ter acesso ao acervo.</div>
-<div class="container">
+<div class="formulario card border rounded-4 m-4 mt-3 mx-auto">
 
     <form method="POST" action="">
-        <input type="text" name="email" placeholder="E-mail" required><br>
-        <input type="password" name="senha" placeholder="Senha" required><br>
-        <a href="">Esqueceu sua senha?</a>
-        <button value="Entrar" type="submit">Explorar</button>
+        <input type="text" name="email" placeholder="E-mail" required class="form-control"><br>
+        <input type="password" name="senha" placeholder="Senha" required class="form-control"><br>
+        
+        <button value="Entrar" type="submit" class="btn" class="form-control">Explorar</button>
+        <div class="row g-2 mt-2" id="adicionais" >
+            <div class="col-auto"><a href="recuperarsenha.php" class="">Esqueceu sua senha?</a></div>
+            <div class="col-auto"><a href="cadastroleitores.php" class="">Não tem uma conta?</a></div>
+        </div>
+      
     </form>
 
 </div>
-
+</section>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+     <script src="../assets/js/estrelas.js"></script>
 </body>
 
 </html>

@@ -11,7 +11,7 @@
         const tamanho  = Math.random() * 2.5 + 0.5;
         const x        = Math.random() * 100;
         const y        = Math.random() * 100;
-        const duracao  = (Math.random() * 1 + 2).toFixed(1);
+        const duracao  = (Math.random() * 0.5 + 1).toFixed(1);
         const delay    = (Math.random() * 6).toFixed(1);
         const opacidade = (Math.random() * 0.6 + 0.2).toFixed(2);
 

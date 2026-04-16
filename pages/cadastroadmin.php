@@ -36,12 +36,20 @@ if (isset($_POST['email'])) {
 </head>
 
 <body>
-    <section class="container text-center my-4" id="Cadastro">
+  
+ <!-- Fundo cósmico -->
+    <div id="estrelas"></div>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+    <section class="text-center my-4 " id="Cadastro">
 
-        <h1>Bem vindo a Andromeda, se identifique para explorar o acervo!</h1>
-        <div class="formulario card  shadow border-0 rounded-4  p-4 m-4 mt-3 ">
+         <h2>Bem vindo a Andromeda!</h3>
+        <div class="subtitulo">Cadastre-se para explorar o acervo.</div>
+
+        <div class="formulario card border rounded-4 m-4 mt-3 mx-auto">
           
-            <form class="d-grid" method="POST" action="">
+            <form class="" method="POST" action="">
                 <div class="row ">
 
                   <div class="col-md-6 mb-3"><input type="text" name="nome" class="form-control" placeholder="Nome" required></div>
@@ -72,13 +80,14 @@ if (isset($_POST['email'])) {
                 <!-- <input type="text" name="Username" class="form-control" placeholder="Username"> -->
                 <input type="password" name="senha" class="form-control mb-3" placeholder="Senha" required>
                
-                <button type="submit" class="btn btn-primary">Cadastrar</button>
+                <button type="submit" class="btn">Cadastrar</button>
             </form>
 
         </div>
-    </section>
+   
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="../assets/js/estrelas.js"></script>
 </body>
 
 </html>
