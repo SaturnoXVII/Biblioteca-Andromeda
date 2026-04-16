@@ -6,19 +6,29 @@ include "../config/conexao.php";
 
 if (isset($_POST['email'])) {
 
-    // O real_escape_string é uma função do mysqli que escapa caracteres especiais em uma string, para evitar ataques de SQL Injection.
-    // $username   = $mysqli->real_escape_string($_POST['Username']);
+ if (isset($_POST['email'])) {
     $nome       = $mysqli->real_escape_string($_POST['nome']);
     $sobrenome  = $mysqli->real_escape_string($_POST['sobrenome']);
     $email      = $mysqli->real_escape_string($_POST['email']);
-    $nascimento = $mysqli->real_escape_string($_POST['data_nascimento']);
+    $nascimento = date("Y-m-d", strtotime($_POST['data_nascimento']));
     $telefone   = $mysqli->real_escape_string($_POST['telefone']);
     $endereco   = $mysqli->real_escape_string($_POST['endereco']);
-    
+    $senha      = password_hash($_POST['senha'], PASSWORD_DEFAULT);
 
-    $senha = password_hash($_POST['senha'], PASSWORD_DEFAULT);
+    // Antes de inserir o novo usuário, vamos verificar se já existe um usuário com o mesmo email no banco de dados. Isso é importante para evitar que haja dois usuários com o mesmo email, o que poderia causar problemas de login e segurança. O código abaixo prepara uma consulta SQL para selecionar o id dos usuários que tenham o email igual ao email digitado no formulário, depois ele executa a consulta e armazena o resultado. Se o número de linhas do resultado for maior que 0, significa que já existe um usuário com esse email, então ele define a variável $erro com a mensagem de erro. Caso contrário, ele insere o novo usuário no banco de dados e redireciona para a página de login.
+    $check = $mysqli->prepare("SELECT id FROM usuarios WHERE email = ?");
+    $check->bind_param("s", $email);
+    $check->execute();
+    $check->store_result();
 
-    $mysqli->query("INSERT INTO  usuarios (nome, sobrenome, email, data_nascimento, telefone, endereco, senha) VALUES ('$nome', '$sobrenome', '$email', '$nascimento', '$telefone', '$endereco', '$senha')");
+    if ($check->num_rows > 0) {
+        $erro = "Este e-mail já está em uso!";
+    } else {
+        $mysqli->query("INSERT INTO usuarios (nome, sobrenome, email, data_nascimento, telefone, endereco, senha) VALUES ('$nome', '$sobrenome', '$email', '$nascimento', '$telefone', '$endereco', '$senha')");
+        header("Location: login.php");
+        exit;
+    }
+}
 }
 
 
@@ -32,7 +42,7 @@ if (isset($_POST['email'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Cadastro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <link rel="stylesheet" href="../assets/css/teste.css">
+    <link rel="stylesheet" href="../assets/css/cadastro.css">
 </head>
 
 <body>
@@ -60,7 +70,7 @@ if (isset($_POST['email'])) {
                 <div class="row">
 
                    <div class="col-md-6 mb-3"> <input type="text" name="email" class="form-control" placeholder="E-mail" required></div>
-                    <div class="col-md-6"><input type="text" name="data_nascimento" class="form-control" placeholder="Data de nascimento"></div>
+                    <div class="col-md-6"><input type="date" name="data_nascimento" class="form-control" placeholder=""></div>
                     
                 </div>
 
@@ -75,6 +85,11 @@ if (isset($_POST['email'])) {
                 <input type="password" name="senha" class="form-control mb-3" placeholder="Senha" required>
                
                 <button type="submit" class="btn">Cadastrar</button>
+                <?php if (!empty($erro)): ?>
+    <div class="alert alert-danger mt-3 rounded-3">
+        ⚠️ <?= $erro ?>
+    </div>
+<?php endif; ?>
 
             </form>
 

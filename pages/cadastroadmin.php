@@ -16,6 +16,8 @@ if (isset($_POST['email'])) {
     $endereco   = $mysqli->real_escape_string($_POST['endereco']);
     $nivel_acesso = $mysqli->real_escape_string($_POST['nivel_acesso']);
 
+    $nascimento = date("Y-m-d", strtotime($_POST['data_nascimento']));
+
     $senha = password_hash($_POST['senha'], PASSWORD_DEFAULT);
 
     $mysqli->query("INSERT INTO  usuarios (nome, sobrenome, email, data_nascimento, telefone, endereco, nivel_acesso, senha) VALUES ('$nome', '$sobrenome', '$email', '$nascimento', '$telefone', '$endereco', '$nivel_acesso', '$senha')");
@@ -60,7 +62,7 @@ if (isset($_POST['email'])) {
                 <div class="row">
 
                    <div class="col-md-6 mb-3"> <input type="text" name="email" class="form-control" placeholder="E-mail" required></div>
-                    <div class="col-md-6"><input type="text" name="data_nascimento" class="form-control" placeholder="Data de nascimento"></div>
+                    <div class="col-md-6"><input type="date" name="data_nascimento" class="form-control" placeholder=""></div>
                     
                 </div>
 
