@@ -1,40 +1,58 @@
+<?php
 
-async function loadCatalog() {
-    try {
-        const response = await fetch('dados.php'); // Chama o seu arquivo PHP
-        const booksData = await response.json();
+declare(strict_types=1);
 
-        if (booksData.error) {
-            console.error("Erro no banco:", booksData.error);
-            return;
+namespace App\Repository;
+
+use mysqli;
+use Exception;
+
+/**
+ * Repositório de Livros - Biblioteca Andromeda
+ * Versão otimizada para PHP 8.0+ e MySQLi
+ */
+class LivroRepository 
+{ 
+   
+private mysqli $db; // 1. Declara explicitamente
+
+    public function __construct(mysqli $conexao) {
+        $this->db = $conexao; // 2. Atribui manualmente
+    }
+    /**
+     * Busca o catálogo completo com nomes de autores e categorias.
+     * @return array
+     * @throws Exception
+     */
+    public function listarTodos(): array 
+    {
+        $sql = "SELECT 
+                    l.id_livro, 
+                    l.titulo, 
+                    a.nome AS autor_nome, 
+                    l.ano_publicacao, 
+                    c.nome AS categoria_nome,
+                    e.nome AS editora_nome,
+                    l.status
+                FROM Livros l
+                LEFT JOIN autores a ON l.id_autor = a.id_autor
+                LEFT JOIN Categorias c ON l.id_categoria = c.id_categoria
+                LEFT JOIN editoras e ON l.id_editora = e.id_editora
+                ORDER BY l.titulo ASC";
+
+        // Executa a query de forma direta (mais rápida para SELECTs sem inputs de usuário)
+        $result = $this->db->query($sql);
+
+        if (!$result) {
+            throw new Exception("Falha na consulta Andromeda: " . $this->db->error);
         }
 
-        // Chama a função de criação de livros passando os dados do banco
-        initCatalog(booksData);
+        // Transforma o resultado em um array associativo de uma vez só
+        $livros = $result->fetch_all(MYSQLI_ASSOC);
         
-    } catch (error) {
-        console.error("Erro ao carregar dados:", error);
+        // Libera os recursos do MySQL imediatamente
+        $result->free();
+
+        return $livros ?: [];
     }
 }
-
-function initCatalog(data) {
-    data.forEach((item) => {
-        const geo = new THREE.BoxGeometry(2.2, 3.2, 0.2);
-        const mat = new THREE.MeshPhysicalMaterial({
-            map: loader.load(item.cover),
-            metalness: 0.6,
-            roughness: 0.3,
-            emissive: new THREE.Color(0x001122),
-            emissiveIntensity: 0.5
-        });
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(parseFloat(item.x), 0, 0);
-        mesh.userData = { title: item.title, desc: item.desc }; 
-        
-        bookGroup.add(mesh);
-        books.push(mesh);
-    });
-}
-
-// Chame a função de carregar no lugar de onde criava os livros antes
-loadCatalog();

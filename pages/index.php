@@ -225,7 +225,7 @@
     <div class="cinematic-vignette" id="ui-layer">
         <div class="intro-content" id="intro-block">
             <div class="title-wrap">
-                <h1 class="title" id="title-text">Andrômeda</h1>
+                <h1 class="title" id="title-text">Andromeda</h1>
             </div>
             <div class="subtitle-wrap">
                 <p class="subtitle" id="subtitle-text">O Cofre Cósmico</p>
