@@ -1,0 +1,252 @@
+@import url('https://fonts.googleapis.com/css2?family=Bruno+Ace+SC&family=Cinzel:wght@400..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+   
+}
+/* copiar body e main */
+body {
+    display: flex;
+    min-height: 100vh;
+    background-color: rgb(11, 11, 11);
+    background-color: #030308;
+    position: relative;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: -10%;
+    right: -10%;
+    width: 400px;
+    height: 400px;
+    background: rgba(124, 58, 237, 0.15); 
+    filter: blur(100px);
+    border-radius: 50%;
+    z-index: -1;
+}
+
+main {
+    flex: 1; /* Faz o main ocupar todo o resto da tela ao lado da sidebar */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* ISSO joga o conteúdo para o meio/baixo verticalmente */
+    padding-left: 80px; /* Dá um respiro em relação à sidebar */
+    height: 100vh; /* Garante que ele use a altura toda da tela */
+    color: white;
+}
+
+#sidebar {
+   background: linear-gradient(180deg, #0d0120 0%, #060014 100%);
+    border-right: 1px solid rgba(160, 80, 255, 0.2);
+display: flex;
+flex-direction: column; 
+justify-content: space-between;
+height: 100vh;
+border-radius: 0 20px 20px 0;
+position: relative;
+transition: all .5s;
+min-width: 82px;
+}
+
+#sidebar_content {
+    padding: 30px 20px 12px 12px;
+}
+
+#side_items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    list-style: none;
+}
+.side-item {
+  padding: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  font-family: "cinzel", serif;
+}
+.side-item a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: rgba(245, 245, 245, 0.888);
+}
+.side-item.active {
+ background: rgba(124, 58, 237, 0.2); 
+    border: 1px solid rgba(160, 100, 255, 0.4);
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.15);
+}
+
+.side-item:hover:not(.active), #logout_btn:hover {
+    background: rgba(75, 64, 64, 0.2);
+}
+
+.side-item.active a {
+   color: #ffffff; 
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+.side-item a i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+#open_btn {
+    background: linear-gradient(135deg, #7c3aed, #200070);
+    box-shadow: 0 0 15px rgba(124, 58, 237, 0.6);
+    position: absolute;
+    top: 30px;
+    right: -10px;
+    color: #e3e9f7;
+    border-radius: 100%;
+    width: 23px;
+    height: 23px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+   
+}
+
+#logout {
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 12px;
+}
+#logout_btn {
+  border: none  ;
+  padding: 12px;
+  font-size: 14px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  border-radius: 8px;
+  text-align: start;
+  cursor: pointer;
+  background-color: transparent;
+  color: white;
+
+}
+
+.item-description {
+    width: 0px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 14px;
+    transition: width .6s;
+    height: 0px;
+}
+
+#sidebar.open_sidebar {
+    min-width: 15%;
+}
+
+#sidebar.open_sidebar .item-description {
+    width: 150px;
+    height: auto;
+}
+
+#sidebar.open_sidebar a{
+  justify-content: flex-start;
+  gap: 14px;
+}
+
+#open_btn_icon {
+   transition: transform .3s ease;
+   font-size: 12px;
+  
+   
+}
+
+.open_sidebar #open_btn_icon {
+    transform: rotate(180deg);
+}
+
+
+
+
+
+
+.nebula {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none; 
+    z-index: -1; 
+    animation: nebula-float 10s ease-in-out infinite;
+}
+
+.nebula-1 {
+    width: 300px;
+    height: 300px;
+    top: -50px;
+    right: -50px;
+    background: rgba(124, 58, 237, 0.2); 
+}
+
+.nebula-2 {
+    width: 200px;
+    height: 200px;
+    bottom: 20px;
+    left: 10%;
+    background: rgba(59, 130, 246, 0.15); 
+    animation-delay: -3s;
+}
+
+@keyframes nebula-float {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0.15; }
+    50% { transform: translateY(-20px) scale(1.1); opacity: 0.25; }
+}
+
+.section-tag {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #a855f7;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-tag::before {
+    content: '';
+    width: 30px;
+    height: 1px;
+    background: #a855f7;
+}
+
+.main-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 900; /* O máximo de espessura */
+    font-size: clamp(32px, 5vw, 64px); /* Faz o tamanho se ajustar à tela */
+    line-height: 1; /* Diminui o espaço entre as linhas "Bem-vindo" e "Guardião" */
+    text-transform: uppercase; /* Opcional: deixa mais imponente */
+    letter-spacing: 2px;
+}
+
+.highlight {
+    background: linear-gradient(135deg, #a855f7, #3b82f6);
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent;
+    font-weight: 900;
+}
+
+.divider {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(to right, #a855f7, transparent);
+    margin: 20px 0;
+}
+#starfield {
+  position: fixed; /* Fixa na tela toda */
+  inset: 0;
+  pointer-events: none; /* Garante que você consiga clicar nos botões */
+  z-index: 0; /* Fica atrás da sidebar (z-index: 10) e do main */
+}
