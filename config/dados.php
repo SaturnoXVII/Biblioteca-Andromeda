@@ -55,4 +55,6 @@ private mysqli $db; // 1. Declara explicitamente
 
         return $livros ?: [];
     }
+
+    
 }
