@@ -34,70 +34,105 @@ if (isset($_POST['email'])) {
 
 ?>
 
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Cadastro</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Andrômeda · Cadastro</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <link rel="stylesheet" href="../assets/css/cadastro.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="../assets/css/cadleitores.css">
 </head>
 
 <body>
+    <div id="grain"></div>
+    <div id="webgl"></div>
 
- <!-- Fundo cósmico -->
-    <div id="estrelas"></div>
-    <div class="nebula nebula-1"></div>
-    <div class="nebula nebula-2"></div>
-    <div class="nebula nebula-3"></div>
-    <section class="text-center my-4 " id="Cadastro">
+    <div id="reticle">
+        <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="14" class="ret-ring" stroke-dasharray="88" stroke-dashoffset="0">
+                <animateTransform attributeName="transform" type="rotate" values="0 18 18;360 18 18" dur="18s" repeatCount="indefinite" />
+            </circle>
+            <line x1="18" y1="4" x2="18" y2="10" class="ret-cross" />
+            <line x1="18" y1="26" x2="18" y2="32" class="ret-cross" />
+            <line x1="4" y1="18" x2="10" y2="18" class="ret-cross" />
+            <line x1="26" y1="18" x2="32" y2="18" class="ret-cross" />
+            <circle cx="18" cy="18" r="1.5" fill="rgba(42, 162, 246, 0.6)" />
+        </svg>
+    </div>
+    <div id="reticle-dot"></div>
 
-        <h2>Bem vindo a Andromeda!</h3>
-        <div class="subtitulo">Cadastre-se para explorar o acervo.</div>
-       
-        <div class="formulario card border rounded-4 m-4 mt-3 mx-auto">
-          
-            <form class="" method="POST" action="">
-                <div class="row ">
+    <main class="auth-wrapper">
+        <div class="auth-card" id="Cadastro">
+            <div class="auth-header">
+                <h1 class="auth-brand">Andrômeda</h1>
+                <div class="auth-subtitle">Cadastre-se para explorar o acervo</div>
+            </div>
 
-                  <div class="col-md-6 mb-3"><input type="text" name="nome" class="form-control" placeholder="Nome" required></div>
-                    <div class="col-md-6 "><input type="text" name="sobrenome" class="form-control" placeholder="Sobrenome"></div>
-                    
+            <form method="POST" action="">
+                
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <input type="text" name="nome" class="form-control interactable" placeholder="Nome" required>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" name="sobrenome" class="form-control interactable" placeholder="Sobrenome">
+                    </div>
                 </div>
 
-                <div class="row">
-
-                   <div class="col-md-6 mb-3"> <input type="text" name="email" class="form-control" placeholder="E-mail" required></div>
-                    <div class="col-md-6"><input type="date" name="data_nascimento" class="form-control" placeholder=""></div>
-                    
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <input type="email" name="email" class="form-control interactable" placeholder="E-mail" required>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="date" name="data_nascimento" class="form-control interactable" title="Data de Nascimento">
+                    </div>
                 </div>
 
-                <div class="row ">
-
-                    <div class="col-md-6"><input type="text" name="telefone" class="form-control" placeholder="Telefone"></div>
-                    <div class="col-md-6 mb-3"><input type="text" name="endereco" class="form-control" placeholder="Endereço"></div>
-                    
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <input type="text" name="telefone" class="form-control interactable" placeholder="Telefone">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" name="endereco" class="form-control interactable" placeholder="Endereço">
+                    </div>
                 </div>            
 
-                <!-- <input type="text" name="Username" class="form-control" placeholder="Username"> -->
-                <input type="password" name="senha" class="form-control mb-3" placeholder="Senha" required>
-               
-                <button type="submit" class="btn">Cadastrar</button>
+                <div class="mb-4">
+                    <input type="password" name="senha" class="form-control interactable" placeholder="Senha" required>
+                </div>
+                
+                <button type="submit" class="btn-prim interactable">Iniciar Jornada</button>
+                
                 <?php if (!empty($erro)): ?>
-    <div class="alert alert-danger mt-3 rounded-3">
-        ⚠️ <?= $erro ?>
-    </div>
-<?php endif; ?>
+                    <div class="auth-error">
+                        <i class="fa-solid fa-triangle-exclamation"></i> <?= $erro ?>
+                    </div>
+                <?php endif; ?>
 
+                <div class="auth-links">
+                    <a href="login.php" class="interactable">Já possui uma conta? Acessar</a>
+                </div>
             </form>
-
         </div>
-    </section>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-     <script src="../assets/js/estrelas.js"></script>
-</body>
+    </main>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+    <script src="../assets/js/cadleitores.js">
+        
+    </script>
+</body>
 </html>

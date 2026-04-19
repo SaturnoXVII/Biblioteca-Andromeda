@@ -70,44 +70,72 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
 
 <!DOCTYPE html>
 <html lang="pt-br">
-<!-- Adicionar toast que avise que o email já está em uso -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <link rel="stylesheet" href="../assets/css/cadastro.css">
-
+    <title>Andrômeda · Acesso</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="../assets/css/login.css">
 </head>
 
 <body>
-    <!-- Fundo cósmico -->
-    <div id="estrelas"></div>
-    <div class="nebula nebula-1"></div>
-    <div class="nebula nebula-2"></div>
-    <div class="nebula nebula-3"></div>
-<section class="text-center my-4 " id="Cadastro">
+    <div id="grain"></div>
+    <div id="webgl"></div>
 
-    <h2>Olá!!</h2>
-    <div class="subtitulo">Se identifique para ter acesso ao acervo.</div>
-<div class="formulario card border rounded-4 m-4 mt-3 mx-auto">
+    <div id="reticle">
+        <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="14" class="ret-ring" stroke-dasharray="88" stroke-dashoffset="0">
+                <animateTransform attributeName="transform" type="rotate" values="0 18 18;360 18 18" dur="18s" repeatCount="indefinite" />
+            </circle>
+            <line x1="18" y1="4" x2="18" y2="10" class="ret-cross" />
+            <line x1="18" y1="26" x2="18" y2="32" class="ret-cross" />
+            <line x1="4" y1="18" x2="10" y2="18" class="ret-cross" />
+            <line x1="26" y1="18" x2="32" y2="18" class="ret-cross" />
+            <circle cx="18" cy="18" r="1.5" fill="rgba(42, 162, 246, 0.6)" />
+        </svg>
+    </div>
+    <div id="reticle-dot"></div>
 
-    <form method="POST" action="">
-        <input type="text" name="email" placeholder="E-mail" required class="form-control"><br>
-        <input type="password" name="senha" placeholder="Senha" required class="form-control"><br>
-        
-        <button value="Entrar" type="submit" class="btn" class="form-control">Explorar</button>
-        <div class="row g-2 mt-2" id="adicionais" >
-            <div class="col-auto"><a href="recuperarsenha.php" class="">Esqueceu sua senha?</a></div>
-            <div class="col-auto"><a href="cadastroleitores.php" class="">Não tem uma conta?</a></div>
+    <main class="auth-wrapper">
+        <div class="auth-card" id="Cadastro">
+            <div class="auth-header">
+                <h1 class="auth-brand">Andrômeda</h1>
+                <div class="auth-subtitle">Identifique-se para acessar o acervo</div>
+            </div>
+
+            <form method="POST" action="">
+                <div class="form-group">
+                    <input type="text" name="email" placeholder="E-mail" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <input type="password" name="senha" placeholder="Senha" required class="form-control">
+                </div>
+                
+                <button value="Entrar" type="submit" class="btn-prim interactable">Explorar o Universo</button>
+                
+                <div class="auth-links" id="adicionais">
+                    <a href="recuperarsenha.php" class="interactable">Esqueceu sua senha?</a>
+                    <a href="cadastroleitores.php" class="interactable">Não tem uma conta?</a>
+                </div>
+            </form>
         </div>
-      
-    </form>
+    </main>
 
-</div>
-</section>
- <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-     <script src="../assets/js/estrelas.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+    <script src="../assets/js/login.js">
+     
+    </script>
 </body>
-
 </html>
