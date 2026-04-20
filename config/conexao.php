@@ -14,4 +14,6 @@ if($mysqli->error) {
     die("Falha ao conectar ao banco de dados: " . $mysqli->error);
 }
 
+// Essa linha diz ao MySQL: "fala comigo em UTF-8", para não ter problemas com caracteres acentuados ou especiais
+$mysqli->set_charset("utf8mb4");
 ?>

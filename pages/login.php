@@ -119,7 +119,6 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
                 <button value="Entrar" type="submit" class="btn-prim interactable">Explorar o Universo</button>
                 
                 <div class="auth-links" id="adicionais">
-                    <a href="recuperarsenha.php" class="interactable">Esqueceu sua senha?</a>
                     <a href="cadastroleitores.php" class="interactable">Não tem uma conta?</a>
                 </div>
             </form>

@@ -241,7 +241,7 @@ html {
 
 .auth-links {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin-top: 24px;
   padding-top: 20px;
