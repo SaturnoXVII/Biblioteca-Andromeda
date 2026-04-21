@@ -1,0 +1,438 @@
+/* ═══════════════════════════════════════════════════
+           TABELAS & LISTAGENS (PENTE FINO)
+   ═══════════════════════════════════════════════════ */
+
+.table-wrapper {
+    background: var(--void-glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-hairline);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+}
+
+.cosmic-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.cosmic-table th {
+    background: rgba(42, 162, 246, 0.04);
+    color: var(--am);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-hairline);
+    white-space: nowrap;
+}
+
+.cosmic-table td {
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    color: var(--text-main);
+    vertical-align: middle;
+    transition: background 0.3s ease;
+}
+
+.cosmic-table tbody tr:hover td {
+    background: rgba(42, 162, 246, 0.04);
+}
+
+.cosmic-table tbody tr:last-child td {
+    border-bottom: none; /* Remove a linha do último item para um visual mais limpo */
+}
+
+/* Estado Vazio Elegante */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px !important;
+    color: var(--text-dim);
+}
+
+.empty-state i {
+    font-size: 2rem;
+    color: var(--am);
+    opacity: 0.5;
+    display: block;
+    margin-bottom: 12px;
+    font-style: normal;
+}
+
+.empty-state p {
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    font-family: var(--font-mono);
+}
+
+.t-mono {
+    font-family: var(--font-mono);
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    font-size: 0.85rem;
+}
+
+.t-dim {
+    color: var(--text-dim);
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════
+           FORMULÁRIOS & INPUTS (PENTE FINO)
+   ═══════════════════════════════════════════════════ */
+
+.cosmic-form {
+    max-width: 650px;
+    background: var(--void-glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-hairline);
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-group label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--am);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+}
+
+.cosmic-input {
+    width: 100%;
+    background: rgba(2, 3, 5, 0.6);
+    border: 1px solid var(--border-hairline);
+    border-radius: 8px;
+    padding: 14px 16px;
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.3s ease;
+    cursor: none !important;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+/* Foco refinado */
+.cosmic-input:focus {
+    border-color: var(--am);
+    background: rgba(42, 162, 246, 0.08);
+    box-shadow: inset 0 0 10px rgba(42, 162, 246, 0.05), 0 0 15px rgba(42, 162, 246, 0.2);
+}
+
+/* Select Box */
+select.cosmic-input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%232aa2f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 14px;
+    padding-right: 40px; /* Evita que o texto sobreponha a seta */
+}
+
+select.cosmic-input option {
+    background: var(--void);
+    color: var(--text-main);
+    padding: 12px;
+}
+
+select.cosmic-input option[disabled] {
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+/* Calendário */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) sepia(1) saturate(5) hue-rotate(180deg) brightness(1.2);
+    cursor: none !important;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+}
+
+input[type="date"]:focus::-webkit-calendar-picker-indicator {
+    opacity: 1;
+}
+
+.form-actions {
+    margin-top: 40px;
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid var(--border-hairline);
+    padding-top: 24px;
+}
+
+/* ═══════════════════════════════════════════════════
+           ANIMAÇÕES E TOASTS (PENTE FINO)
+   ═══════════════════════════════════════════════════ */
+
+@keyframes fadeInRise {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-rise {
+    opacity: 0;
+    animation: fadeInRise 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.stagger-item {
+    opacity: 0;
+    animation: fadeInRise 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Toasts (Avisos Flutuantes) */
+.cosmic-toast {
+    position: fixed;
+    top: 30px;
+    right: 30px;
+    z-index: 9999;
+    background: rgba(2, 3, 5, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-hairline);
+    color: var(--text-main);
+    padding: 16px 24px;
+    border-radius: 10px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--font-sans);
+    opacity: 0;
+    transform: translateX(50px); /* Começa fora da tela */
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    min-width: 300px;
+}
+
+.cosmic-toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.cosmic-toast.sucesso {
+    border-left: 4px solid var(--am);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 10px 0 20px rgba(42, 162, 246, 0.05);
+}
+
+.cosmic-toast.erro {
+    border-left: 4px solid #ff3366;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 10px 0 20px rgba(255, 51, 102, 0.05);
+}
+
+.toast-icon {
+    font-size: 1.2rem;
+}
+
+.toast-content {
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+/* Responsividade de Tabela */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--am) transparent;
+}
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--am);
+    border-radius: 10px;
+}
+
+/* ═══════════════════════════════════════════════════
+           RESPONSIVIDADE GERAL (MOBILE)
+   ═══════════════════════════════════════════════════ */
+
+@media (max-width: 850px) {
+    html, body {
+        font-size: 14px;
+        cursor: auto !important;
+    }
+    
+    .hide-on-mobile {
+        display: none !important;
+    }
+
+    #nav {
+        top: auto;
+        bottom: 16px;
+        left: 16px;
+        right: 16px;
+        width: auto;
+        height: 70px;
+        flex-direction: row;
+        padding: 0 16px;
+        border-radius: 20px;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+        background: rgba(4, 6, 10, 0.85); /* Fundo um pouco mais opaco no mobile */
+    }
+
+    .nav-logo, .nav-item span {
+        display: none;
+    }
+
+    .nav-sec {
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+        width: 100%;
+        padding: 0;
+    }
+
+    .nav-item {
+        padding: 12px;
+        justify-content: center;
+    }
+
+    .nav-item.active::before {
+        left: 50%;
+        top: auto;
+        bottom: -6px;
+        transform: translateX(-50%);
+        height: 3px;
+        width: 16px;
+        border-radius: 4px 4px 0 0;
+    }
+
+    #editorial-view {
+        padding-left: 0; 
+        padding-bottom: 100px;
+    }
+
+    .ed-header {
+        padding: 50px 20px 20px;
+    }
+    
+    .ed-section {
+        padding: 0 20px 40px 20px;
+    }
+
+    .cosmic-form {
+        padding: 24px 20px;
+    }
+
+    .cosmic-table th, .cosmic-table td {
+        padding: 14px 16px;
+    }
+
+    .cosmic-toast {
+        top: 16px;
+        right: 16px;
+        left: 16px;
+        transform: translateY(-50px); /* Muda o eixo da animação no mobile */
+        justify-content: flex-start;
+        min-width: auto;
+    }
+
+    .cosmic-toast.show {
+        transform: translateY(0);
+    }
+}
+
+/* ═══════════════════════════════════════════════════
+           BOTÕES DE AÇÃO (TABELA E FORMULÁRIOS)
+   ═══════════════════════════════════════════════════ */
+
+.action-group {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 0.65rem;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: none !important;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-hairline);
+}
+
+.btn-action i {
+    font-size: 0.8rem;
+    font-style: normal;
+}
+
+/* Botão de Editar (Tabela) */
+.btn-edit {
+    color: var(--am);
+    border-color: rgba(42, 162, 246, 0.3);
+}
+
+.btn-edit:hover {
+    background: rgba(42, 162, 246, 0.1);
+    border-color: var(--am);
+    box-shadow: 0 0 15px rgba(42, 162, 246, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Botão de Excluir (Tabela) */
+.btn-delete {
+    color: #ff3366;
+    border-color: rgba(255, 51, 102, 0.3);
+}
+
+.btn-delete:hover {
+    background: rgba(255, 51, 102, 0.1);
+    border-color: #ff3366;
+    box-shadow: 0 0 15px rgba(255, 51, 102, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Botão de Cancelar (Formulário) */
+.btn-cancel {
+    color: var(--text-dim);
+    padding: 14px 24px;
+    font-size: 0.75rem;
+    justify-content: center;
+}
+
+.btn-cancel:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}

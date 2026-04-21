@@ -37,7 +37,7 @@
                 <p class="subtitle" id="subtitle-text">Catálogo Cósmico</p>
             </div>
             <div class="btn-wrap">
-                <a href="#" class="btn-entrar" id="btn-despertar">Acessar Portal</a>
+                <a href="#" class="btn-entrar" id="btn-despertar">Despertar</a>
             </div>
         </div>
     </div>
