@@ -5,6 +5,7 @@ include "../config/crud.php";
 
 $action = $_GET['action'] ?? 'listar';
 
+// ─── NOVO AUTOR ───────────────────────────────────────────────────────────────
 if ($action === 'novo_autor' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION['form_livro'] = [
         'titulo'         => $_POST['titulo']         ?? '',
@@ -21,6 +22,7 @@ if ($action === 'novo_autor' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// ─── NOVA EDITORA ─────────────────────────────────────────────────────────────
 if ($action === 'nova_editora' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION['form_livro'] = [
         'titulo'         => $_POST['titulo']         ?? '',
@@ -37,6 +39,28 @@ if ($action === 'nova_editora' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// ─── REGISTRAR EMPRÉSTIMO ─────────────────────────────────────────────────────
+if ($action === 'registrar' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id_livro      = $_POST['id_livro'];
+    $id_usuario    = $_POST['id_usuario'];
+    $data_prevista = $_POST['data_devolucao'];
+
+    if (registrarEmprestimo($mysqli, $id_livro, $id_usuario, $data_prevista)) {
+        header("Location: adm.php?action=emprestimos&msg=sucesso");
+    } else {
+        header("Location: adm.php?action=emprestimos&msg=erro_estoque");
+    }
+    exit;
+}
+
+// ─── DEVOLVER LIVRO ───────────────────────────────────────────────────────────
+if ($action === 'devolver' && isset($_GET['id'])) {
+    devolverLivro($mysqli, (int) $_GET['id']);
+    header("Location: adm.php?action=emprestimos");
+    exit;
+}
+
+// ─── ADD / EDIT LIVRO ─────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $titulo         = $_POST['titulo'];
     $id_autor       = (int) $_POST['id_autor'];
@@ -59,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// ─── DELETE LIVRO ─────────────────────────────────────────────────────────────
 if ($action === 'delete' && isset($_GET['id'])) {
     excluirLivro($mysqli, (int) $_GET['id']);
     header("Location: adm.php");
@@ -72,13 +97,25 @@ if ($action === 'delete' && isset($_GET['id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>O Cofre Cósmico | Acervo</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/catalogo.css"> 
-    <link rel="stylesheet" href="../assets/css/adm.css"> 
+    <link rel="stylesheet" href="../assets/css/catalogo.css">
+    <link rel="stylesheet" href="../assets/css/adm.css">
 </head>
 <body>
 
     <div id="grain"></div>
     <div id="canvas-dim" class="dimmed"></div>
+
+    <!-- ─── TOAST DE FEEDBACK ──────────────────────────────────────────────── -->
+    <?php if (isset($_GET['msg'])): ?>
+        <div id="toast" class="cosmic-toast <?= $_GET['msg'] === 'erro_estoque' ? 'erro' : 'sucesso' ?>">
+            <div class="toast-icon"><?= $_GET['msg'] === 'erro_estoque' ? '⚠️' : '✨' ?></div>
+            <div class="toast-content">
+                <?= $_GET['msg'] === 'erro_estoque'
+                    ? 'Anomalia detectada: Livro indisponível no estoque.'
+                    : 'Transação registrada no cofre com sucesso!' ?>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <div id="reticle" class="hide-on-mobile">
         <svg viewBox="0 0 100 100">
@@ -89,6 +126,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
     </div>
     <div id="reticle-dot" class="hide-on-mobile"></div>
 
+    <!-- ─── NAVBAR ────────────────────────────────────────────────────────── -->
     <nav id="nav">
         <div class="nav-logo">
             <span class="nav-logo-text">Andrômeda</span>
@@ -98,11 +136,11 @@ if ($action === 'delete' && isset($_GET['id'])) {
                 <i>📚</i>
                 <span>Acervo</span>
             </a>
-            <a href="emprestimos.php" class="nav-item">
+            <a href="adm.php?action=emprestimos" class="nav-item <?= $action === 'emprestimos' ? 'active' : '' ?>">
                 <i>📜</i>
                 <span>Empréstimos</span>
             </a>
-             <a href="emprestimos.php?action=novo" class="nav-item <?= $action === 'novo' ? 'active' : '' ?>">
+            <a href="adm.php?action=novo_emprestimo" class="nav-item <?= $action === 'novo_emprestimo' ? 'active' : '' ?>">
                 <i>✨</i>
                 <span>Novo Registro</span>
             </a>
@@ -115,12 +153,27 @@ if ($action === 'delete' && isset($_GET['id'])) {
 
     <div id="editorial-view" class="open">
         <header class="ed-header animate-rise">
-            <h1 class="ed-header-title">Controle do <em>Acervo</em></h1>
-            <p class="ed-header-desc">Painel principal do bibliotecário para catalogação, edição e expurgo de artefatos da matriz central.</p>
+            <h1 class="ed-header-title">
+                <?php if (in_array($action, ['emprestimos', 'novo_emprestimo', 'registrar'])): ?>
+                    Registros <em>Cósmicos</em>
+                <?php else: ?>
+                    Controle do <em>Acervo</em>
+                <?php endif; ?>
+            </h1>
+            <p class="ed-header-desc">
+                <?php if (in_array($action, ['emprestimos', 'novo_emprestimo'])): ?>
+                    Gerenciamento dinâmico de transações, empréstimos e devoluções dos artefatos da biblioteca.
+                <?php else: ?>
+                    Painel principal do bibliotecário para catalogação, edição e expurgo de artefatos da matriz central.
+                <?php endif; ?>
+            </p>
         </header>
 
         <div class="ed-section" style="margin-top: 50px;">
-            
+
+        
+            <!-- LISTAR LIVROS                                               -->
+      
             <?php if ($action === 'listar'): ?>
                 <div class="ed-section-header animate-rise" style="animation-delay: 0.1s;">
                     <h2 class="ed-section-title">Livros Cadastrados</h2>
@@ -142,9 +195,9 @@ if ($action === 'delete' && isset($_GET['id'])) {
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php 
+                                <?php
                                 $lista = listarLivros($mysqli);
-                                if(empty($lista)): 
+                                if (empty($lista)):
                                 ?>
                                     <tr>
                                         <td colspan="8" class="empty-state">
@@ -186,6 +239,9 @@ if ($action === 'delete' && isset($_GET['id'])) {
                     </div>
                 </div>
 
+           
+            <!-- ADICIONAR LIVRO                                             -->
+           
             <?php elseif ($action === 'add'):
                 $salvo = $_SESSION['form_livro'] ?? [];
                 unset($_SESSION['form_livro']);
@@ -309,6 +365,9 @@ if ($action === 'delete' && isset($_GET['id'])) {
                     </form>
                 </div>
 
+           
+            <!-- EDITAR LIVRO                                                -->
+        
             <?php elseif ($action === 'edit' && isset($_GET['id'])):
                 $id    = (int) $_GET['id'];
                 $livro = buscarLivroPorId($mysqli, $id);
@@ -384,7 +443,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
                                 <label>Status:</label>
                                 <select name="status" class="cosmic-input">
                                     <option value="Disponível"   <?= $livro['status'] === 'Disponível'   ? 'selected' : '' ?>>Disponível</option>
-                                    <option value="Indisponível" <?= $livro['status'] === 'Indisponível' ? 'selected' : '' ?>>Indisponível</option>
+                                    <option value="Em Restauração" <?= $livro['status'] === 'Em Restauração' ? 'selected' : '' ?>>Em Restauração</option>
                                 </select>
                             </div>
                             <div class="form-group stagger-item" style="animation-delay: 0.7s;">
@@ -400,6 +459,114 @@ if ($action === 'delete' && isset($_GET['id'])) {
                     </form>
                 </div>
 
+         
+            <!-- LISTAR EMPRÉSTIMOS                                          -->
+          
+            <?php elseif ($action === 'emprestimos'): ?>
+                <div class="ed-section-header animate-rise" style="animation-delay: 0.1s;">
+                    <h2 class="ed-section-title">Empréstimos Ativos</h2>
+                </div>
+
+                <div class="table-wrapper animate-rise" style="animation-delay: 0.2s;">
+                    <div class="table-responsive">
+                        <table class="cosmic-table">
+                            <thead>
+                                <tr>
+                                    <th>Livro</th>
+                                    <th>Usuário</th>
+                                    <th>Data Empréstimo</th>
+                                    <th>Previsão Devolução</th>
+                                    <th>Status</th>
+                                    <th style="text-align: right;">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $emprestimos = listarEmprestimos($mysqli);
+                                if (empty($emprestimos)):
+                                ?>
+                                    <tr>
+                                        <td colspan="6" class="empty-state">
+                                            <i>📡</i>
+                                            <p>Nenhum registro de transação encontrado no cofre no momento.</p>
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($emprestimos as $index => $e): ?>
+                                        <tr class="stagger-item" style="animation-delay: <?= 0.3 + ($index * 0.05) ?>s;">
+                                            <td style="font-weight: 600; color: var(--am3);"><?= htmlspecialchars($e['titulo']) ?></td>
+                                            <td><?= htmlspecialchars($e['id_usuario']) ?></td>
+                                            <td class="t-mono"><?= date('d/m/Y', strtotime($e['data_emprestimo'])) ?></td>
+                                            <td class="t-mono"><?= date('d/m/Y', strtotime($e['data_devolucao'])) ?></td>
+                                            <td>
+                                                <?php if ($e['status_emprestimo'] === 'Pendente'): ?>
+                                                    <span class="sbadge s-empr">Pendente</span>
+                                                <?php else: ?>
+                                                    <span class="sbadge s-disp">Devolvido</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td style="text-align: right;">
+                                                <?php if ($e['status_emprestimo'] === 'Pendente'): ?>
+                                                    <a href="adm.php?action=devolver&id=<?= $e['id_emprestimo'] ?>" onclick="return confirm('Confirmar o retorno deste artefato?')" class="btn-sec btn-sm">Dar Baixa</a>
+                                                <?php else: ?>
+                                                    <span class="t-dim t-mono" style="font-size: 0.7rem;">Em: <?= date('d/m/Y', strtotime($e['data_devolucao'])) ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+        
+            <!-- NOVO EMPRÉSTIMO                                             -->
+       
+            <?php elseif ($action === 'novo_emprestimo'): ?>
+                <div class="ed-section-header animate-rise" style="animation-delay: 0.1s;">
+                    <h2 class="ed-section-title">Registrar Empréstimo</h2>
+                </div>
+
+                <form method="POST" action="adm.php?action=registrar" class="cosmic-form animate-rise" style="animation-delay: 0.2s;">
+
+                    <div class="form-group stagger-item" style="animation-delay: 0.3s;">
+                        <label>Livro Solicitado:</label>
+                        <select name="id_livro" required class="cosmic-input">
+                            <option value="">-- Selecione o Tomo --</option>
+                            <?php foreach (listarLivros($mysqli) as $l):
+                                $id   = $l['id_livro']    ?? 0;
+                                $nome = $l['titulo']      ?? 'Sem título';
+                                $qtd  = $l['quantidade']  ?? 0;
+                            ?>
+                                <option value="<?= $id ?>" <?= $qtd == 0 ? 'disabled' : '' ?>>
+                                    <?= htmlspecialchars($nome) ?> <?= $qtd == 0 ? '(Esgotado)' : "— (Qtd: $qtd)" ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group stagger-item" style="animation-delay: 0.4s;">
+                        <label>Usuário Explorador:</label>
+                        <select name="id_usuario" required class="cosmic-input">
+                            <option value="">-- Selecione o Explorador --</option>
+                            <?php foreach (listarUsuarios($mysqli) as $u): ?>
+                                <option value="<?= $u['id_usuario'] ?>"><?= htmlspecialchars($u['nome']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group stagger-item" style="animation-delay: 0.5s;">
+                        <label>Data de Devolução Prevista:</label>
+                        <input type="date" name="data_devolucao_prevista" required class="cosmic-input" min="<?= date('Y-m-d') ?>">
+                    </div>
+
+                    <div class="form-actions stagger-item" style="animation-delay: 0.6s;">
+                        <a href="adm.php?action=emprestimos" class="btn-action btn-cancel" style="flex: 0.3;">Cancelar</a>
+                        <button type="submit" class="btn-prim">Confirmar Empréstimo</button>
+                    </div>
+                </form>
+
             <?php endif; ?>
 
         </div>
@@ -407,19 +574,42 @@ if ($action === 'delete' && isset($_GET['id'])) {
 
     <script src="../assets/js/adm.js"></script>
     <script>
+        // ─── Cursor Magnético ─────────────────────────────────────────────────
         const cursor = document.getElementById('reticle');
-        const dot = document.getElementById('reticle-dot');
-        
+        const dot    = document.getElementById('reticle-dot');
+
         if (window.matchMedia("(pointer: fine)").matches) {
             document.addEventListener('mousemove', (e) => {
                 cursor.style.transform = `translate3d(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%), 0)`;
-                dot.style.transform = `translate3d(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%), 0)`;
+                dot.style.transform    = `translate3d(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%), 0)`;
             });
 
             document.querySelectorAll('a, button, select, input, textarea').forEach(el => {
                 el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
                 el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
             });
+        }
+
+        // ─── Toast de Feedback ────────────────────────────────────────────────
+        const toast = document.getElementById('toast');
+        if (toast) {
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 500);
+            }, 4500);
+        }
+
+        // ─── Toggle Novo Autor ────────────────────────────────────────────────
+        function toggleNovoAutor() {
+            const div = document.getElementById('div_novo_autor');
+            div.style.display = div.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // ─── Toggle Nova Editora ──────────────────────────────────────────────
+        function toggleNovaEditora() {
+            const div = document.getElementById('div_nova_editora');
+            div.style.display = div.style.display === 'none' ? 'block' : 'none';
         }
     </script>
 </body>

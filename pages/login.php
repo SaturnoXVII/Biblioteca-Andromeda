@@ -47,9 +47,9 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
                     session_start();
                 }
                 // Guarda as informações do usuário na sessão, para que elas possam ser acessadas em outras páginas
-                $_SESSION['id'] = $usuario['id'];
+                $_SESSION['id_usuario'] = $usuario['id_usuario'];
                 $_SESSION['nome'] = $usuario['nome'];
-                $_SESSION['tipo'] = $usuario['tipo'];
+                $_SESSION['nivel_acesso'] = $usuario['nivel_acesso'];
 
                 // Redireciona para o catalogo ou painel, dependendo do tipo do usuário
                 header("Location: catalogo.php");

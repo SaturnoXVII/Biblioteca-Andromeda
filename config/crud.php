@@ -104,7 +104,7 @@ function adicionarAutor($mysqli, $nome, $descricao, $nacionalidade) {
 // --- FUNÇÕES DE EMPRÉSTIMO ---
 
 function listarEmprestimos($mysqli) {
-    $sql = "SELECT E.*, L.titulo, U.nome as usuario 
+    $sql = "SELECT E.*, L.titulo, data_devolucao, U.nome as usuario 
             FROM emprestimos E
             JOIN Livros L ON E.id_livro = L.id_livro
             JOIN usuarios U ON E.id_usuario = U.id_usuario
@@ -118,7 +118,7 @@ function registrarEmprestimo($mysqli, $id_livro, $id_usuario, $data_devolucao_pr
     if ($livro['quantidade'] <= 0) return false;
 
     // 2. Insere o empréstimo
-    $stmt = $mysqli->prepare("INSERT INTO emprestimos (id_livro, id_usuario, data_devolucao_prevista, status) VALUES (?, ?, ?, 'Pendente')");
+    $stmt = $mysqli->prepare("INSERT INTO emprestimos (id_livro, id_usuario, data_emprestimo, data_devolucao, status_emprestimo) VALUES (?, ?, NOW(), ?, 'Pendente')");
     $stmt->bind_param("iis", $id_livro, $id_usuario, $data_devolucao_prevista);
     
     if ($stmt->execute()) {
@@ -137,8 +137,8 @@ function devolverLivro($mysqli, $id_emprestimo) {
     $id_livro = $emp['id_livro'];
 
     // 2. Atualiza status e data de devolução real
-    $data_hoje = date('Y-m-d');
-    $mysqli->query("UPDATE emprestimos SET status = 'Devolvido', data_devolucao_real = '$data_hoje' WHERE id_emprestimo = $id_emprestimo");
+    $data_hoje = date('y-m-d');
+    $mysqli->query("UPDATE emprestimos SET status_emprestimo = 'Devolvido', data_devolucao = '$data_hoje' WHERE id_emprestimo = $id_emprestimo");
 
     // 3. Devolve 1 unidade ao estoque
     $mysqli->query("UPDATE Livros SET quantidade = quantidade + 1 WHERE id_livro = $id_livro");

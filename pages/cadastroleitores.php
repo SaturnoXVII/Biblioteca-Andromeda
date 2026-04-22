@@ -14,9 +14,10 @@ if (isset($_POST['email'])) {
     $telefone   = $mysqli->real_escape_string($_POST['telefone']);
     $endereco   = $mysqli->real_escape_string($_POST['endereco']);
     $senha      = password_hash($_POST['senha'], PASSWORD_DEFAULT);
-
+    
     // Antes de inserir o novo usuário, vamos verificar se já existe um usuário com o mesmo email no banco de dados. Isso é importante para evitar que haja dois usuários com o mesmo email, o que poderia causar problemas de login e segurança. O código abaixo prepara uma consulta SQL para selecionar o id dos usuários que tenham o email igual ao email digitado no formulário, depois ele executa a consulta e armazena o resultado. Se o número de linhas do resultado for maior que 0, significa que já existe um usuário com esse email, então ele define a variável $erro com a mensagem de erro. Caso contrário, ele insere o novo usuário no banco de dados e redireciona para a página de login.
-    $check = $mysqli->prepare("SELECT id FROM usuarios WHERE email = ?");
+
+    $check = $mysqli->prepare("SELECT id_usuario FROM usuarios WHERE email = ?");
     $check->bind_param("s", $email);
     $check->execute();
     $check->store_result();
