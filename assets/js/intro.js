@@ -1,45 +1,46 @@
 // ═══════════════════════════════════════════════
-// 1. MOTOR & PÓS-PROCESSAMENTO (Otimizado)
+// 1. MOTOR DE RENDERIZAÇÃO & PÓS-PROCESSAMENTO VFX
 // ═══════════════════════════════════════════════
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x000000, 0.0015);
+scene.fog = new THREE.FogExp2(0x000205, 0.0015);
 
 const camera = new THREE.PerspectiveCamera(
   45,
   innerWidth / innerHeight,
   0.1,
-  2000,
+  4000,
 );
-camera.position.set(0, 40, 100);
+camera.position.set(0, 45, 120);
 
 const renderer = new THREE.WebGLRenderer({
   antialias: false,
   powerPreference: "high-performance",
 });
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
+renderer.toneMappingExposure = 1.4; // Exposição cinematográfica alta
 document.getElementById("webgl-container").appendChild(renderer.domElement);
 
 const renderPass = new THREE.RenderPass(scene, camera);
 const bloomPass = new THREE.UnrealBloomPass(
   new THREE.Vector2(innerWidth, innerHeight),
-  1.5,
-  0.4,
+  2.0,
+  0.3,
   0.85,
 );
-bloomPass.threshold = 0.02;
-bloomPass.strength = 1.6;
+bloomPass.threshold = 0.05;
+bloomPass.strength = 1.8; // Glow intenso para o buraco negro
 bloomPass.radius = 1.2;
 
 const ChromaShader = {
   uniforms: { tDiffuse: { value: null }, uStrength: { value: 0.0 } },
   vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uStrength; varying vec2 vUv; void main(){ vec2 c=vUv-0.5; float d=length(c); vec2 off=c*d*uStrength; float r=texture2D(tDiffuse,vUv-off*1.3).r; float g=texture2D(tDiffuse,vUv).g; float b=texture2D(tDiffuse,vUv+off).b; gl_FragColor=vec4(r,g,b,1.0); }`,
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uStrength; varying vec2 vUv; void main(){ vec2 c=vUv-0.5; float d=length(c); vec2 off=c*d*uStrength; float r=texture2D(tDiffuse,vUv-off*1.5).r; float g=texture2D(tDiffuse,vUv).g; float b=texture2D(tDiffuse,vUv+off).b; gl_FragColor=vec4(r,g,b,1.0); }`,
 };
 const chromaticPass = new THREE.ShaderPass(ChromaShader);
 
+// Shader de distorção gravitacional (Warp/Lens)
 const WarpShader = {
   uniforms: {
     tDiffuse: { value: null },
@@ -47,7 +48,7 @@ const WarpShader = {
     uTime: { value: 0.0 },
   },
   vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uAmount, uTime; varying vec2 vUv; void main(){ vec2 center = vec2(0.5); vec2 delta = vUv - center; float dist = length(delta); float warp = uAmount * dist * dist; vec4 col = vec4(0.0); float total = 0.0; for(int i=0; i<8; i++){ float t = float(i) / 7.0; float sc = 1.0 - warp * t; vec2 uv = center + delta * sc; uv = clamp(uv, 0.001, 0.999); col += texture2D(tDiffuse, uv) * (1.0 - t * 0.5); total += (1.0 - t * 0.5); } gl_FragColor = col / total; }`,
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uAmount, uTime; varying vec2 vUv; void main(){ vec2 center = vec2(0.5); vec2 delta = vUv - center; float dist = length(delta); float warp = uAmount * pow(dist, 2.2); vec4 col = vec4(0.0); float total = 0.0; for(int i=0; i<12; i++){ float t = float(i) / 11.0; float sc = 1.0 - warp * t; vec2 uv = center + delta * sc; uv = clamp(uv, 0.001, 0.999); col += texture2D(tDiffuse, uv) * (1.0 - t * 0.5); total += (1.0 - t * 0.5); } gl_FragColor = col / total; }`,
 };
 const warpPass = new THREE.ShaderPass(WarpShader);
 
@@ -58,63 +59,285 @@ composer.addPass(warpPass);
 composer.addPass(chromaticPass);
 
 // ═══════════════════════════════════════════════
-// 2. O CORPO CELESTIAL UNIFICADO
+// 2. TÚNEL INTERDIMENSIONAL (Partículas Esticadas/Streak)
 // ═══════════════════════════════════════════════
-const celestialGeom = new THREE.SphereGeometry(4.0, 128, 128);
+const tunnelCount = 15000;
+const tunnelGeom = new THREE.BufferGeometry();
+const tPos = new Float32Array(tunnelCount * 3);
+const tColors = new Float32Array(tunnelCount * 3);
+const tRand = new Float32Array(tunnelCount);
+
+for (let i = 0; i < tunnelCount; i++) {
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 10 + Math.random() * 180;
+  tPos[i * 3] = Math.cos(angle) * radius;
+  tPos[i * 3 + 1] = Math.sin(angle) * radius;
+  tPos[i * 3 + 2] = -Math.random() * 4000; // Profundidade absurda
+
+  const mixCol = Math.random();
+  const c = new THREE.Color(0x1144ff).lerp(
+    new THREE.Color(mixCol > 0.6 ? 0xff33aa : 0xffee55),
+    Math.random(),
+  );
+  tColors[i * 3] = c.r;
+  tColors[i * 3 + 1] = c.g;
+  tColors[i * 3 + 2] = c.b;
+  tRand[i] = Math.random();
+}
+tunnelGeom.setAttribute("position", new THREE.BufferAttribute(tPos, 3));
+tunnelGeom.setAttribute("color", new THREE.BufferAttribute(tColors, 3));
+tunnelGeom.setAttribute("aRand", new THREE.BufferAttribute(tRand, 1));
+
+// Shader Customizado: Estica a partícula com base na velocidade de dobra
+const tunnelMat = new THREE.ShaderMaterial({
+  transparent: true,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  vertexColors: true,
+  uniforms: { uSpeed: { value: 0.0 }, uOpacity: { value: 0.0 } },
+  vertexShader: `
+    attribute float aRand; varying vec3 vColor; varying float vAlpha; uniform float uSpeed;
+    void main() {
+      vColor = color;
+      vec3 p = position;
+      // Estica em Z baseado na velocidade
+      p.z += uSpeed * 2.0 * aRand; 
+      vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+      gl_Position = projectionMatrix * mvPosition;
+      gl_PointSize = (150.0 / -mvPosition.z) * (1.0 + uSpeed * 0.1); // Aumenta o tamanho com a velocidade
+      vAlpha = smoothstep(50.0, -100.0, p.z); // Fade no fim do túnel
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vColor; varying float vAlpha; uniform float uOpacity; uniform float uSpeed;
+    void main() {
+      // Cria o formato de "agulha/streak"
+      vec2 c = gl_PointCoord - 0.5;
+      float streak = exp(-abs(c.x) * 10.0) * exp(-abs(c.y) * 2.0);
+      float alpha = streak * vAlpha * uOpacity;
+      gl_FragColor = vec4(vColor * alpha * 2.0, alpha);
+    }
+  `,
+});
+const dimensionTunnel = new THREE.Points(tunnelGeom, tunnelMat);
+dimensionTunnel.visible = false;
+scene.add(dimensionTunnel);
+
+// ═══════════════════════════════════════════════
+// 3. O CORPO CELESTIAL (A LUA) - VISUAL FANTASIA SOMBRIA
+// ═══════════════════════════════════════════════
+const moonSystem = new THREE.Group();
+moonSystem.visible = false;
+scene.add(moonSystem);
+
+const celestialGeom = new THREE.SphereGeometry(4.0, 256, 256);
+
+// Shader Refinado com Efeito Mineral/Obsidiana e Rim Light Cinematográfico
 const celestialShader = new THREE.ShaderMaterial({
   transparent: true,
-  uniforms: { uProgress: { value: 0.0 }, uMorph: { value: 0.0 } },
-  vertexShader: `varying vec2 vUv; varying vec3 vN,vPos; void main(){ vUv=uv; vN=normalize(normalMatrix*normal); vPos=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  uniforms: {
+    uProgress: { value: 0.0 },
+    uMorph: { value: 0.0 },
+    uLightAngle: { value: -2.0 },
+  },
+  vertexShader: `
+    varying vec2 vUv; varying vec3 vN, vPos, vViewPosition; 
+    void main(){ 
+        vUv = uv; 
+        vN = normalize(normalMatrix * normal); 
+        vPos = position; 
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        vViewPosition = -mvPosition.xyz;
+        gl_Position = projectionMatrix * mvPosition; 
+    }`,
   fragmentShader: `
-            uniform float uProgress; uniform float uMorph; varying vec2 vUv; varying vec3 vN,vPos;
-            float h(float n){ return fract(sin(n)*1e4); }
-            float noise(vec3 x){ vec3 i=floor(x),f=fract(x); float n=dot(i,vec3(110,241,171)); vec3 u=f*f*(3.0-2.0*f); return mix(mix(mix(h(n),h(n+110.0),u.x),mix(h(n+241.0),h(n+351.0),u.x),u.y),mix(mix(h(n+171.0),h(n+281.0),u.x),mix(h(n+412.0),h(n+522.0),u.x),u.y),u.z); }
-            float fbm(vec3 p){ float f=0.0,w=0.5; for(int i=0;i<5;i++){f+=w*noise(p);p*=2.2;w*=0.5;} return f; }
-            void main(){
-                float macro=fbm(vPos*0.8),micro=fbm(vPos*4.0),dust=fbm(vPos*16.0)*0.1;
-                vec3 base=vec3(0.89,0.89,0.94)-(macro*0.28)-(micro*0.18)-dust;
-                float lx=mix(2.0,0.5,uProgress),lz=mix(-1.0,1.5,uProgress);
-                vec3 ld=normalize(vec3(lx,0.0,lz));
-                float diff=max(0.0,dot(vN,ld));
-                vec3 vd=normalize(-vPos),hd=normalize(ld+vd);
-                float spec=pow(max(dot(vN,hd),0.0),40.0)*diff*0.35;
-                float rim=pow(1.0-max(dot(vN,vec3(0,0,1)),0.0),8.0);
-                float rimI=rim*(1.0-smoothstep(0.0,0.25,uProgress))*0.9;
-                vec3 moonColor=(base*smoothstep(0.0,0.55,diff))+vec3(spec)+vec3(0.85,0.92,1.0)*rimI;
-                vec3 finalColor = mix(vec3(0.0), moonColor, uMorph);
-                gl_FragColor=vec4(finalColor, 1.0);
-            }
-        `,
+    uniform float uProgress; uniform float uMorph; uniform float uLightAngle; 
+    varying vec2 vUv; varying vec3 vN, vPos, vViewPosition;
+    
+    // Funções de Ruído Otimizadas
+    float h(float n){ return fract(sin(n)*1e4); } 
+    float noise(vec3 x){ vec3 i=floor(x),f=fract(x); float n=dot(i,vec3(110,241,171)); vec3 u=f*f*(3.0-2.0*f); return mix(mix(mix(h(n),h(n+110.0),u.x),mix(h(n+241.0),h(n+351.0),u.x),u.y),mix(mix(h(n+171.0),h(n+281.0),u.x),mix(h(n+412.0),h(n+522.0),u.x),u.y),u.z); } 
+    float fbm(vec3 p){ float f=0.0,w=0.5; for(int i=0;i<5;i++){f+=w*noise(p);p*=2.0;w*=0.5;} return f; }
+    
+    void main(){
+        // Relevo Procedural
+        float macro = fbm(vPos * 0.8);
+        float micro = fbm(vPos * 3.5);
+        float craters = fbm(vPos * 12.0) * 0.2;
+        
+        // Cores Base: Tons escuros, alienígenas e minerais
+        vec3 darkObsidian = vec3(0.04, 0.05, 0.08);
+        vec3 paleSilver = vec3(0.4, 0.45, 0.55);
+        vec3 baseColor = mix(darkObsidian, paleSilver, macro * 0.5 - craters);
+        
+        // Iluminação
+        vec3 ld = normalize(vec3(cos(uLightAngle), 0.3, sin(uLightAngle)));
+        vec3 normal = normalize(vN + (vec3(macro, micro, craters) * 0.1)); // Bump mapping falso
+        float diff = max(0.0, dot(normal, ld));
+        
+        // Especularidade Metálica/Mineral
+        vec3 viewDir = normalize(vViewPosition);
+        vec3 halfVector = normalize(ld + viewDir);
+        float spec = pow(max(dot(normal, halfVector), 0.0), 80.0) * diff * 0.8;
+        
+        // Rim Light Etereo (Azul Espectral)
+        float rimPower = pow(1.0 - max(dot(vN, viewDir), 0.0), 3.5);
+        vec3 rimColor = vec3(0.2, 0.5, 1.0) * rimPower * (0.2 + diff * 0.8);
+        
+        // Composição Final
+        vec3 ambient = vec3(0.005, 0.01, 0.02); 
+        vec3 finalColor = (baseColor * diff) + ambient + spec + rimColor;
+        
+        // Controle de Aparição Dramática (uProgress controla a sombra invadindo)
+        float shadowMask = smoothstep(0.0, 0.8, diff + (uProgress * 1.5 - 0.5));
+        
+        gl_FragColor = vec4(mix(vec3(0.0), finalColor * shadowMask, uMorph), 1.0);
+    }`,
 });
 const celestialBody = new THREE.Mesh(celestialGeom, celestialShader);
 celestialBody.scale.set(0.525, 0.525, 0.525);
-scene.add(celestialBody);
+moonSystem.add(celestialBody);
+
+// Coroa Solar (Aura Específica para contrastar com a textura sombria)
+const coronaShader = new THREE.ShaderMaterial({
+  transparent: true,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  uniforms: { uTime: { value: 0 }, uOpacity: { value: 0.0 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform float uTime, uOpacity; varying vec2 vUv;
+    void main(){ 
+        vec2 center = vUv - 0.5; 
+        float dist = length(center) * 2.0; 
+        float glow = exp(-dist * 2.5) * 2.0; 
+        float mask = smoothstep(0.24, 0.28, dist); 
+        // Gradiente de azul profundo para ciano fantasmagórico
+        vec3 col = mix(vec3(0.1, 0.8, 1.0), vec3(0.05, 0.1, 0.4), dist); 
+        gl_FragColor = vec4(col * glow * mask * uOpacity, glow * mask * uOpacity); 
+    }`,
+});
+const webglCorona = new THREE.Mesh(new THREE.PlaneGeometry(35, 35), coronaShader);
+webglCorona.position.set(0, 0, -4.2);
+moonSystem.add(webglCorona);
+
+// Anéis de Poeira de Cristal
+const ringCount = 3500; // Mais partículas para um visual mais denso
+const ringGeom = new THREE.BufferGeometry();
+const rPos = new Float32Array(ringCount * 3);
+const rRnd = new Float32Array(ringCount * 2);
+const rAng = new Float32Array(ringCount);
+for (let i = 0; i < ringCount; i++) {
+  const ang = Math.random() * Math.PI * 2;
+  const radius = 5.8 + Math.random() * 3.5;
+  rPos[i * 3] = Math.cos(ang) * radius;
+  rPos[i * 3 + 1] = (Math.random() - 0.5) * 0.15; // Anel mais achatado e preciso
+  rPos[i * 3 + 2] = Math.sin(ang) * radius;
+  rRnd[i * 2] = Math.random();
+  rRnd[i * 2 + 1] = Math.random();
+  rAng[i] = ang;
+}
+ringGeom.setAttribute("position", new THREE.BufferAttribute(rPos, 3));
+ringGeom.setAttribute("aRnd", new THREE.BufferAttribute(rRnd, 2));
+ringGeom.setAttribute("aAngle", new THREE.BufferAttribute(rAng, 1));
+
+const ringMat = new THREE.ShaderMaterial({
+  transparent: true,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  uniforms: { uTime: { value: 0 }, uOpacity: { value: 0.0 } },
+  vertexShader: `
+    attribute vec2 aRnd; attribute float aAngle; uniform float uTime; varying vec2 vR; 
+    void main(){ 
+        vR=aRnd; 
+        float speed = 0.08 + aRnd.x * 0.1; // Rotação mais lenta e imponente
+        float ang = aAngle + uTime * speed; 
+        vec3 p = vec3(cos(ang) * length(position.xz), position.y, sin(ang) * length(position.xz)); 
+        vec4 vp = viewMatrix * modelMatrix * vec4(p, 1.0); 
+        gl_Position = projectionMatrix * vp; 
+        gl_PointSize = (12.0 / -vp.z) * (0.5 + aRnd.y * 0.5); 
+    }`,
+  fragmentShader: `
+    uniform float uOpacity; varying vec2 vR; 
+    void main(){ 
+        float s = pow(1.0 - distance(gl_PointCoord, vec2(0.5)), 2.0); 
+        vec3 col = mix(vec3(0.4, 0.7, 1.0), vec3(0.8, 0.9, 1.0), vR.x); 
+        gl_FragColor = vec4(col * s * uOpacity, s * uOpacity); 
+    }`,
+});
+const moonRing = new THREE.Points(ringGeom, ringMat);
+moonRing.rotation.x = Math.PI * 0.05; // Leve inclinação no anel
+moonSystem.add(moonRing);
+
 
 // ═══════════════════════════════════════════════
-// 3. SISTEMA DO BURACO NEGRO
+// 4. O BURACO NEGRO CINEMATOGRÁFICO (GARGÂNTUA)
 // ═══════════════════════════════════════════════
 const bhSystem = new THREE.Group();
 scene.add(bhSystem);
 
-const accretionGeom = new THREE.TorusGeometry(3.2, 0.8, 64, 128);
+// Horizonte de Eventos (Esfera de Escuridão Absoluta Escalonada)
+const eventHorizon = new THREE.Mesh(
+  new THREE.SphereGeometry(1.65, 128, 128),
+  new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide }),
+);
+bhSystem.add(eventHorizon);
+
+// Disco de Acreção Volumétrico (FBM Polar Coordinates Shader)
+const accretionGeom = new THREE.RingGeometry(1.65, 6.5, 256, 64);
 const accretionShader = new THREE.ShaderMaterial({
   transparent: true,
   blending: THREE.AdditiveBlending,
   depthWrite: false,
-  uniforms: {
-    uTime: { value: 0 },
-    uIntensityMulti: { value: 1.0 },
-    uOpacity: { value: 1.0 },
-  },
+  side: THREE.DoubleSide,
+  uniforms: { uTime: { value: 0 }, uOpacity: { value: 1.0 } },
   vertexShader: `varying vec2 vUv; varying vec3 vPos; void main(){ vUv=uv; vPos=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-  fragmentShader: `uniform float uTime,uIntensityMulti,uOpacity; varying vec2 vUv; varying vec3 vPos; float h(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); } float fbm(vec2 p){ float f=0.0; f+=0.5*h(p); p*=2.01; f+=0.25*h(p); p*=2.01; f+=0.125*h(p); return f; } void main(){ float r=length(vPos.xy); float ang=atan(vPos.y,vPos.x); float turb=fbm(vUv*24.0+vec2(uTime*0.22,0.0))*0.32; float pulse=0.90+0.10*sin(uTime*2.9+r); float intensity=pow(1.0-smoothstep(1.8,5.5,r),3.0)*pulse+turb; float dopp=sin(ang+uTime*0.38)*0.5+0.5; vec3 hotCore=vec3(0.94,0.97,1.0); vec3 blueShift=vec3(0.35,0.68,1.0); vec3 redShift=vec3(0.68,0.38,1.0); vec3 col=mix(hotCore, mix(redShift,blueShift,dopp), smoothstep(1.8,4.2,r)); float vol=smoothstep(0.0,0.18,vUv.y)*smoothstep(1.0,0.82,vUv.y); gl_FragColor=vec4(col*intensity*uIntensityMulti*uOpacity, intensity*vol*uOpacity); }`,
+  fragmentShader: `
+    uniform float uTime; uniform float uOpacity; varying vec2 vUv; varying vec3 vPos; 
+    // Ruído Simplex/FBM
+    float hash(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); } 
+    float noise(vec2 p){ vec2 i=floor(p), f=fract(p), u=f*f*(3.0-2.0*f); return mix(mix(hash(i),hash(i+vec2(1,0)),u.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x),u.y); }
+    float fbm(vec2 p){ float f=0.0, w=0.5; for(int i=0;i<5;i++){f+=w*noise(p);p*=2.0;w*=0.5;} return f; } 
+    
+    void main(){ 
+        vec2 center = vec2(0.5);
+        vec2 d = vUv - center;
+        float radius = length(vPos.xy); 
+        float angle = atan(vPos.y, vPos.x); 
+        
+        // Espiral e Rotação
+        float vortex = angle + uTime * 0.8 + 10.0 / radius; 
+        vec2 polarUv = vec2(radius * 2.0, vortex * 1.5);
+        
+        // Textura procedural de poeira e gás
+        float gas = fbm(polarUv + fbm(polarUv + uTime * 0.2)) * 1.2;
+        float darkLanes = smoothstep(0.4, 1.0, fbm(polarUv * 3.0 - uTime * 0.5));
+        
+        // Doppler Beaming (Efeito Cinematográfico - Um lado azul brilhante, outro escuro avermelhado)
+        float doppler = sin(angle - 0.5); 
+        float beam = smoothstep(-1.0, 1.0, doppler) * 1.8 + 0.2;
+        
+        // Densidade baseada na distância do horizonte de eventos
+        float coreDensity = smoothstep(1.65, 2.5, radius) * smoothstep(6.5, 3.0, radius);
+        float intensity = coreDensity * gas * beam * darkLanes; 
+        
+        // Paleta de Cores de Acreção
+        vec3 hotCore = vec3(1.0, 0.95, 0.9); // Branco incandescente
+        vec3 blueShift = vec3(0.3, 0.6, 1.0); 
+        vec3 redShift = vec3(1.0, 0.2, 0.05); 
+        
+        vec3 dopplerColor = mix(redShift, blueShift, smoothstep(-0.8, 0.8, doppler));
+        vec3 finalColor = mix(dopplerColor, hotCore, smoothstep(2.5, 1.65, radius));
+        
+        gl_FragColor = vec4(finalColor * intensity * uOpacity, intensity * uOpacity); 
+    }`,
 });
 const photonDisk = new THREE.Mesh(accretionGeom, accretionShader);
-photonDisk.rotation.x = Math.PI / 2;
-photonDisk.scale.z = 0.05;
+photonDisk.rotation.x = Math.PI / 2.2; // Inclinação elegante
 bhSystem.add(photonDisk);
 
-const starsParam = { count: 90000, radius: 65, branches: 4, spin: 4.5 };
+// Estrelas e Galáxia orbitando o buraco
+const starsParam = { count: 120000, radius: 80, branches: 5, spin: 6.0 };
 const starsGeom = new THREE.BufferGeometry();
 const positions = new Float32Array(starsParam.count * 3);
 const colors = new Float32Array(starsParam.count * 3);
@@ -130,15 +353,12 @@ for (let i = 0; i < starsParam.count; i++) {
   positions[i3] =
     Math.cos(branchAngle + spinAngle) * radius +
     Math.cos(Math.random() * Math.PI * 2) * spread;
-  positions[i3 + 1] = (Math.random() - 0.5) * (radius < 8 ? 4.0 : 0.5);
+  positions[i3 + 1] = (Math.random() - 0.5) * (radius < 10 ? 4.0 : 0.5);
   positions[i3 + 2] =
     Math.sin(branchAngle + spinAngle) * radius +
     Math.sin(Math.random() * Math.PI * 2) * spread;
   const mx = radius / starsParam.radius;
-  const mixed = new THREE.Color(0xe0f0ff).lerp(
-    new THREE.Color(0xa960ee),
-    mx * 1.15,
-  );
+  const mixed = new THREE.Color(0xff8833).lerp(new THREE.Color(0x3388ff), mx);
   colors[i3] = mixed.r;
   colors[i3 + 1] = mixed.g;
   colors[i3 + 2] = mixed.b;
@@ -149,7 +369,6 @@ for (let i = 0; i < starsParam.count; i++) {
 starsGeom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
 starsGeom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 starsGeom.setAttribute("aRandomness", new THREE.BufferAttribute(randomness, 3));
-
 const starShader = new THREE.ShaderMaterial({
   depthWrite: false,
   blending: THREE.AdditiveBlending,
@@ -158,276 +377,121 @@ const starShader = new THREE.ShaderMaterial({
   uniforms: {
     uTime: { value: 0 },
     uSpeedMult: { value: 1.0 },
-    uSuck: { value: 0.0 },
     uOpacity: { value: 1.0 },
   },
-  vertexShader: `uniform float uTime,uSpeedMult,uSuck; attribute vec3 aRandomness; varying vec3 vColor; varying float vDist; void main(){ vec3 pos=position; float dist=length(pos); vDist=dist; float angle=atan(pos.z,pos.x)+(uTime*uSpeedMult/(dist*0.5)); float sf=smoothstep(0.0,1.0,uSuck); float curR=mix(dist,1.5,pow(sf, 1.5)*(1.0-aRandomness.x*0.2)); pos.x=cos(angle)*curR; pos.z=sin(angle)*curR; pos.y*=(1.0-sf*0.95); vec4 vp=viewMatrix*modelMatrix*vec4(pos,1.0); gl_Position=projectionMatrix*vp; gl_PointSize=(28.0/-vp.z)*(0.2+aRandomness.x); vColor=color; }`,
-  fragmentShader: `uniform float uOpacity; varying vec3 vColor; void main(){ float s=pow(1.0-distance(gl_PointCoord,vec2(0.5)),2.5); gl_FragColor=vec4(vColor*s*uOpacity,s*0.9*uOpacity); }`,
+  vertexShader: `uniform float uTime,uSpeedMult; attribute vec3 aRandomness; varying vec3 vColor; void main(){ vec3 pos=position; float dist=length(pos); float angle=atan(pos.z,pos.x)+(uTime*uSpeedMult/(dist*0.2)); pos.x=cos(angle)*dist; pos.z=sin(angle)*dist; vec4 vp=viewMatrix*modelMatrix*vec4(pos,1.0); gl_Position=projectionMatrix*vp; gl_PointSize=(35.0/-vp.z)*(0.2+aRandomness.x); vColor=color; }`,
+  fragmentShader: `uniform float uOpacity; varying vec3 vColor; void main(){ float s=pow(1.0-distance(gl_PointCoord,vec2(0.5)),3.0); gl_FragColor=vec4(vColor*s*uOpacity,s*uOpacity); }`,
 });
 const galaxy = new THREE.Points(starsGeom, starShader);
 bhSystem.add(galaxy);
 
-function createJet(direction) {
-  const count = 600;
-  const geom = new THREE.BufferGeometry();
-  const pos = new Float32Array(count * 3);
-  const rands = new Float32Array(count * 2);
-  for (let i = 0; i < count; i++) {
-    const t = Math.random();
-    const ang = Math.random() * Math.PI * 2;
-    const spread = Math.pow(1 - t, 2) * 2.2;
-    pos[i * 3] = Math.cos(ang) * spread;
-    pos[i * 3 + 1] = t * 20 + 2.2;
-    pos[i * 3 + 2] = Math.sin(ang) * spread;
-    rands[i * 2] = Math.random();
-    rands[i * 2 + 1] = Math.random();
-  }
-  geom.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  geom.setAttribute("aRand", new THREE.BufferAttribute(rands, 2));
-  const mat = new THREE.ShaderMaterial({
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    uniforms: {
-      uTime: { value: 0 },
-      uIntensity: { value: 0.0 },
-      uOpacity: { value: 1.0 },
-    },
-    vertexShader: `attribute vec2 aRand; uniform float uTime,uIntensity; varying float vY; varying vec2 vR; void main(){ vR=aRand; float speed=3.5+aRand.x*5.0; vec3 p=position; p.y=mod(p.y-2.2+uTime*speed*aRand.x,20.0)+2.2; vY=p.y/22.0; vec4 vp=viewMatrix*modelMatrix*vec4(p,1.0); gl_Position=projectionMatrix*vp; float sz=(1.0-vY)*uIntensity*(0.5+aRand.y*0.5); gl_PointSize=(28.0/-vp.z)*sz; }`,
-    fragmentShader: `uniform float uOpacity; varying float vY; varying vec2 vR; void main(){ float s=pow(1.0-distance(gl_PointCoord,vec2(0.5)),2.0); float fade=1.0-vY; vec3 col=mix(vec3(0.94,0.97,1.0),vec3(0.22,0.60,1.0),vY*0.8); gl_FragColor=vec4(col*s*fade*uOpacity,s*fade*0.9*uOpacity); }`,
-  });
-  const pts = new THREE.Points(geom, mat);
-  if (direction < 0) pts.rotation.x = Math.PI;
-  return { mesh: pts, mat };
-}
-const jetUp = createJet(1);
-const jetDown = createJet(-1);
-bhSystem.add(jetUp.mesh);
-bhSystem.add(jetDown.mesh);
-
-const streakCount = 200;
-const streakGeom = new THREE.BufferGeometry();
-const sPos = new Float32Array(streakCount * 3);
-const sRnd = new Float32Array(streakCount * 3);
-for (let i = 0; i < streakCount; i++) {
-  const ang = Math.random() * Math.PI * 2;
-  const r = 8 + Math.random() * 38;
-  sPos[i * 3] = Math.cos(ang) * r;
-  sPos[i * 3 + 1] = (Math.random() - 0.5) * 25;
-  sPos[i * 3 + 2] = (Math.random() - 0.5) * 90;
-  sRnd[i * 3] = Math.random();
-  sRnd[i * 3 + 1] = Math.random();
-  sRnd[i * 3 + 2] = Math.random();
-}
-streakGeom.setAttribute("position", new THREE.BufferAttribute(sPos, 3));
-streakGeom.setAttribute("aRnd", new THREE.BufferAttribute(sRnd, 3));
-const streakMat = new THREE.ShaderMaterial({
-  transparent: true,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false,
-  uniforms: {
-    uTime: { value: 0 },
-    uSpeed: { value: 0.0 },
-    uOpacity: { value: 1.0 },
-  },
-  vertexShader: `attribute vec3 aRnd; uniform float uTime,uSpeed; varying float vD; varying float vS; void main(){ vec3 p=position; vS=uSpeed; p.z=mod(p.z+uTime*uSpeed*(10.0+aRnd.z*18.0),100.0)-50.0; vD=length(p.xy)/50.0; vec4 vp=viewMatrix*modelMatrix*vec4(p,1.0); gl_Position=projectionMatrix*vp; gl_PointSize=(uSpeed*1.8/-vp.z)*(0.5+aRnd.x); }`,
-  fragmentShader: `uniform float uOpacity; varying float vD; varying float vS; void main(){ float s=pow(1.0-distance(gl_PointCoord,vec2(0.5)),2.0); vec3 col=mix(vec3(0.96,0.98,1.0),vec3(0.38,0.68,1.0),vD); gl_FragColor=vec4(col*s*uOpacity,(1.0-vD)*s*0.85*uOpacity); }`,
-});
-const speedStreaks = new THREE.Points(streakGeom, streakMat);
-bhSystem.add(speedStreaks);
-bhSystem.rotation.x = 1.15;
-bhSystem.rotation.z = 0.15;
-
 // ═══════════════════════════════════════════════
-// 4. SISTEMA DA LUA (Anéis, Corona, Atmosfera)
-// ═══════════════════════════════════════════════
-const moonSystem = new THREE.Group();
-moonSystem.visible = false;
-scene.add(moonSystem);
-
-const nebula = new THREE.Mesh(
-  new THREE.PlaneGeometry(160, 160),
-  new THREE.ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    uniforms: { uTime: { value: 0 }, uOpacity: { value: 0.0 } },
-    vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-    fragmentShader: `uniform float uTime,uOpacity; varying vec2 vUv; float hash(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); } float noise(vec2 p){ vec2 i=floor(p);vec2 f=fract(p);vec2 u=f*f*(3.0-2.0*f); return mix(mix(hash(i),hash(i+vec2(1,0)),u.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x),u.y); } float fbm(vec2 p){ float f=0.0,w=0.5; for(int i=0;i<5;i++){ f+=w*noise(p); p*=2.0; w*=0.5; } return f; } void main(){ vec2 uv=vUv*3.0; float n=fbm(uv+fbm(uv+uTime*0.016)+fbm(uv*2.0-uTime*0.022)); vec3 col=mix(vec3(0.01,0.03,0.10),vec3(0.14,0.10,0.34),n); col+=mix(vec3(0.0),vec3(0.04,0.10,0.22),fbm(uv*1.5+uTime*0.01)); float mask=pow(max(0.0,1.0-distance(vUv,vec2(0.5))*1.6),2.0); gl_FragColor=vec4(col*mask*uOpacity,mask*uOpacity*0.55); }`,
-  }),
-);
-nebula.position.set(0, 0, -40);
-moonSystem.add(nebula);
-
-const atmosphere = new THREE.Mesh(
-  new THREE.SphereGeometry(4.0 * 1.05, 128, 128),
-  new THREE.ShaderMaterial({
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    side: THREE.BackSide,
-    depthWrite: false,
-    uniforms: { uProgress: { value: 0.0 } },
-    vertexShader: `varying vec3 vN; void main(){ vN=normalize(normalMatrix*normal); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-    fragmentShader: `uniform float uProgress; varying vec3 vN; void main(){ float lx=mix(2.0,0.5,uProgress),lz=mix(-1.0,1.5,uProgress); vec3 ld=normalize(vec3(lx,0.0,lz)); float intensity=pow(0.62-dot(vN,vec3(0,0,1.0)),4.0); float diff=max(0.0,dot(vN,ld)); vec3 col=mix(vec3(0.62,0.34,0.96),vec3(0.24,0.62,1.0),uProgress)*intensity*diff*uProgress; gl_FragColor=vec4(col,col.b+col.r*0.4); }`,
-  }),
-);
-moonSystem.add(atmosphere);
-
-// COROA DE LUZ - Elemento Chave da Espiral
-const coronaShader = new THREE.ShaderMaterial({
-  transparent: true,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false,
-  uniforms: { uTime: { value: 0 }, uOpacity: { value: 0.0 } },
-  vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-  fragmentShader: `uniform float uTime,uOpacity; varying vec2 vUv; vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;} vec2 mod289(vec2 x){return x-floor(x*(1.0/289.0))*289.0;} vec3 permute(vec3 x){return mod289(((x*34.0)+1.0)*x);} float snoise(vec2 v){const vec4 C=vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);vec2 i=floor(v+dot(v,C.yy));vec2 x0=v-i+dot(i,C.xx);vec2 i1=(x0.x>x0.y)?vec2(1,0):vec2(0,1);vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;i=mod289(i);vec3 p=permute(permute(i.y+vec3(0,i1.y,1))+i.x+vec3(0,i1.x,1));vec3 m=max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0);m=m*m;m=m*m;vec3 xx=2.0*fract(p*C.www)-1.0;vec3 hh=abs(xx)-0.5;vec3 ox=floor(xx+0.5);vec3 a0=xx-ox;m*=1.79284291400159-0.85373472095314*(a0*a0+hh*hh);vec3 g;g.x=a0.x*x0.x+hh.x*x0.y;g.yz=a0.yz*x12.xz+hh.yz*x12.yw;return 130.0*dot(m,g);} void main(){ vec2 center=vUv-0.5; float dist=length(center)*2.0; float twist=dist*2.8; float spAng=atan(center.y,center.x)+twist; float rays=(snoise(vec2(spAng*3.0,uTime*0.045))*0.5+0.5)*0.55+(snoise(vec2(spAng*11.0,uTime*0.075))*0.5+0.5)*0.45; float glow=exp(-dist*2.1)*2.8; float mask=smoothstep(0.25,0.27,dist); float intensity=glow*rays*mask; vec3 col=mix(vec3(0.96,0.99,1.0),vec3(0.45,0.26,0.92),dist*0.55); gl_FragColor=vec4(col*intensity*uOpacity,intensity*uOpacity); }`,
-});
-const webglCorona = new THREE.Mesh(
-  new THREE.PlaneGeometry(44, 44),
-  coronaShader,
-);
-webglCorona.position.set(0, 0, -4.2);
-moonSystem.add(webglCorona);
-
-// ANÉIS - Elemento Auxiliar da Espiral
-const ringCount = 1800;
-const ringGeom = new THREE.BufferGeometry();
-const rPos = new Float32Array(ringCount * 3);
-const rRnd = new Float32Array(ringCount * 2);
-const rAng = new Float32Array(ringCount);
-for (let i = 0; i < ringCount; i++) {
-  const ang = Math.random() * Math.PI * 2;
-  const radius = 5.5 + Math.random() * 2.8;
-  rPos[i * 3] = Math.cos(ang) * radius;
-  rPos[i * 3 + 1] = (Math.random() - 0.5) * 0.55;
-  rPos[i * 3 + 2] = Math.sin(ang) * radius;
-  rRnd[i * 2] = Math.random();
-  rRnd[i * 2 + 1] = Math.random();
-  rAng[i] = ang;
-}
-ringGeom.setAttribute("position", new THREE.BufferAttribute(rPos, 3));
-ringGeom.setAttribute("aRnd", new THREE.BufferAttribute(rRnd, 2));
-ringGeom.setAttribute("aAngle", new THREE.BufferAttribute(rAng, 1));
-const ringMat = new THREE.ShaderMaterial({
-  transparent: true,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false,
-  uniforms: { uTime: { value: 0 }, uOpacity: { value: 0.0 } },
-  vertexShader: `attribute vec2 aRnd; attribute float aAngle; uniform float uTime,uOpacity; varying vec2 vR; void main(){ vR=aRnd; float speed=0.18+aRnd.x*0.22; float ang=aAngle+uTime*speed; float rad=length(position.xz); vec3 p=vec3(cos(ang)*rad,position.y,sin(ang)*rad); vec4 vp=viewMatrix*modelMatrix*vec4(p,1.0); gl_Position=projectionMatrix*vp; gl_PointSize=(18.0/-vp.z)*(0.3+aRnd.y*0.7); }`,
-  fragmentShader: `uniform float uOpacity; varying vec2 vR; void main(){ float s=pow(1.0-distance(gl_PointCoord,vec2(0.5)),2.0); vec3 col=mix(vec3(0.56,0.78,1.0),vec3(0.94,0.96,1.0),vR.x); gl_FragColor=vec4(col*s*uOpacity,s*0.8*uOpacity); }`,
-});
-const moonRing = new THREE.Points(ringGeom, ringMat);
-moonSystem.add(moonRing);
-
-// ═══════════════════════════════════════════════
-// 5. BACKGROUND FIXO E EVENTOS
+// 5. BACKGROUND (Espaço Profundo)
 // ═══════════════════════════════════════════════
 const bgGeom = new THREE.BufferGeometry();
-const bgPos = new Float32Array(6000 * 3);
-const bgRand = new Float32Array(6000);
-for (let i = 0; i < 6000; i++) {
-  bgPos[i * 3] = (Math.random() - 0.5) * 1400;
-  bgPos[i * 3 + 1] = (Math.random() - 0.5) * 1400;
-  bgPos[i * 3 + 2] = (Math.random() - 0.5) * 1400;
-  bgRand[i] = Math.random();
+const bgPos = new Float32Array(8000 * 3);
+for (let i = 0; i < 8000; i++) {
+  bgPos[i * 3] = (Math.random() - 0.5) * 2000;
+  bgPos[i * 3 + 1] = (Math.random() - 0.5) * 2000;
+  bgPos[i * 3 + 2] = (Math.random() - 0.5) * 2000;
 }
 bgGeom.setAttribute("position", new THREE.BufferAttribute(bgPos, 3));
-bgGeom.setAttribute("aRand", new THREE.BufferAttribute(bgRand, 1));
-const bgMat = new THREE.ShaderMaterial({
+const bgMat = new THREE.PointsMaterial({
+  size: 2.0,
+  color: 0xffffff,
   transparent: true,
-  depthWrite: false,
+  opacity: 0.6,
   blending: THREE.AdditiveBlending,
-  uniforms: { uTime: { value: 0 } },
-  vertexShader: `attribute float aRand; uniform float uTime; varying float vR; void main(){ vR=aRand; float tw=0.55+0.45*sin(uTime*1.6+aRand*97.3); vec4 vp=viewMatrix*modelMatrix*vec4(position,1.0); gl_Position=projectionMatrix*vp; gl_PointSize=(5.5/-vp.z)*(0.35+aRand*0.65)*tw; }`,
-  fragmentShader: `varying float vR; void main(){ float s=pow(1.0-distance(gl_PointCoord,vec2(0.5)),2.2); vec3 col=mix(vec3(0.72,0.86,1.0),vec3(1.0,0.93,0.82),vR); gl_FragColor=vec4(col*s,s*0.88); }`,
 });
-scene.add(new THREE.Points(bgGeom, bgMat));
+const spaceBg = new THREE.Points(bgGeom, bgMat);
+scene.add(spaceBg);
 
+// Efeito Filme Granulado
 const gc = document.getElementById("grain-canvas");
-gc.width = 200;
-gc.height = 200;
-const gCtx = gc.getContext("2d");
-setInterval(() => {
-  const img = gCtx.createImageData(200, 200);
-  for (let i = 0; i < img.data.length; i += 4) {
-    const v = Math.random() * 255;
-    img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
-    img.data[i + 3] = 255;
-  }
-  gCtx.putImageData(img, 0, 0);
-}, 80);
+if(gc) { // Prevenção de erro caso o canvas não exista no HTML ainda
+  gc.width = 200;
+  gc.height = 200;
+  const gCtx = gc.getContext("2d");
+  setInterval(() => {
+    const img = gCtx.createImageData(200, 200);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = Math.random() * 255;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+      img.data[i + 3] = 255;
+    }
+    gCtx.putImageData(img, 0, 0);
+  }, 80);
+}
 
+// ═══════════════════════════════════════════════
+// 6. LOOP DE ANIMAÇÃO & PARALLAX
+// ═══════════════════════════════════════════════
 let mouseX = 0,
   mouseY = 0,
-  isDiving = false;
+  isDiving = false,
+  isTunneling = false;
 const traumaParams = { level: 0 };
-gsap.to(camera.position, {
-  x: 0,
-  y: 12,
-  z: 65,
-  duration: 6,
-  ease: "power2.out",
-});
+
 document.addEventListener("mousemove", (e) => {
   mouseX = (e.clientX - innerWidth / 2) * 0.00018;
   mouseY = (e.clientY - innerHeight / 2) * 0.00018;
 });
+
 function smoothShake(t, level) {
   const sq = level * level;
   return {
-    x:
-      (Math.sin(t * 38.7) * 0.5 +
-        Math.sin(t * 19.3) * 0.3 +
-        Math.sin(t * 63.1) * 0.2) *
-      sq *
-      3.8,
-    y:
-      (Math.cos(t * 29.7) * 0.5 +
-        Math.cos(t * 14.9) * 0.3 +
-        Math.cos(t * 49.3) * 0.2) *
-      sq *
-      3.8,
+    x: (Math.sin(t * 45) * 0.5 + Math.sin(t * 21) * 0.3) * sq * 4.0,
+    y: (Math.cos(t * 33) * 0.5 + Math.cos(t * 17) * 0.3) * sq * 4.0,
   };
 }
 
 const clock = new THREE.Clock();
 (function animate() {
   const delta = clock.getElapsedTime();
-  bgMat.uniforms.uTime.value = delta;
   warpPass.uniforms.uTime.value = delta;
 
   if (bhSystem.visible) {
     starShader.uniforms.uTime.value = delta;
     accretionShader.uniforms.uTime.value = delta;
-    jetUp.mat.uniforms.uTime.value = delta;
-    jetDown.mat.uniforms.uTime.value = delta;
-    streakMat.uniforms.uTime.value = delta;
-    bhSystem.rotation.y = delta * 0.012;
+    bhSystem.rotation.y = delta * 0.015;
+    bhSystem.rotation.z = Math.sin(delta * 0.3) * 0.05; // Respiração majestosa do eixo
   }
+
   if (moonSystem.visible) {
     coronaShader.uniforms.uTime.value = delta;
-    nebula.material.uniforms.uTime.value = delta;
-    ringMat.uniforms.uTime.value = delta;
+  }
+
+  // Túnel Loop Mágico
+  if (isTunneling) {
+    tunnelMat.uniforms.uSpeed.value = 80.0; // Velocidade absurda de dobra
+    const tArray = dimensionTunnel.geometry.attributes.position.array;
+    for (let i = 2; i < tArray.length; i += 3) {
+      tArray[i] += tunnelMat.uniforms.uSpeed.value;
+      if (tArray[i] > camera.position.z + 200)
+        tArray[i] = camera.position.z - 4000;
+    }
+    dimensionTunnel.geometry.attributes.position.needsUpdate = true;
   }
 
   if (!isDiving) {
-    camera.position.x += (mouseX * 28 - camera.position.x) * 0.012;
-    camera.position.y += (12 - mouseY * 28 - camera.position.y) * 0.012;
+    camera.position.x += (mouseX * 50 - camera.position.x) * 0.01;
+    camera.position.y += (45 - mouseY * 50 - camera.position.y) * 0.01;
   } else if (traumaParams.level > 0.01) {
     const sh = smoothShake(delta, traumaParams.level);
     camera.position.x += sh.x;
     camera.position.y += sh.y;
   }
+
   camera.updateProjectionMatrix();
-  camera.lookAt(0, 0, 0);
+  camera.lookAt(0, 0, isTunneling ? -500 : 0);
   composer.render();
   requestAnimationFrame(animate);
 })();
 
 // ═══════════════════════════════════════════════
-// 6. A COREOGRAFIA (TRANSIÇÃO E ESPIRAL DE SUCK)
+// 7. A COREOGRAFIA (SURF GRAVITACIONAL E TÚNEL)
 // ═══════════════════════════════════════════════
-document.getElementById("btn-despertar").addEventListener("click", (e) => {
+document.getElementById("btn-despertar")?.addEventListener("click", (e) => {
   e.preventDefault();
   if (isDiving) return;
   isDiving = true;
@@ -435,17 +499,15 @@ document.getElementById("btn-despertar").addEventListener("click", (e) => {
 
   const tl = gsap.timeline({ defaults: { ease: "power3.inOut" } });
 
-  // FASE 0 & 1 — Sumiço da UI
+  // FASE 1: Fade out UI e Atmosfera
   tl.to(
     "#ui-layer",
     {
       opacity: 0,
-      duration: 0.32,
-      ease: "power2.out",
+      duration: 0.5,
       onComplete: () => {
-        const uiLayer = document.getElementById("ui-layer");
-        uiLayer.style.display = "none";
-        uiLayer.style.pointerEvents = "none";
+        const ui = document.getElementById("ui-layer");
+        if(ui) ui.style.display = "none";
       },
     },
     0,
@@ -457,204 +519,135 @@ document.getElementById("btn-despertar").addEventListener("click", (e) => {
         scale: 1.1,
         filter: "blur(10px)",
         stagger: 0.1,
-        duration: 1.2,
-        ease: "power2.in",
+        duration: 1.5,
       },
       0,
     )
-    .to("#intro-block", { opacity: 0, duration: 0.5 }, 0)
-    .to("#bar-top", { height: "9vh", duration: 2, ease: "power4.inOut" }, 0.5)
     .to(
-      "#bar-bottom",
-      { height: "9vh", duration: 2, ease: "power4.inOut" },
-      0.5,
-    )
-    .to(camera.position, { z: 80, duration: 1.5, ease: "power2.out" }, 0.5)
+      ["#bar-top", "#bar-bottom"],
+      { height: "12vh", duration: 2.5, ease: "power4.inOut" },
+      0,
+    );
 
-    // FASE 2 — O Mergulho
-    .to(
-      camera.position,
-      { x: 0, y: 0, z: 2.5, duration: 6.0, ease: "expo.in" },
-      2.0,
-    )
+  // FASE 2: Aproximação Colossal (Surfing Gargantua)
+  tl.to(
+    camera.position,
+    { x: 3, y: 1.0, z: 12, duration: 6.5, ease: "power2.inOut" },
+    1.0,
+  )
     .to(
       camera,
       {
-        fov: 165,
-        duration: 6.0,
-        ease: "expo.in",
+        fov: 95,
+        duration: 6.5,
+        ease: "power2.inOut",
         onUpdate: () => camera.updateProjectionMatrix(),
       },
-      2.0,
+      1.0,
     )
     .to(
       starShader.uniforms.uSpeedMult,
-      { value: 250.0, duration: 6.0, ease: "power4.in" },
-      2.0,
+      { value: 12.0, duration: 6.0, ease: "power2.in" },
+      1.0,
     )
-    .to(bhSystem.rotation, { y: "+=18", duration: 6.0, ease: "power4.in" }, 2.0)
-    .to(
-      starShader.uniforms.uSuck,
-      { value: 1.0, duration: 4.5, ease: "power3.in" },
-      3.5,
-    )
+    .to(traumaParams, { level: 0.3, duration: 4.0 }, 3.0)
     .to(
       warpPass.uniforms.uAmount,
-      { value: 4.0, duration: 5.5, ease: "power3.in" },
-      2.5,
-    )
-    .to("#dive-vignette", { opacity: 1, duration: 4.0, ease: "power2.in" }, 2.5)
-    .to(bloomPass, { strength: 6.0, duration: 3.0, ease: "power2.in" }, 5.0)
-    .to(
-      chromaticPass.uniforms.uStrength,
-      { value: 0.1, duration: 3.5, ease: "power2.in" },
-      4.5,
-    )
-    .to(traumaParams, { level: 1.2, duration: 3.0, ease: "power2.in" }, 5.0)
+      { value: 1.8, duration: 5.0, ease: "power2.inOut" },
+      2.0,
+    ); // Dobra a luz em volta do buraco
 
-    // FASE 3 — O Instante de Silêncio
-    .to(traumaParams, { level: 0.0, duration: 0.1 }, 7.9)
-    .to(bloomPass, { strength: 0.2, duration: 0.1 }, 7.9)
-    .to(warpPass.uniforms.uAmount, { value: 0.0, duration: 0.1 }, 7.9)
+  // FASE 3: Contemplação à beira do abismo
+  tl.to(
+    camera.position,
+    { x: -3, y: -0.5, duration: 4.5, ease: "sine.inOut" },
+    7.5,
+  )
+    .to(traumaParams, { level: 0.1, duration: 1.5 }, 7.5)
+    .to(bloomPass, { strength: 2.8, duration: 3.0 }, 7.5);
 
-    // FASE 4 — O MORPH
-    .to(
-      celestialBody.scale,
-      { x: 1.0, y: 1.0, z: 1.0, duration: 4.0, ease: "power2.inOut" },
-      8.0,
-    )
-    .to(
-      celestialShader.uniforms.uMorph,
-      { value: 1.0, duration: 3.5, ease: "power2.inOut" },
-      8.0,
-    )
-    .to(camera.position, { z: 22, duration: 8.0, ease: "power3.out" }, 8.0)
+  // FASE 4: O Colapso e Cruzando o Horizonte de Eventos
+  tl.to(
+    camera.position,
+    { x: 0, y: 0, z: -1.0, duration: 2.5, ease: "power4.in" },
+    12.0,
+  )
     .to(
       camera,
       {
-        fov: 35,
-        duration: 2.0,
-        ease: "power2.out",
+        fov: 150,
+        duration: 2.5,
+        ease: "power4.in",
         onUpdate: () => camera.updateProjectionMatrix(),
       },
-      8.0,
+      12.0,
     )
+    .to(
+      warpPass.uniforms.uAmount,
+      { value: 5.0, duration: 2.5, ease: "power4.in" },
+      12.0,
+    ) // Lente rasga a tela
+    .to(traumaParams, { level: 1.5, duration: 2.5, ease: "power4.in" }, 12.0)
+    .to(bgMat, { opacity: 0.0, duration: 1.0 }, 13.5); // Espaço normal morre
 
-    // Desintegração do Buraco Negro Antigo
-    .to(
-      bhSystem.scale,
-      { x: 4.0, y: 4.0, z: 4.0, duration: 4.0, ease: "power2.out" },
-      8.0,
-    )
-    .to(
-      accretionShader.uniforms.uOpacity,
-      { value: 0.0, duration: 2.5, ease: "power2.out" },
-      8.0,
-    )
-    .to(
-      starShader.uniforms.uOpacity,
-      { value: 0.0, duration: 3.0, ease: "power2.out" },
-      8.0,
-    )
-    .to(jetUp.mat.uniforms.uOpacity, { value: 0.0, duration: 1.5 }, 8.0)
-    .to(jetDown.mat.uniforms.uOpacity, { value: 0.0, duration: 1.5 }, 8.0)
-    .to(streakMat.uniforms.uOpacity, { value: 0.0, duration: 1.5 }, 8.0)
+  // FASE 5: O Túnel de Velocidade de Dobra (Interdimensional)
+  tl.add(() => {
+    bhSystem.visible = false; 
+    dimensionTunnel.visible = true; 
+    isTunneling = true;
+    camera.position.set(0, 0, -50);
+  }, 14.5)
+    .to(tunnelMat.uniforms.uOpacity, { value: 1.0, duration: 1.0, ease: "power2.out" }, 14.5)
+    .to(camera.position, { z: -2000, duration: 5.5, ease: "power1.inOut" }, 14.5)
+    .to(traumaParams, { level: 0.8, duration: 5.5 }, 14.5);
+
+  // FASE 6: O Clarão Branco e o Revelar do Cofre
+  // Aumentamos o raio e a força do bloom para cobrir a tela inteira
+  tl.to(bloomPass, { strength: 20.0, radius: 4.0, duration: 1.2, ease: "power4.in" }, 18.8)
+    .to(chromaticPass.uniforms.uStrength, { value: 2.5, duration: 1.0 }, 19.0)
     .add(() => {
-      bhSystem.visible = false;
-    }, 12.0)
+      isTunneling = false;
+      dimensionTunnel.visible = false;
+      moonSystem.visible = true; 
+      camera.position.set(0, 0, 30); // Câmera começa um pouco mais distante
+      camera.fov = 45;
+      camera.updateProjectionMatrix();
+    }, 20.0)
+    .to(celestialShader.uniforms.uMorph, { value: 1.0, duration: 0.1 }, 20.0)
+    // O Bloom recua de forma mais suave, revelando a escuridão
+    .to(bloomPass, { strength: 1.2, radius: 0.8, duration: 5.0, ease: "power2.out" }, 20.0)
+    .to(chromaticPass.uniforms.uStrength, { value: 0.0, duration: 4.0, ease: "power2.out" }, 20.0)
+    .to(traumaParams, { level: 0.0, duration: 0.5 }, 20.0)
+    .to(bgMat, { opacity: 0.8, duration: 3.0 }, 20.0);
 
-    // Flash de Ocultamento
-    .to(bloomPass, { strength: 8.0, duration: 0.6, ease: "power2.in" }, 8.0)
-    .to(
-      bloomPass,
-      { strength: 1.8, radius: 0.8, duration: 4.0, ease: "power2.out" },
-      8.6,
-    )
-    .to(chromaticPass.uniforms.uStrength, { value: 0.4, duration: 0.6 }, 8.0)
-    .to(chromaticPass.uniforms.uStrength, { value: 0.0, duration: 3.0 }, 8.6)
+  // FASE 7: A Dança Mágica e Majestosa da Lua
+  // A luz caminha pela superfície revelando as texturas minerais
+  tl.to(celestialShader.uniforms.uLightAngle, { value: 1.2, duration: 8.0, ease: "power2.out" }, 21.0)
+    .to(celestialShader.uniforms.uProgress, { value: 1.0, duration: 6.0, ease: "sine.inOut" }, 21.0)
+    .to(coronaShader.uniforms.uOpacity, { value: 0.6, duration: 5.0, ease: "power1.inOut" }, 21.5) // Coroa mais sutil
+    .to(ringMat.uniforms.uOpacity, { value: 0.8, duration: 5.0, ease: "power1.inOut" }, 22.0)
+    .to(webglCorona.rotation, { z: "+=0.5", duration: 10.0, ease: "none" }, 20.0)
+    .to(["#bar-top", "#bar-bottom"], { height: "0vh", duration: 4.0, ease: "power3.inOut" }, 23.0);
 
-    // Revela o sistema lunar
-    .add(() => {
-      moonSystem.visible = true;
-    }, 8.0)
-    .to(
-      coronaShader.uniforms.uOpacity,
-      { value: 1.0, duration: 3.0, ease: "power2.out" },
-      8.5,
-    )
-    .to(
-      ringMat.uniforms.uOpacity,
-      { value: 1.0, duration: 3.0, ease: "power2.out" },
-      8.5,
-    )
-    .to(nebula.material.uniforms.uOpacity, { value: 1.0, duration: 4.0 }, 8.5)
-    .to("#bar-top", { height: "0vh", duration: 4.0, ease: "power2.inOut" }, 9.5)
-    .to(
-      "#bar-bottom",
-      { height: "0vh", duration: 4.0, ease: "power2.inOut" },
-      9.5,
-    )
-    .to("#dive-vignette", { opacity: 0, duration: 3.0 }, 8.5)
-
-    // FASE 5 — A ESPIRAL DE SUCÇÃO (Suck)
-    // A lua inicia seu clareamento
-    .to(
-      celestialShader.uniforms.uProgress,
-      { value: 1.0, duration: 8.0, ease: "sine.inOut" },
-      10.0,
-    )
-    .to(
-      atmosphere.material.uniforms.uProgress,
-      { value: 1.0, duration: 8.0, ease: "sine.inOut" },
-      10.0,
-    )
-
-    // AQUI ESTÁ A MÁGICA: Coroa e Anéis giram violentamente enquanto diminuem
-    // A rotação acelerada cria a percepção exata do funil/espiral de sucção
-    .to(
-      webglCorona.rotation,
-      { z: "+=15", duration: 4.5, ease: "power3.in" },
-      12.0,
-    )
-    .to(
-      moonRing.rotation,
-      { y: "+=15", duration: 4.5, ease: "power3.in" },
-      12.0,
-    )
-
-    // Eles são puxados para o centro (escala 0.01) de trás da lua
-    .to(
-      [webglCorona.scale, moonRing.scale],
-      { x: 0.01, y: 0.01, z: 0.01, duration: 4.5, ease: "power3.in" },
-      12.0,
-    )
-
-    // No exato milissegundo final da sucção, eles somem e a Lua "ignita" com um pulso de Bloom
-    .to(
-      [coronaShader.uniforms.uOpacity, ringMat.uniforms.uOpacity],
-      { value: 0.0, duration: 0.1 },
-      16.5,
-    )
-    .to(bloomPass, { strength: 4.0, duration: 0.3, ease: "power2.out" }, 16.5)
-    .to(bloomPass, { strength: 1.5, duration: 2.5, ease: "power2.inOut" }, 16.8)
-
-    // FASE 6 — Transição Final para o Login
-    .to(camera.position, { z: 2.0, duration: 4.5, ease: "power4.in" }, 20.0)
-    .to(bloomPass, { strength: 5.0, duration: 4.0, ease: "power2.in" }, 20.5)
+  // FASE FINAL: O Pouso
+  tl.to(camera.position, { z: 4.0, duration: 6.0, ease: "power3.in" }, 26.0)
+    .to(bloomPass, { strength: 6.0, duration: 4.0, ease: "power2.in" }, 27.5)
     .to(
       "#void-transition",
       {
         opacity: 1,
-        duration: 2.5,
+        duration: 3.0,
         ease: "power2.inOut",
         onComplete: () => {
-          window.location.href = "login.php";
+          // Aqui ocorre o redirecionamento final
+          window.location.href = "login.php"; 
         },
       },
-      22.0,
+      28.5,
     );
 });
 
+// Listener de Redimensionamento da Tela
 window.addEventListener("resize", () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
