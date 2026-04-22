@@ -1,179 +1,234 @@
-/* ═══════════════════════════════════════════════════════════════
-           CURSOR INTERATIVO
-        ═══════════════════════════════════════════════════════════════ */
-let mX = 0,
-  mY = 0;
-const retEl = document.getElementById("reticle"),
-  retDot = document.getElementById("reticle-dot");
-let retX = window.innerWidth / 2,
-  retY = window.innerHeight / 2,
-  dotX = retX,
-  dotY = retY,
-  tgtX = retX,
-  tgtY = retY,
-  isMag = false;
+/* ═══════════════════════════════════════════════════
+   cadleitores.js — Avalon · Cadastro de Leitores
+   Campo estelar Three.js + Bloom + Cursor magnético
+   ═══════════════════════════════════════════════════ */
 
-document.addEventListener("mousemove", (e) => {
-  tgtX = e.clientX;
-  tgtY = e.clientY;
-  mX = (e.clientX / innerWidth - 0.5) * 2;
-  mY = (e.clientY / innerHeight - 0.5) * 2;
-
-  // Atração magnética para botões e inputs
-  const els = document.querySelectorAll(".form-control, .interactable");
-  let closest = null,
-    closestDist = 40;
-  els.forEach((el) => {
-    const r = el.getBoundingClientRect(),
-      cx = r.left + r.width / 2,
-      cy = r.top + r.height / 2;
-    const d = Math.hypot(e.clientX - cx, e.clientY - cy);
-    if (d < closestDist) {
-      closestDist = d;
-      closest = { x: cx, y: cy };
-      isMag = true;
-    }
-  });
-  if (!closest) isMag = false;
-});
-
-(function animCursor() {
-  const eas = isMag ? 0.4 : 0.35;
-  retX += (tgtX - retX) * eas;
-  retY += (tgtY - retY) * eas;
-  dotX += (tgtX - dotX) * 0.65;
-  dotY += (tgtY - dotY) * 0.65;
-  retEl.style.transform = `translate3d(${retX}px, ${retY}px, 0) translate(-50%, -50%)`;
-  retDot.style.transform = `translate3d(${dotX}px, ${dotY}px, 0) translate(-50%, -50%)`;
-  if (isMag) retEl.classList.add("hover");
-  else retEl.classList.remove("hover");
-  requestAnimationFrame(animCursor);
-})();
-
-document.addEventListener("mousedown", () => retEl.classList.add("click"));
-document.addEventListener("mouseup", () => retEl.classList.remove("click"));
-
-/* ═══════════════════════════════════════════════════════════════
-           THREE.JS - O PORTAL DE ANDRÔMEDA (BACKGROUND)
-        ═══════════════════════════════════════════════════════════════ */
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(
-  48,
-  innerWidth / innerHeight,
-  0.1,
-  3000,
-);
-camera.position.set(0, 8, 45); // Posição estática mas grandiosa
-camera.lookAt(0, 0, 0);
-
-const renderer = new THREE.WebGLRenderer({
-  antialias: true,
-  powerPreference: "high-performance",
-});
-renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-document.getElementById("webgl").appendChild(renderer.domElement);
-
-// Pós-processamento (Bloom e Aberração Cromática)
-const rPass = new THREE.RenderPass(scene, camera);
-const bloom = new THREE.UnrealBloomPass(
-  new THREE.Vector2(innerWidth, innerHeight),
-  1.2,
-  0.55,
-  0.82,
-);
-
-const ChromaShader = {
-  uniforms: { tDiffuse: { value: null }, uS: { value: 0.002 } },
-  vertexShader: `varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-  fragmentShader: `uniform sampler2D tDiffuse;uniform float uS;varying vec2 vUv;void main(){vec2 c=vUv-.5;float d=length(c);vec2 o=c*d*uS;gl_FragColor=vec4(texture2D(tDiffuse,vUv-o*.8).r,texture2D(tDiffuse,vUv).g,texture2D(tDiffuse,vUv+o*.7).b,1.0);}`,
-};
-const chroma = new THREE.ShaderPass(ChromaShader);
-
-const composer = new THREE.EffectComposer(renderer);
-composer.addPass(rPass);
-composer.addPass(bloom);
-composer.addPass(chroma);
-
-// Estrelas de Fundo Clássicas
-let bgMat;
 (function () {
-  const starVS = `attribute float aR,aFlicker;uniform float uT;varying float vR;varying vec3 vC;void main(){vC=color;float tw=0.5+0.5*sin(uT*0.8+aR*88.0+aFlicker*7.0)*sin(uT*1.3+aFlicker*3.0);vec4 vp=viewMatrix*modelMatrix*vec4(position,1.0);gl_Position=projectionMatrix*vp;gl_PointSize=(9.0/-vp.z)*(0.25+aR*0.95)*tw;}`;
-  const starFS = `varying vec3 vC;void main(){float s=pow(1.0-distance(gl_PointCoord,vec2(0.5)),2.5);gl_FragColor=vec4(vC,s*.88);}`;
-  const OBAFGKM = [
-    [0.6, 0.7, 1.0],
-    [0.7, 0.8, 1.0],
-    [1.0, 1.0, 1.0],
-    [1.0, 1.0, 0.8],
-    [1.0, 0.9, 0.6],
-    [1.0, 0.7, 0.4],
-    [1.0, 0.4, 0.2],
+  "use strict";
+
+  /* ────────────────────────────────────────────────
+     1. THREE.JS — CAMPO ESTELAR NO #webgl
+  ──────────────────────────────────────────────── */
+  const container = document.getElementById("webgl");
+  if (!container || typeof THREE === "undefined") return;
+
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+
+  const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(W, H);
+  renderer.setClearColor(0x020305, 1);
+  renderer.toneMapping = THREE.ReinhardToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  container.appendChild(renderer.domElement);
+
+  const scene  = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 2000);
+  camera.position.z = 550;
+
+  /* — Bloom via UnrealBloomPass se disponível — */
+  let composer = null;
+  if (
+    typeof THREE.EffectComposer !== "undefined" &&
+    typeof THREE.RenderPass    !== "undefined" &&
+    typeof THREE.UnrealBloomPass !== "undefined"
+  ) {
+    composer = new THREE.EffectComposer(renderer);
+    composer.addPass(new THREE.RenderPass(scene, camera));
+    const bloom = new THREE.UnrealBloomPass(
+      new THREE.Vector2(W, H),
+      0.9,   // strength
+      0.5,   // radius
+      0.55   // threshold
+    );
+    composer.addPass(bloom);
+  }
+
+  /* — Estrelas — */
+  const N = 2000;
+  const pos   = new Float32Array(N * 3);
+  const cols  = new Float32Array(N * 3);
+  const sizes = new Float32Array(N);
+
+  const palette = [
+    new THREE.Color("#2aa2f6"),
+    new THREE.Color("#e0f0ff"),
+    new THREE.Color("#a960ee"),
+    new THREE.Color("#ffffff"),
+    new THREE.Color("#14599d"),
+    new THREE.Color("#7fd4ff"),
   ];
 
-  function mkLayer(N, spread, colA, colB) {
-    const g = new THREE.BufferGeometry(),
-      p = new Float32Array(N * 3),
-      r = new Float32Array(N),
-      fl = new Float32Array(N),
-      c = new Float32Array(N * 3);
-    for (let i = 0; i < N; i++) {
-      p[i * 3] = (Math.random() - 0.5) * spread;
-      p[i * 3 + 1] = (Math.random() - 0.5) * spread;
-      p[i * 3 + 2] = (Math.random() - 0.5) * spread;
-      r[i] = Math.random();
-      fl[i] = Math.random();
-      const t = Math.random();
-      c[i * 3] = colA[0] * (1 - t) + colB[0] * t;
-      c[i * 3 + 1] = colA[1] * (1 - t) + colB[1] * t;
-      c[i * 3 + 2] = colA[2] * (1 - t) + colB[2] * t;
+  for (let i = 0; i < N; i++) {
+    const i3 = i * 3;
+    pos[i3]     = (Math.random() - 0.5) * 2400;
+    pos[i3 + 1] = (Math.random() - 0.5) * 2400;
+    pos[i3 + 2] = (Math.random() - 0.5) * 1200;
+    sizes[i] = Math.random() * 2.8 + 0.3;
+
+    const c = palette[Math.floor(Math.random() * palette.length)];
+    const b = 0.55 + Math.random() * 0.45;
+    cols[i3]     = c.r * b;
+    cols[i3 + 1] = c.g * b;
+    cols[i3 + 2] = c.b * b;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute("color",    new THREE.BufferAttribute(cols, 3));
+  geo.setAttribute("size",     new THREE.BufferAttribute(sizes, 1));
+
+  const mat = new THREE.PointsMaterial({
+    size: 2.2, sizeAttenuation: true,
+    vertexColors: true, transparent: true, opacity: 0.9,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+
+  const stars = new THREE.Points(geo, mat);
+  scene.add(stars);
+
+  /* — Nuvem nebular brilhante (centro da tela) — */
+  function nebula(color, ox, oy, oz, spread, n) {
+    const g   = new THREE.BufferGeometry();
+    const p   = new Float32Array(n * 3);
+    const cl  = new Float32Array(n * 3);
+    const col = new THREE.Color(color);
+    for (let i = 0; i < n; i++) {
+      const r = Math.random() * spread;
+      const θ = Math.random() * Math.PI * 2;
+      const φ = Math.acos(2 * Math.random() - 1);
+      const i3 = i * 3;
+      p[i3]     = ox + r * Math.sin(φ) * Math.cos(θ);
+      p[i3 + 1] = oy + r * Math.sin(φ) * Math.sin(θ);
+      p[i3 + 2] = oz + r * Math.cos(φ);
+      const b = 0.3 + Math.random() * 0.7;
+      cl[i3]     = col.r * b;
+      cl[i3 + 1] = col.g * b;
+      cl[i3 + 2] = col.b * b;
     }
     g.setAttribute("position", new THREE.BufferAttribute(p, 3));
-    g.setAttribute("aR", new THREE.BufferAttribute(r, 1));
-    g.setAttribute("aFlicker", new THREE.BufferAttribute(fl, 1));
-    g.setAttribute("color", new THREE.BufferAttribute(c, 3));
-    return g;
-  }
-  const mkMat = (u) =>
-    new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      vertexColors: true,
-      uniforms: u,
-      vertexShader: starVS,
-      fragmentShader: starFS,
+    g.setAttribute("color",    new THREE.BufferAttribute(cl, 3));
+    const m = new THREE.PointsMaterial({
+      size: 1.8, sizeAttenuation: true,
+      vertexColors: true, transparent: true, opacity: 0.22,
+      blending: THREE.AdditiveBlending, depthWrite: false,
     });
-  scene.add(
-    new THREE.Points(
-      mkLayer(4000, 1000, OBAFGKM[0], OBAFGKM[2]),
-      mkMat({ uT: { value: 0 } }),
-    ),
-  );
-  bgMat = mkMat({ uT: { value: 0 } });
-  scene.add(
-    new THREE.Points(mkLayer(2000, 800, OBAFGKM[5], OBAFGKM[6]), bgMat),
-  );
-})();
+    return new THREE.Points(g, m);
+  }
 
-// Resize
-window.addEventListener("resize", () => {
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-  composer.setSize(innerWidth, innerHeight);
-});
+  const neb1 = nebula("#2aa2f6",  380,  150, -250, 320, 700);
+  const neb2 = nebula("#a960ee", -420, -200, -150, 280, 550);
+  const neb3 = nebula("#14599d",    0,    0, -500, 350, 450);
+  scene.add(neb1, neb2, neb3);
 
-// Loop de Renderização
-const clock = new THREE.Clock();
-(function animate() {
-  requestAnimationFrame(animate);
-  const t = clock.getElapsedTime();
-  if (bgMat) bgMat.uniforms.uT.value = t;
+  /* — Mouse parallax — */
+  let mx = 0, my = 0;
+  document.addEventListener("mousemove", (e) => {
+    mx = (e.clientX / window.innerWidth  - 0.5) * 2;
+    my = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
 
-  // Movimento sutil da câmera baseado no mouse para dar paralaxe
-  camera.position.x += (mX * 2 - camera.position.x) * 0.05;
-  camera.position.y += (8 - mY * 2 - camera.position.y) * 0.05;
-  camera.lookAt(0, 0, 0);
+  /* — Resize — */
+  window.addEventListener("resize", () => {
+    const w = window.innerWidth, h = window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+    if (composer) composer.setSize(w, h);
+  });
 
-  composer.render();
+  /* — Loop — */
+  let t = 0;
+  (function loop() {
+    requestAnimationFrame(loop);
+    t += 0.00035;
+
+    stars.rotation.y = t * 0.25 + mx * 0.035;
+    stars.rotation.x = my * 0.018;
+    neb1.rotation.y  = t * 0.18;
+    neb1.rotation.z  = t * 0.08;
+    neb2.rotation.y  = -t * 0.14;
+    neb3.rotation.x  = t * 0.1;
+
+    camera.position.x += (mx * 7 - camera.position.x) * 0.035;
+    camera.position.y += (-my * 5 - camera.position.y) * 0.035;
+
+    if (composer) composer.render();
+    else renderer.render(scene, camera);
+  })();
+
+  /* ────────────────────────────────────────────────
+     2. CURSOR MAGNÉTICO
+  ──────────────────────────────────────────────── */
+  const reticle    = document.getElementById("reticle");
+  const reticleDot = document.getElementById("reticle-dot");
+  if (!reticle) return;
+
+  let rx = innerWidth / 2, ry = innerHeight / 2;
+  let cx = rx, cy = ry;
+
+  document.addEventListener("mousemove", (e) => { rx = e.clientX; ry = e.clientY; });
+  document.addEventListener("mousedown", () => reticle.classList.add("click"));
+  document.addEventListener("mouseup",   () => reticle.classList.remove("click"));
+
+  document.querySelectorAll("a, button, input, select, label, .interactable").forEach((el) => {
+    el.addEventListener("mouseenter", () => reticle.classList.add("hover"));
+    el.addEventListener("mouseleave", () => reticle.classList.remove("hover"));
+  });
+
+  (function cursorLoop() {
+    cx += (rx - cx) * 0.11;
+    cy += (ry - cy) * 0.11;
+    reticle.style.transform    = `translate3d(${cx}px,${cy}px,0) translate(-50%,-50%)`;
+    reticleDot.style.transform = `translate3d(${rx}px,${ry}px,0) translate(-50%,-50%)`;
+    requestAnimationFrame(cursorLoop);
+  })();
+
+  /* ────────────────────────────────────────────────
+     3. REVEAL DO CARD
+  ──────────────────────────────────────────────── */
+  requestAnimationFrame(() => {
+    const card = document.querySelector(".auth-card");
+    if (card) setTimeout(() => card.classList.add("reveal"), 120);
+  });
+
+  /* ────────────────────────────────────────────────
+     4. PASSWORD TOGGLE
+  ──────────────────────────────────────────────── */
+  document.querySelectorAll(".pass-toggle").forEach((btn) => {
+    const inp = btn.closest(".pass-wrap")?.querySelector("input");
+    if (!inp) return;
+    btn.addEventListener("click", () => {
+      const vis = inp.type === "password";
+      inp.type  = vis ? "text" : "password";
+      btn.innerHTML = vis
+        ? '<i class="fa-solid fa-eye-slash"></i>'
+        : '<i class="fa-solid fa-eye"></i>';
+    });
+  });
+
+  /* ────────────────────────────────────────────────
+     5. RIPPLE NO BTN-PRIM
+  ──────────────────────────────────────────────── */
+  document.querySelectorAll(".btn-prim").forEach((btn) => {
+    btn.addEventListener("click", function (e) {
+      const rect   = this.getBoundingClientRect();
+      const size   = Math.max(rect.width, rect.height);
+      const ripple = document.createElement("span");
+      ripple.style.cssText = `
+        position:absolute;border-radius:50%;background:rgba(255,255,255,.18);
+        width:${size}px;height:${size}px;
+        left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px;
+        transform:scale(0);animation:ripple .55s ease-out forwards;pointer-events:none;
+      `;
+      this.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 600);
+    });
+  });
+
+  const ks = document.createElement("style");
+  ks.textContent = "@keyframes ripple{to{transform:scale(2.8);opacity:0;}}";
+  document.head.appendChild(ks);
+
 })();

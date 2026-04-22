@@ -77,6 +77,7 @@ if (isset($_POST['email'])) {
 
             <form method="POST" action="">
                 
+                <div class="form-section-label">Identificação</div>
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <input type="text" name="nome" class="form-control interactable" placeholder="Nome" required>
@@ -86,6 +87,7 @@ if (isset($_POST['email'])) {
                     </div>
                 </div>
 
+                <div class="form-section-label">Contato</div>
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <input type="email" name="email" class="form-control interactable" placeholder="E-mail" required>
@@ -104,8 +106,12 @@ if (isset($_POST['email'])) {
                     </div>
                 </div>            
 
-                <div class="mb-4">
+                <div class="form-section-label">Segurança</div>
+                <div class="pass-wrap mb-4">
                     <input type="password" name="senha" class="form-control interactable" placeholder="Senha" required>
+                    <button type="button" class="pass-toggle" tabindex="-1">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
                 </div>
                 
                 <button type="submit" class="btn-prim interactable">Iniciar Jornada</button>
@@ -131,8 +137,6 @@ if (isset($_POST['email'])) {
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
-    <script src="../assets/js/cadleitores.js">
-        
-    </script>
+    <script src="../assets/js/cadleitores.js"></script>
 </body>
 </html>

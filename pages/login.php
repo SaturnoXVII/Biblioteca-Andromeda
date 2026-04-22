@@ -109,11 +109,16 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
             </div>
 
             <form method="POST" action="">
+
                 <div class="form-group">
-                    <input type="text" name="email" placeholder="E-mail" required class="form-control">
+                    <input type="text" name="email" placeholder="E-mail" required class="form-control interactable">
                 </div>
-                <div class="form-group">
-                    <input type="password" name="senha" placeholder="Senha" required class="form-control">
+
+                <div class="form-group pass-wrap">
+                    <input type="password" name="senha" placeholder="Senha" required class="form-control interactable">
+                    <button type="button" class="pass-toggle" tabindex="-1">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
                 </div>
                 
                 <button value="Entrar" type="submit" class="btn-prim interactable">Explorar o Universo</button>
@@ -133,8 +138,6 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
-    <script src="../assets/js/login.js">
-     
-    </script>
+    <script src="../assets/js/login.js"></script>
 </body>
 </html>
