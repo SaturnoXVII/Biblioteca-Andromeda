@@ -102,6 +102,10 @@ if ($action === 'delete' && isset($_GET['id'])) {
                 <i>📜</i>
                 <span>Empréstimos</span>
             </a>
+             <a href="emprestimos.php?action=novo" class="nav-item <?= $action === 'novo' ? 'active' : '' ?>">
+                <i>✨</i>
+                <span>Novo Registro</span>
+            </a>
             <a href="adm.php?action=add" class="nav-item <?= $action === 'add' ? 'active' : '' ?>">
                 <i>✨</i>
                 <span>Novo Tomo</span>

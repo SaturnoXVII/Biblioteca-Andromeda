@@ -77,6 +77,10 @@ if ($action === 'devolver' && isset($_GET['id'])) {
                 <i>✨</i>
                 <span>Novo Registro</span>
             </a>
+            <a href="adm.php?action=add" class="nav-item <?= $action === 'add' ? 'active' : '' ?>">
+                <i>✨</i>
+                <span>Novo Tomo</span>
+            </a>
         </div>
     </nav>
 
