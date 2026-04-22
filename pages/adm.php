@@ -69,13 +69,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id_editora     = (int) $_POST['id_editora'];
     $numero_paginas = (int) $_POST['numero_paginas'];
     $origem_idioma  = $_POST['origem_idioma'];
-    $status         = $_POST['status'];
     $quantidade     = (int) $_POST['quantidade'];
+    $status         = $quantidade > 0 ? 'Disponível' : 'Indisponível';
 
     if ($action === 'add') {
         adicionarLivro($mysqli, $titulo, $id_autor, $ano_publicacao, $id_categoria, $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade);
     } elseif ($action === 'edit') {
         $id_livro = (int) $_POST['id_livro'];
+        if ($quantidade == 0) $status = 'Indisponível';
         editarLivro($mysqli, $id_livro, $titulo, $id_autor, $ano_publicacao, $id_categoria, $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade);
     }
 
@@ -92,6 +93,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -100,6 +102,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
     <link rel="stylesheet" href="../assets/css/catalogo.css">
     <link rel="stylesheet" href="../assets/css/adm.css">
 </head>
+
 <body>
 
     <div id="grain"></div>
@@ -119,9 +122,9 @@ if ($action === 'delete' && isset($_GET['id'])) {
 
     <div id="reticle" class="hide-on-mobile">
         <svg viewBox="0 0 100 100">
-            <circle class="ret-ring" cx="50" cy="50" r="45"/>
-            <line class="ret-cross" x1="50" y1="20" x2="50" y2="80"/>
-            <line class="ret-cross" x1="20" y1="50" x2="80" y2="50"/>
+            <circle class="ret-ring" cx="50" cy="50" r="45" />
+            <line class="ret-cross" x1="50" y1="20" x2="50" y2="80" />
+            <line class="ret-cross" x1="20" y1="50" x2="80" y2="50" />
         </svg>
     </div>
     <div id="reticle-dot" class="hide-on-mobile"></div>
@@ -171,9 +174,9 @@ if ($action === 'delete' && isset($_GET['id'])) {
 
         <div class="ed-section" style="margin-top: 50px;">
 
-        
+
             <!-- LISTAR LIVROS                                               -->
-      
+
             <?php if ($action === 'listar'): ?>
                 <div class="ed-section-header animate-rise" style="animation-delay: 0.1s;">
                     <h2 class="ed-section-title">Livros Cadastrados</h2>
@@ -207,31 +210,31 @@ if ($action === 'delete' && isset($_GET['id'])) {
                                     </tr>
                                 <?php else: ?>
                                     <?php foreach ($lista as $index => $livro): ?>
-                                    <tr class="stagger-item" style="animation-delay: <?= 0.3 + ($index * 0.05) ?>s;">
-                                        <td style="font-weight: 600; color: var(--am3);"><?= htmlspecialchars($livro['titulo']) ?></td>
-                                        <td><?= htmlspecialchars($livro['autor']) ?></td>
-                                        <td><?= htmlspecialchars($livro['categoria']) ?></td>
-                                        <td class="t-dim"><?= htmlspecialchars($livro['editora']) ?></td>
-                                        <td class="t-mono"><?= $livro['ano_publicacao'] ?></td>
-                                        <td>
-                                            <?php if ($livro['status'] === 'Disponível'): ?>
-                                                <span class="sbadge s-disp">Disponível</span>
-                                            <?php else: ?>
-                                                <span class="sbadge s-unk">Indisponível</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="t-mono" style="color: var(--am);"><?= $livro['quantidade'] ?></td>
-                                        <td>
-                                            <div class="action-group">
-                                                <a href="adm.php?action=edit&id=<?= $livro['id_livro'] ?>" class="btn-action btn-edit">
-                                                    <i>⚙️</i> Editar
-                                                </a>
-                                                <a href="adm.php?action=delete&id=<?= $livro['id_livro'] ?>" class="btn-action btn-delete" onclick="return confirm('Tem certeza que deseja expurgar este registro do cofre?')">
-                                                    <i>🗑️</i> Excluir
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                        <tr class="stagger-item" style="animation-delay: <?= 0.3 + ($index * 0.05) ?>s;">
+                                            <td style="font-weight: 600; color: var(--am3);"><?= htmlspecialchars($livro['titulo']) ?></td>
+                                            <td><?= htmlspecialchars($livro['autor']) ?></td>
+                                            <td><?= htmlspecialchars($livro['categoria']) ?></td>
+                                            <td class="t-dim"><?= htmlspecialchars($livro['editora']) ?></td>
+                                            <td class="t-mono"><?= $livro['ano_publicacao'] ?></td>
+                                            <td>
+                                                <?php if ($livro['status'] === 'Disponível' && $livro['quantidade'] > 0): ?>
+                                                    <span class="sbadge s-disp">Disponível</span>
+                                                <?php else: ?>
+                                                    <span class="sbadge s-unk">Indisponível</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="t-mono" style="color: var(--am);"><?= $livro['quantidade'] ?></td>
+                                            <td>
+                                                <div class="action-group">
+                                                    <a href="adm.php?action=edit&id=<?= $livro['id_livro'] ?>" class="btn-action btn-edit">
+                                                        <i>⚙️</i> Editar
+                                                    </a>
+                                                    <a href="adm.php?action=delete&id=<?= $livro['id_livro'] ?>" class="btn-action btn-delete" onclick="return confirm('Tem certeza que deseja expurgar este registro do cofre?')">
+                                                        <i>🗑️</i> Excluir
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </tbody>
@@ -239,9 +242,9 @@ if ($action === 'delete' && isset($_GET['id'])) {
                     </div>
                 </div>
 
-           
-            <!-- ADICIONAR LIVRO                                             -->
-           
+
+                <!-- ADICIONAR LIVRO                                             -->
+
             <?php elseif ($action === 'add'):
                 $salvo = $_SESSION['form_livro'] ?? [];
                 unset($_SESSION['form_livro']);
@@ -348,7 +351,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
                             <div class="form-group stagger-item" style="animation-delay: 0.65s;">
                                 <label>Status:</label>
                                 <select name="status" class="cosmic-input">
-                                    <option value="Disponível"   <?= ($salvo['status'] ?? '') === 'Disponível'   ? 'selected' : '' ?>>Disponível</option>
+                                    <option value="Disponível" <?= ($salvo['status'] ?? '') === 'Disponível'   ? 'selected' : '' ?>>Disponível</option>
                                     <option value="Indisponível" <?= ($salvo['status'] ?? '') === 'Indisponível' ? 'selected' : '' ?>>Indisponível</option>
                                 </select>
                             </div>
@@ -365,9 +368,9 @@ if ($action === 'delete' && isset($_GET['id'])) {
                     </form>
                 </div>
 
-           
-            <!-- EDITAR LIVRO                                                -->
-        
+
+                <!-- EDITAR LIVRO                                                -->
+
             <?php elseif ($action === 'edit' && isset($_GET['id'])):
                 $id    = (int) $_GET['id'];
                 $livro = buscarLivroPorId($mysqli, $id);
@@ -442,8 +445,9 @@ if ($action === 'delete' && isset($_GET['id'])) {
                             <div class="form-group stagger-item" style="animation-delay: 0.65s;">
                                 <label>Status:</label>
                                 <select name="status" class="cosmic-input">
-                                    <option value="Disponível"   <?= $livro['status'] === 'Disponível'   ? 'selected' : '' ?>>Disponível</option>
-                                    <option value="Em Restauração" <?= $livro['status'] === 'Em Restauração' ? 'selected' : '' ?>>Em Restauração</option>
+                                    <option value="Disponível" <?= $livro['status'] === 'Disponível'   ? 'selected' : '' ?>>Disponível</option>
+                                    <option value="Indisponível" <?= $livro['status'] === 'Indisponível' ? 'selected' : '' ?>>Indisponível</option>
+                                    <option value="Em Restauração" <?= $livro['status'] === 'Em Restauração' ? 'selected' : '' ?>>Em restauração</option>
                                 </select>
                             </div>
                             <div class="form-group stagger-item" style="animation-delay: 0.7s;">
@@ -459,9 +463,9 @@ if ($action === 'delete' && isset($_GET['id'])) {
                     </form>
                 </div>
 
-         
-            <!-- LISTAR EMPRÉSTIMOS                                          -->
-          
+
+                <!-- LISTAR EMPRÉSTIMOS                                          -->
+
             <?php elseif ($action === 'emprestimos'): ?>
                 <div class="ed-section-header animate-rise" style="animation-delay: 0.1s;">
                     <h2 class="ed-section-title">Empréstimos Ativos</h2>
@@ -520,9 +524,9 @@ if ($action === 'delete' && isset($_GET['id'])) {
                     </div>
                 </div>
 
-        
-            <!-- NOVO EMPRÉSTIMO                                             -->
-       
+
+                <!-- NOVO EMPRÉSTIMO                                             -->
+
             <?php elseif ($action === 'novo_emprestimo'): ?>
                 <div class="ed-section-header animate-rise" style="animation-delay: 0.1s;">
                     <h2 class="ed-section-title">Registrar Empréstimo</h2>
@@ -558,7 +562,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
 
                     <div class="form-group stagger-item" style="animation-delay: 0.5s;">
                         <label>Data de Devolução Prevista:</label>
-                        <input type="date" name="data_devolucao_prevista" required class="cosmic-input" min="<?= date('Y-m-d') ?>">
+                        <input type="date" name="data_devolucao" required class="cosmic-input" min="<?= date('Y-m-d') ?>">
                     </div>
 
                     <div class="form-actions stagger-item" style="animation-delay: 0.6s;">
@@ -576,12 +580,12 @@ if ($action === 'delete' && isset($_GET['id'])) {
     <script>
         // ─── Cursor Magnético ─────────────────────────────────────────────────
         const cursor = document.getElementById('reticle');
-        const dot    = document.getElementById('reticle-dot');
+        const dot = document.getElementById('reticle-dot');
 
         if (window.matchMedia("(pointer: fine)").matches) {
             document.addEventListener('mousemove', (e) => {
                 cursor.style.transform = `translate3d(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%), 0)`;
-                dot.style.transform    = `translate3d(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%), 0)`;
+                dot.style.transform = `translate3d(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%), 0)`;
             });
 
             document.querySelectorAll('a, button, select, input, textarea').forEach(el => {
@@ -613,4 +617,5 @@ if ($action === 'delete' && isset($_GET['id'])) {
         }
     </script>
 </body>
+
 </html>

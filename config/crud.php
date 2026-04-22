@@ -71,7 +71,7 @@ function editarLivro($mysqli, $id_livro, $titulo, $id_autor, $ano_publicacao, $i
             quantidade     = ?
          WHERE id_livro = ?"
     );
-    $stmt->bind_param("siiiissii",
+    $stmt->bind_param("siiiissiii",
         $titulo, $id_autor, $ano_publicacao, $id_categoria,
         $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade,
         $id_livro
@@ -104,7 +104,7 @@ function adicionarAutor($mysqli, $nome, $descricao, $nacionalidade) {
 // --- FUNÇÕES DE EMPRÉSTIMO ---
 
 function listarEmprestimos($mysqli) {
-    $sql = "SELECT E.*, L.titulo, data_devolucao, U.nome as usuario 
+    $sql = "SELECT E.*, L.titulo, U.nome as usuario 
             FROM emprestimos E
             JOIN Livros L ON E.id_livro = L.id_livro
             JOIN usuarios U ON E.id_usuario = U.id_usuario
@@ -113,20 +113,23 @@ function listarEmprestimos($mysqli) {
 }
 
 function registrarEmprestimo($mysqli, $id_livro, $id_usuario, $data_devolucao_prevista) {
-    // 1. Verifica se tem estoque
     $livro = buscarLivroPorId($mysqli, $id_livro);
     if ($livro['quantidade'] <= 0) return false;
 
-    // 2. Insere o empréstimo
-    $stmt = $mysqli->prepare("INSERT INTO emprestimos (id_livro, id_usuario, data_emprestimo, data_devolucao, status_emprestimo) VALUES (?, ?, NOW(), ?, 'Pendente')");
+    $stmt = $mysqli->prepare(
+        "INSERT INTO emprestimos (id_livro, id_usuario, data_emprestimo, data_devolucao, status_emprestimo) 
+         VALUES (?, ?, NOW(), ?, 'Pendente')"
+    );
+
     $stmt->bind_param("iis", $id_livro, $id_usuario, $data_devolucao_prevista);
-    
-    if ($stmt->execute()) {
-        // 3. Reduz a quantidade no estoque
-        $nova_qtd = $livro['quantidade'] - 1;
-        $mysqli->query("UPDATE Livros SET quantidade = $nova_qtd WHERE id_livro = $id_livro");
-        return true;
-    }
+
+ if ($stmt->execute()) {
+    $nova_qtd = $livro['quantidade'] - 1;
+    $status = $nova_qtd == 0 ? 'Indisponível' : 'Disponível';
+    $mysqli->query("UPDATE Livros SET quantidade = $nova_qtd, status = '$status' WHERE id_livro = $id_livro");
+    return true;
+}
+
     return false;
 }
 
@@ -141,7 +144,7 @@ function devolverLivro($mysqli, $id_emprestimo) {
     $mysqli->query("UPDATE emprestimos SET status_emprestimo = 'Devolvido', data_devolucao = '$data_hoje' WHERE id_emprestimo = $id_emprestimo");
 
     // 3. Devolve 1 unidade ao estoque
-    $mysqli->query("UPDATE Livros SET quantidade = quantidade + 1 WHERE id_livro = $id_livro");
+  $mysqli->query("UPDATE Livros SET quantidade = quantidade + 1, status = 'Disponível' WHERE id_livro = $id_livro");
 }
 
 function listarUsuarios($mysqli) {
