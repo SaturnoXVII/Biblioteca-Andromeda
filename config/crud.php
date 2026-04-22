@@ -109,7 +109,19 @@ function listarEmprestimos($mysqli) {
             JOIN Livros L ON E.id_livro = L.id_livro
             JOIN usuarios U ON E.id_usuario = U.id_usuario
             ORDER BY E.data_emprestimo DESC";
-    return $mysqli->query($sql)->fetch_all(MYSQLI_ASSOC);
+
+    $rows = $mysqli->query($sql)->fetch_all(MYSQLI_ASSOC);
+    $hoje = strtotime(date('Y-m-d'));
+    foreach ($rows as &$row) {
+        if ($row['status_emprestimo'] === 'Pendente' && !empty($row['data_devolucao'])) {
+            $due = strtotime($row['data_devolucao']);
+            if ($due !== false && $due < $hoje) {
+                $row['status_emprestimo'] = 'Atrasado';
+            }
+        }
+    }
+
+    return $rows;
 }
 
 function registrarEmprestimo($mysqli, $id_livro, $id_usuario, $data_devolucao_prevista) {
@@ -124,6 +136,7 @@ function registrarEmprestimo($mysqli, $id_livro, $id_usuario, $data_devolucao_pr
     $stmt->bind_param("iis", $id_livro, $id_usuario, $data_devolucao_prevista);
 
  if ($stmt->execute()) {
+
     $nova_qtd = $livro['quantidade'] - 1;
     $status = $nova_qtd == 0 ? 'Indisponível' : 'Disponível';
     $mysqli->query("UPDATE Livros SET quantidade = $nova_qtd, status = '$status' WHERE id_livro = $id_livro");

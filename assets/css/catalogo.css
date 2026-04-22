@@ -654,6 +654,15 @@ body {
 .sbadge.s-res::before {
   background: var(--accent);
 }
+.sbadge.s-atrasado {
+  background: rgba(255, 56, 56, 0.1);
+  color: #ff3842;
+  border: 1px solid rgba(255, 56, 56, 0.3);
+}
+.sbadge.s-atrasado::before {
+  background: #ff3842;
+  box-shadow: 0 0 8px rgba(255, 56, 56, 0.4);
+}
 .sbadge.s-unk {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-dim);

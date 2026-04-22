@@ -217,7 +217,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
                                             <td class="t-dim"><?= htmlspecialchars($livro['editora']) ?></td>
                                             <td class="t-mono"><?= $livro['ano_publicacao'] ?></td>
                                             <td>
-                                                <?php if ($livro['status'] === 'Disponível' && $livro['quantidade'] > 0): ?>
+                                                <?php if ($livro['quantidade'] > 0): ?>
                                                     <span class="sbadge s-disp">Disponível</span>
                                                 <?php else: ?>
                                                     <span class="sbadge s-unk">Indisponível</span>
@@ -347,18 +347,10 @@ if ($action === 'delete' && isset($_GET['id'])) {
                             <input type="text" name="origem_idioma" class="cosmic-input" value="<?= htmlspecialchars($salvo['origem_idioma'] ?? '') ?>">
                         </div>
 
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-                            <div class="form-group stagger-item" style="animation-delay: 0.65s;">
-                                <label>Status:</label>
-                                <select name="status" class="cosmic-input">
-                                    <option value="Disponível" <?= ($salvo['status'] ?? '') === 'Disponível'   ? 'selected' : '' ?>>Disponível</option>
-                                    <option value="Indisponível" <?= ($salvo['status'] ?? '') === 'Indisponível' ? 'selected' : '' ?>>Indisponível</option>
-                                </select>
-                            </div>
-                            <div class="form-group stagger-item" style="animation-delay: 0.7s;">
-                                <label>Quantidade:</label>
-                                <input type="number" name="quantidade" class="cosmic-input" value="<?= $salvo['quantidade'] ?? '' ?>" min="0">
-                            </div>
+                        <div class="form-group stagger-item" style="animation-delay: 0.65s;">
+                            <label>Quantidade:</label>
+                            <input type="number" name="quantidade" class="cosmic-input" value="<?= $salvo['quantidade'] ?? '' ?>" min="0">
+                            <p style="font-size: 0.8rem; color: var(--am); margin-top: 8px;">💫 O status será ajustado automaticamente conforme a quantidade</p>
                         </div>
 
                         <div class="form-actions stagger-item" style="animation-delay: 0.8s; gap: 16px;">
@@ -441,19 +433,10 @@ if ($action === 'delete' && isset($_GET['id'])) {
                             <input type="text" name="origem_idioma" class="cosmic-input" value="<?= htmlspecialchars($livro['origem_idioma']) ?>">
                         </div>
 
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-                            <div class="form-group stagger-item" style="animation-delay: 0.65s;">
-                                <label>Status:</label>
-                                <select name="status" class="cosmic-input">
-                                    <option value="Disponível" <?= $livro['status'] === 'Disponível'   ? 'selected' : '' ?>>Disponível</option>
-                                    <option value="Indisponível" <?= $livro['status'] === 'Indisponível' ? 'selected' : '' ?>>Indisponível</option>
-                                    <option value="Em Restauração" <?= $livro['status'] === 'Em Restauração' ? 'selected' : '' ?>>Em restauração</option>
-                                </select>
-                            </div>
-                            <div class="form-group stagger-item" style="animation-delay: 0.7s;">
-                                <label>Quantidade:</label>
-                                <input type="number" name="quantidade" class="cosmic-input" value="<?= $livro['quantidade'] ?>" min="0">
-                            </div>
+                        <div class="form-group stagger-item" style="animation-delay: 0.65s;">
+                            <label>Quantidade:</label>
+                            <input type="number" name="quantidade" class="cosmic-input" value="<?= $livro['quantidade'] ?>" min="0">
+                            <p style="font-size: 0.8rem; color: var(--am); margin-top: 8px;">💫 O status será ajustado automaticamente conforme a quantidade</p>
                         </div>
 
                         <div class="form-actions stagger-item" style="animation-delay: 0.8s; gap: 16px;">
@@ -499,18 +482,20 @@ if ($action === 'delete' && isset($_GET['id'])) {
                                     <?php foreach ($emprestimos as $index => $e): ?>
                                         <tr class="stagger-item" style="animation-delay: <?= 0.3 + ($index * 0.05) ?>s;">
                                             <td style="font-weight: 600; color: var(--am3);"><?= htmlspecialchars($e['titulo']) ?></td>
-                                            <td><?= htmlspecialchars($e['id_usuario']) ?></td>
+                                            <td><?= htmlspecialchars($e['usuario']) ?></td>
                                             <td class="t-mono"><?= date('d/m/Y', strtotime($e['data_emprestimo'])) ?></td>
                                             <td class="t-mono"><?= date('d/m/Y', strtotime($e['data_devolucao'])) ?></td>
                                             <td>
                                                 <?php if ($e['status_emprestimo'] === 'Pendente'): ?>
                                                     <span class="sbadge s-empr">Pendente</span>
+                                                <?php elseif ($e['status_emprestimo'] === 'Atrasado'): ?>
+                                                    <span class="sbadge s-atrasado">Atrasado</span>
                                                 <?php else: ?>
                                                     <span class="sbadge s-disp">Devolvido</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td style="text-align: right;">
-                                                <?php if ($e['status_emprestimo'] === 'Pendente'): ?>
+                                                <?php if ($e['status_emprestimo'] === 'Pendente' || $e['status_emprestimo'] === 'Atrasado'): ?>
                                                     <a href="adm.php?action=devolver&id=<?= $e['id_emprestimo'] ?>" onclick="return confirm('Confirmar o retorno deste artefato?')" class="btn-sec btn-sm">Dar Baixa</a>
                                                 <?php else: ?>
                                                     <span class="t-dim t-mono" style="font-size: 0.7rem;">Em: <?= date('d/m/Y', strtotime($e['data_devolucao'])) ?></span>
