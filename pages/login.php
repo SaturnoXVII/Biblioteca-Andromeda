@@ -102,6 +102,14 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
     <div id="reticle-dot"></div>
 
     <main class="auth-wrapper">
+
+        <!-- ── Título flutuante cinematográfico ── -->
+        <div class="auth-float-title">
+            <h1 class="auth-brand">Andrômeda</h1>
+            <span class="auth-brand-line"></span>
+            <div class="auth-subtitle">Identifique-se para acessar o acervo</div>
+        </div>
+
         <div class="auth-card" id="Cadastro">
             <div class="auth-header">
                 <h1 class="auth-brand">Andrômeda</h1>

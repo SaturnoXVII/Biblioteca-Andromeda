@@ -82,19 +82,76 @@ html, body {
 /* ── Layout central ──────────────────────────────── */
 .auth-wrapper {
   position: fixed; inset: 0; z-index: 20;
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 20px; gap: 0;
 }
 
-/* ── Auth Card ───────────────────────────────────── */
+/* ── Título flutuante acima do card ──────────────── */
+.auth-float-title {
+  text-align: center;
+  margin-bottom: 28px;
+  position: relative;
+}
+
+/* marca principal */
+.auth-brand {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 6vw, 4.6rem);
+  font-weight: 300;
+  letter-spacing: .35em;
+  text-transform: uppercase;
+  color: var(--text-main);
+  line-height: 1;
+  display: block;
+
+  /* glow duplo: azul + branco sutil */
+  text-shadow:
+    0 0 40px rgba(42,162,246,.55),
+    0 0 90px rgba(42,162,246,.2),
+    0 2px 0 rgba(255,255,255,.06);
+
+  /* reveal */
+  opacity: 0;
+  transform: translateY(18px) scaleX(.96);
+  transition: opacity .9s .15s cubic-bezier(.16,1,.3,1),
+              transform .9s .15s cubic-bezier(.16,1,.3,1);
+}
+.auth-brand.reveal { opacity: 1; transform: translateY(0) scaleX(1); }
+
+/* linha decorativa sob a marca */
+.auth-brand-line {
+  display: block;
+  margin: 10px auto 12px;
+  width: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--am), transparent);
+  transition: width 1s .7s cubic-bezier(.16,1,.3,1);
+}
+.auth-brand.reveal ~ .auth-brand-line { width: 160px; }
+
+/* subtítulo */
+.auth-subtitle {
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  line-height: 1.5;
+  opacity: 0;
+  transition: opacity .7s .85s;
+}
+.auth-subtitle.reveal { opacity: 1; }
+
+/* ── Auth Card (sem header dentro) ───────────────── */
 .auth-card {
-  width: 100%; max-width: 480px;
+  width: 100%; max-width: 420px;
   background: var(--void-glass);
   backdrop-filter: blur(32px) saturate(1.4);
   -webkit-backdrop-filter: blur(32px);
   border: 1px solid var(--border-hairline);
-  border-radius: 18px;
-  padding: 44px 48px;
+  border-radius: 16px;
+  padding: 38px 44px;
   position: relative;
   overflow: hidden;
   box-shadow:
@@ -102,18 +159,18 @@ html, body {
     inset 0 1px 0 rgba(42,162,246,.12);
 
   /* reveal */
-  opacity: 0; transform: translateY(28px) scale(.98);
-  transition: opacity .75s .2s cubic-bezier(.16,1,.3,1),
-              transform .75s .2s cubic-bezier(.16,1,.3,1);
+  opacity: 0; transform: translateY(22px) scale(.985);
+  transition: opacity .7s .5s cubic-bezier(.16,1,.3,1),
+              transform .7s .5s cubic-bezier(.16,1,.3,1);
 }
 .auth-card.reveal { opacity: 1; transform: translateY(0) scale(1); }
 
-/* linha de luz no topo */
+/* linha de luz no topo do card */
 .auth-card::before {
   content: "";
-  position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+  position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
   background: linear-gradient(90deg, transparent, var(--am) 50%, transparent);
-  opacity: .55;
+  opacity: .45;
 }
 
 /* brilho de canto */
@@ -121,36 +178,12 @@ html, body {
   content: "";
   position: absolute; top: -80px; right: -80px;
   width: 220px; height: 220px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(42,162,246,.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(42,162,246,.07) 0%, transparent 70%);
   pointer-events: none;
 }
 
-/* ── Header ─────────────────────────────────────── */
-.auth-header { text-align: center; margin-bottom: 36px; }
-
-.auth-brand {
-  font-family: var(--font-display);
-  font-size: 2.8rem; font-weight: 400;
-  letter-spacing: .22em; text-transform: uppercase;
-  color: var(--text-main);
-  text-shadow: 0 0 28px rgba(42,162,246,.35);
-  margin-bottom: 10px;
-
-  /* reveal próprio */
-  opacity: 0; transform: translateY(12px);
-  transition: opacity .7s .4s, transform .7s .4s cubic-bezier(.16,1,.3,1);
-}
-.auth-card.reveal .auth-brand { opacity: 1; transform: translateY(0); }
-
-.auth-subtitle {
-  font-family: var(--font-mono);
-  font-size: .68rem; letter-spacing: .2em; text-transform: uppercase;
-  color: var(--am); line-height: 1.5;
-
-  opacity: 0;
-  transition: opacity .7s .6s;
-}
-.auth-card.reveal .auth-subtitle { opacity: 1; }
+/* ── Header (oculto — título foi para fora) ────── */
+.auth-header { display: none; }
 
 /* ── Inputs Bootstrap override ───────────────────── */
 .form-control {
@@ -159,14 +192,23 @@ html, body {
   border-radius: 8px !important;
   color: var(--text-main) !important;
   font-family: var(--font-sans) !important;
-  font-size: .83rem !important;
-  padding: 13px 16px !important;
+  font-size: .82rem !important;
+  padding: 12px 16px !important;
   letter-spacing: .03em;
   height: auto !important;
+  width: 100% !important; /* CORREÇÃO: Força a largura igual à do botão */
+  display: block !important; /* CORREÇÃO: Garante o comportamento de bloco */
+  box-sizing: border-box !important; /* CORREÇÃO: Impede que o padding quebre o layout */
   cursor: none !important;
   transition: border-color .3s, box-shadow .3s, background .3s !important;
 }
-.form-control::placeholder { color: var(--text-dim) !important; font-size: .8rem; letter-spacing: .04em; }
+.form-control::placeholder {
+  color: var(--text-dim) !important;
+  font-size: .65rem !important;
+  letter-spacing: .14em;
+  font-family: var(--font-mono) !important;
+  text-transform: uppercase;
+}
 .form-control:focus {
   background: rgba(42,162,246,.05) !important;
   border-color: var(--am) !important;
@@ -185,7 +227,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .form-group { margin-bottom: 14px; position: relative; }
 
 /* ── Password toggle ─────────────────────────────── */
-.pass-wrap { position: relative; }
+.pass-wrap { 
+  position: relative; 
+  display: block; /* CORREÇÃO: Mantém o empacotador estruturado */
+  width: 100%; /* CORREÇÃO: Alinha a base para o ícone */
+}
 .pass-toggle {
   position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
   background: none; border: none; color: var(--text-dim);
@@ -260,8 +306,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* ── Responsive ─────────────────────────────────── */
 @media (max-width: 520px) {
-  .auth-card { padding: 32px 22px; }
-  .auth-brand { font-size: 2.2rem; }
+  .auth-card { padding: 28px 20px; }
+  .auth-brand { font-size: 2.4rem; letter-spacing: .22em; }
   html, body { overflow: auto; }
-  .auth-wrapper { align-items: flex-start; padding: 30px 16px 40px; }
+  .auth-wrapper { align-items: flex-start; padding: 40px 16px 40px; justify-content: flex-start; }
+  .auth-float-title { margin-bottom: 20px; }
 }

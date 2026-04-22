@@ -186,11 +186,16 @@
   })();
 
   /* ────────────────────────────────────────────────
-     3. REVEAL DO CARD
+     3. REVEAL — título flutuante + card
   ──────────────────────────────────────────────── */
   requestAnimationFrame(() => {
-    const card = document.querySelector(".auth-card");
-    if (card) setTimeout(() => card.classList.add("reveal"), 120);
+    const brand    = document.querySelector(".auth-brand");
+    const subtitle = document.querySelector(".auth-subtitle");
+    const card     = document.querySelector(".auth-card");
+
+    if (brand)    setTimeout(() => brand.classList.add("reveal"),    80);
+    if (subtitle) setTimeout(() => subtitle.classList.add("reveal"), 900);
+    if (card)     setTimeout(() => card.classList.add("reveal"),     420);
   });
 
   /* ────────────────────────────────────────────────
