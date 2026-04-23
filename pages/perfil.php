@@ -129,7 +129,7 @@ function buscarEmprestimos(mysqli $db, int $idUsuario): array
         "SELECT e.id_emprestimo,
                 e.data_emprestimo,
                 e.data_devolucao,
-                e.status,
+                e.status_emprestimo,
                 l.titulo,
                 l.id_autor
          FROM emprestimos e

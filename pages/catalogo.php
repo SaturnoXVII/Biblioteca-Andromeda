@@ -7,6 +7,7 @@ $mysqli->set_charset("utf8mb4");
 $repo = new \App\Repository\LivroRepository($mysqli);
 try {
     $livros = $repo->listarTodos();
+   
 } catch (Exception $e) {
     die("Erro: " . htmlspecialchars($e->getMessage()));
 }
@@ -205,6 +206,7 @@ $totalCats   = count($categorias);
         <div id="ed-sections"></div>
     </div>
 
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
@@ -219,4 +221,5 @@ $totalCats   = count($categorias);
     </script>
     <script src="../assets/js/catalogo.js"></script>
 </body>
+
 </html>

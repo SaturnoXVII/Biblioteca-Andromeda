@@ -60,7 +60,6 @@ if ($action === 'devolver' && isset($_GET['id'])) {
     exit;
 }
 
-// ─── ADD / EDIT LIVRO ─────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $titulo         = $_POST['titulo'];
     $id_autor       = (int) $_POST['id_autor'];
@@ -72,12 +71,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $quantidade     = (int) $_POST['quantidade'];
     $status         = $quantidade > 0 ? 'Disponível' : 'Indisponível';
 
+
+    
+$capa = $_POST['capa_atual'] ?? 'uploads/capas/default.jpg';
+
+if (!empty($_FILES['capa']['name'])) {
+    $ext              = pathinfo($_FILES['capa']['name'], PATHINFO_EXTENSION);
+    $nome_arquivo     = uniqid('capa_') . '.' . $ext;
+    $destino          = '../uploads/capas/' . $nome_arquivo; // caminho físico no servidor
+    $tipos_permitidos = ['image/jpeg', 'image/png', 'image/webp'];
+
+    if (in_array($_FILES['capa']['type'], $tipos_permitidos) && $_FILES['capa']['size'] <= 2097152) {
+        if (move_uploaded_file($_FILES['capa']['tmp_name'], $destino)) {
+            $capa = 'uploads/capas/' . $nome_arquivo; // caminho salvo no banco
+        }
+    }
+}
+
     if ($action === 'add') {
-        adicionarLivro($mysqli, $titulo, $id_autor, $ano_publicacao, $id_categoria, $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade);
+        adicionarLivro($mysqli, $titulo, $id_autor, $ano_publicacao, $id_categoria, $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade, $capa);
     } elseif ($action === 'edit') {
         $id_livro = (int) $_POST['id_livro'];
         if ($quantidade == 0) $status = 'Indisponível';
-        editarLivro($mysqli, $id_livro, $titulo, $id_autor, $ano_publicacao, $id_categoria, $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade);
+        editarLivro($mysqli, $id_livro, $titulo, $id_autor, $ano_publicacao, $id_categoria, $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade, $capa);
     }
 
     header("Location: adm.php");
@@ -254,11 +270,16 @@ if ($action === 'delete' && isset($_GET['id'])) {
                 </div>
 
                 <div class="cosmic-form animate-rise" style="animation-delay: 0.2s;">
-                    <form method="POST" action="adm.php?action=add">
+                    <form method="POST" action="adm.php?action=add" enctype="multipart/form-data">
 
                         <div class="form-group stagger-item" style="animation-delay: 0.3s;">
                             <label>Título:</label>
                             <input type="text" name="titulo" class="cosmic-input" value="<?= htmlspecialchars($salvo['titulo'] ?? '') ?>" required>
+                        </div>
+                        <div class="form-group stagger-item" style="animation-delay: 0.32s;">
+                            <label>Capa do Livro:</label>
+                            <input type="file" name="capa" accept="image/jpeg, image/png, image/webp" class="cosmic-input">
+                            <p style="font-size: 0.8rem; color: var(--am); margin-top: 8px;">📸 JPG, PNG ou WEBP • Máx. 2MB</p>
                         </div>
 
                         <div class="form-group stagger-item" style="animation-delay: 0.35s;">
@@ -372,13 +393,24 @@ if ($action === 'delete' && isset($_GET['id'])) {
                 </div>
 
                 <div class="cosmic-form animate-rise" style="animation-delay: 0.2s;">
-                    <form method="POST" action="adm.php?action=edit">
+                    <form method="POST" action="adm.php?action=edit" enctype="multipart/form-data">
 
                         <input type="hidden" name="id_livro" value="<?= $id ?>">
 
                         <div class="form-group stagger-item" style="animation-delay: 0.3s;">
                             <label>Título:</label>
                             <input type="text" name="titulo" class="cosmic-input" value="<?= htmlspecialchars($livro['titulo']) ?>" required>
+                        </div>
+                        <div class="form-group stagger-item" style="animation-delay: 0.32s;">
+                            <label>Capa do Livro:</label>
+                            <?php if (!empty($livro['capa'])): ?>
+                                <img src="../<?= htmlspecialchars($livro['capa']) ?>"
+                                    alt="Capa atual"
+                                    style="width: 80px; border-radius: 6px; margin-bottom: 10px; display: block;">
+                            <?php endif; ?>
+                            <input type="hidden" name="capa_atual" value="<?= htmlspecialchars($livro['capa'] ?? '') ?>">
+                            <input type="file" name="capa" accept="image/jpeg, image/png, image/webp" class="cosmic-input">
+                            <p style="font-size: 0.8rem; color: var(--am); margin-top: 8px;">📸 Deixe vazio para manter a capa atual</p>
                         </div>
 
                         <div class="form-group stagger-item" style="animation-delay: 0.35s;">

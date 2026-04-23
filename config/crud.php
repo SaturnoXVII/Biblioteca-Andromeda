@@ -12,6 +12,7 @@ function listarLivros($mysqli) {
                 Livros.origem_idioma,
                 Livros.status,
                 Livros.quantidade,
+                Livros.capa,
                 autores.nome       AS autor,
                 Categorias.nome    AS categoria,
                 editoras.nome      AS editora
@@ -43,21 +44,21 @@ function listarEditoras($mysqli) {
     return $mysqli->query("SELECT id_editora, nome FROM editoras ORDER BY nome ASC")->fetch_all(MYSQLI_ASSOC);
 }
 
-function adicionarLivro($mysqli, $titulo, $id_autor, $ano_publicacao, $id_categoria, $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade) {
+
+function adicionarLivro($mysqli, $titulo, $id_autor, $ano_publicacao, $id_categoria, $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade, $capa) {
     $stmt = $mysqli->prepare(
         "INSERT INTO Livros 
-            (titulo, id_autor, ano_publicacao, id_categoria, id_editora, numero_paginas, origem_idioma, status, quantidade) 
+            (titulo, id_autor, ano_publicacao, id_categoria, id_editora, numero_paginas, origem_idioma, status, quantidade, capa) 
          VALUES 
-            (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     );
-    $stmt->bind_param("siiiiissi",  
-        $titulo, $id_autor, $ano_publicacao, $id_categoria,
-        $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade
-    );
-    return $stmt->execute();
+   $stmt->bind_param("siiiiissis",
+    $titulo, $id_autor, $ano_publicacao, $id_categoria,
+    $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade, $capa
+);
 }
 
-function editarLivro($mysqli, $id_livro, $titulo, $id_autor, $ano_publicacao, $id_categoria, $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade) {
+function editarLivro($mysqli, $id_livro, $titulo, $id_autor, $ano_publicacao, $id_categoria, $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade, $capa) {
     $stmt = $mysqli->prepare(
         "UPDATE Livros SET
             titulo         = ?,
@@ -68,12 +69,13 @@ function editarLivro($mysqli, $id_livro, $titulo, $id_autor, $ano_publicacao, $i
             numero_paginas = ?,
             origem_idioma  = ?,
             status         = ?,
-            quantidade     = ?
+            quantidade     = ?,
+            capa           = ?
          WHERE id_livro = ?"
     );
-    $stmt->bind_param("siiiissiii",
+    $stmt->bind_param("siiiisssisi",
         $titulo, $id_autor, $ano_publicacao, $id_categoria,
-        $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade,
+        $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade, $capa,
         $id_livro
     );
     return $stmt->execute();

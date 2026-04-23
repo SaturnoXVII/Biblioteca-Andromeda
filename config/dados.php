@@ -26,19 +26,20 @@ private mysqli $db; // 1. Declara explicitamente
      */
     public function listarTodos(): array 
     {
-        $sql = "SELECT 
-                    l.id_livro, 
-                    l.titulo, 
-                    a.nome AS autor_nome, 
-                    l.ano_publicacao, 
-                    c.nome AS categoria_nome,
-                    e.nome AS editora_nome,
-                    l.status
-                FROM Livros l
-                LEFT JOIN autores a ON l.id_autor = a.id_autor
-                LEFT JOIN Categorias c ON l.id_categoria = c.id_categoria
-                LEFT JOIN editoras e ON l.id_editora = e.id_editora
-                ORDER BY l.titulo ASC";
+      $sql = "SELECT 
+            l.id_livro, 
+            l.titulo, 
+            a.nome AS autor_nome, 
+            l.ano_publicacao, 
+            c.nome AS categoria_nome,
+            e.nome AS editora_nome,
+            l.status,
+            l.capa          -- ← linha nova
+        FROM Livros l
+        LEFT JOIN autores a ON l.id_autor = a.id_autor
+        LEFT JOIN Categorias c ON l.id_categoria = c.id_categoria
+        LEFT JOIN editoras e ON l.id_editora = e.id_editora
+        ORDER BY l.titulo ASC";
 
         // Executa a query de forma direta (mais rápida para SELECTs sem inputs de usuário)
         $result = $this->db->query($sql);
