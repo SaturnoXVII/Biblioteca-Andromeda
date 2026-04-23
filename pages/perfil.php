@@ -121,7 +121,7 @@ function trocarSenha(mysqli $db, int $id, string $hashAtual, string $atual, stri
 
 /**
  * Retorna todos os empréstimos do usuário com título e autor do livro.
- * O INNER JOIN conecta emprestimos → livros pelo id_livro.
+ * O INNER JOIN conecta emprestimos → livros → autores para trazer o nome do autor.
  */
 function buscarEmprestimos(mysqli $db, int $idUsuario): array
 {
@@ -131,9 +131,10 @@ function buscarEmprestimos(mysqli $db, int $idUsuario): array
                 e.data_devolucao,
                 e.status_emprestimo,
                 l.titulo,
-                l.id_autor
+                a.nome as nome_autor
          FROM emprestimos e
          INNER JOIN Livros l ON l.id_livro = e.id_livro
+         INNER JOIN autores a ON a.id_autor = l.id_autor
          WHERE e.id_usuario = ?
          ORDER BY e.data_emprestimo DESC"
     );
@@ -232,9 +233,9 @@ $h = fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
 
 // Mapa de cores/labels para o status do empréstimo
 $statusMap = [
-    'Em andamento' => ['label' => 'Em andamento', 'class' => 'text-warning'],
-    'Devolvido'    => ['label' => 'Devolvido',    'class' => 'text-success'],
-    'Atrasado'     => ['label' => 'Atrasado',     'class' => 'text-danger'],
+    'Pendente'  => ['label' => 'Pendente',  'class' => 'text-info'],
+    'Devolvido' => ['label' => 'Devolvido', 'class' => 'text-success'],
+    'Atrasado'  => ['label' => 'Atrasado',  'class' => 'text-danger'],
 ];
 ?>
 <!DOCTYPE html>
@@ -247,6 +248,7 @@ $statusMap = [
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/catalogo.css">
+    <link rel="stylesheet" href="../assets/css/perfil.css">
 </head>
 <body>
 
@@ -289,12 +291,18 @@ $statusMap = [
     <?php endif; ?>
 
     <!-- ── Cabeçalho do perfil ─────────────────────────────── -->
-    <div class="mb-4">
-        <h2 class="fw-bold mb-0">
-            <i class="fa-solid fa-user-astronaut me-2"></i>
-            <?= $h($usuario['nome']) ?> <?= $h($usuario['sobrenome']) ?>
-        </h2>
-        <small class="text-muted">@<?= $h($usuario['username']) ?> · <?= $h($usuario['nivel_acesso']) ?></small>
+    <div class="perfil-header">
+        <div class="perfil-user-info">
+            <div class="perfil-user-avatar">
+                <i class="fa-solid fa-user-astronaut"></i>
+            </div>
+            <div class="perfil-user-details">
+                <h2><?= $h($usuario['nome']) ?> <?= $h($usuario['sobrenome']) ?></h2>
+                <div class="perfil-user-meta">
+                    @<?= $h($usuario['username']) ?> · <?= $h($usuario['nivel_acesso']) ?>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ── Abas de navegação interna ──────────────────────── -->
@@ -331,53 +339,55 @@ $statusMap = [
              com action="editar_perfil"
         ═════════════════════════════════════════════════════ -->
         <div class="tab-pane fade show active" id="tab-dados">
-            <!--
-                action="perfil.php" → envia para a própria página
-                method="POST"       → dados vão no corpo da requisição (não na URL)
-            -->
-            <form action="perfil.php" method="POST">
-                <!-- Campo oculto que identifica qual action processar no PHP -->
-                <input type="hidden" name="action" value="editar_perfil">
+            <div class="form-card">
+                <!--
+                    action="perfil.php" → envia para a própria página
+                    method="POST"       → dados vão no corpo da requisição (não na URL)
+                -->
+                <form action="perfil.php" method="POST">
+                    <!-- Campo oculto que identifica qual action processar no PHP -->
+                    <input type="hidden" name="action" value="editar_perfil">
 
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Nome</label>
-                        <!-- value= preenche o campo com o dado atual do banco -->
-                        <input type="text" name="nome" class="form-control"
-                               value="<?= $h($usuario['nome']) ?>" required>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nome</label>
+                            <!-- value= preenche o campo com o dado atual do banco -->
+                            <input type="text" name="nome" class="form-control"
+                                   value="<?= $h($usuario['nome']) ?>" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sobrenome</label>
+                            <input type="text" name="sobrenome" class="form-control"
+                                   value="<?= $h($usuario['sobrenome']) ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">E-mail</label>
+                            <input type="email" name="email" class="form-control"
+                                   value="<?= $h($usuario['email']) ?>" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Telefone</label>
+                            <input type="text" name="telefone" class="form-control"
+                                   value="<?= $h($usuario['telefone']) ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Data de Nascimento</label>
+                            <input type="date" name="data_nascimento" class="form-control"
+                                   value="<?= $h($usuario['data_nascimento']) ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Endereço</label>
+                            <input type="text" name="endereco" class="form-control"
+                                   value="<?= $h($usuario['endereco']) ?>">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> Salvar Alterações
+                            </button>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Sobrenome</label>
-                        <input type="text" name="sobrenome" class="form-control"
-                               value="<?= $h($usuario['sobrenome']) ?>">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">E-mail</label>
-                        <input type="email" name="email" class="form-control"
-                               value="<?= $h($usuario['email']) ?>" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Telefone</label>
-                        <input type="text" name="telefone" class="form-control"
-                               value="<?= $h($usuario['telefone']) ?>">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Data de Nascimento</label>
-                        <input type="date" name="data_nascimento" class="form-control"
-                               value="<?= $h($usuario['data_nascimento']) ?>">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Endereço</label>
-                        <input type="text" name="endereco" class="form-control"
-                               value="<?= $h($usuario['endereco']) ?>">
-                    </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fa-solid fa-floppy-disk me-1"></i> Salvar Alterações
-                        </button>
-                    </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
 
         <!-- ════════════════════════════════════════════════════
@@ -385,33 +395,35 @@ $statusMap = [
              Formulário separado com action="trocar_senha"
         ═════════════════════════════════════════════════════ -->
         <div class="tab-pane fade" id="tab-senha">
-            <form action="perfil.php" method="POST" style="max-width: 420px;">
-                <input type="hidden" name="action" value="trocar_senha">
+            <div class="form-card" style="max-width: 450px;">
+                <form action="perfil.php" method="POST">
+                    <input type="hidden" name="action" value="trocar_senha">
 
-                <div class="mb-3">
-                    <label class="form-label">Senha Atual</label>
-                    <!--
-                        type="password" → o browser não mostra o texto digitado
-                        autocomplete="current-password" → hint para gerenciadores de senha
-                    -->
-                    <input type="password" name="senha_atual" class="form-control"
-                           autocomplete="current-password" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Nova Senha</label>
-                    <input type="password" name="senha_nova" class="form-control"
-                           autocomplete="new-password" minlength="6" required>
-                    <div class="form-text">Mínimo de 6 caracteres.</div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Confirmar Nova Senha</label>
-                    <input type="password" name="senha_conf" class="form-control"
-                           autocomplete="new-password" minlength="6" required>
-                </div>
-                <button type="submit" class="btn btn-warning">
-                    <i class="fa-solid fa-key me-1"></i> Alterar Senha
-                </button>
-            </form>
+                    <div class="mb-3">
+                        <label class="form-label">Senha Atual</label>
+                        <!--
+                            type="password" → o browser não mostra o texto digitado
+                            autocomplete="current-password" → hint para gerenciadores de senha
+                        -->
+                        <input type="password" name="senha_atual" class="form-control"
+                               autocomplete="current-password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nova Senha</label>
+                        <input type="password" name="senha_nova" class="form-control"
+                               autocomplete="new-password" minlength="6" required>
+                        <div class="form-text">Mínimo de 6 caracteres.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirmar Nova Senha</label>
+                        <input type="password" name="senha_conf" class="form-control"
+                               autocomplete="new-password" minlength="6" required>
+                    </div>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fa-solid fa-key me-1"></i> Alterar Senha
+                    </button>
+                </form>
+            </div>
         </div>
 
         <!-- ════════════════════════════════════════════════════
@@ -422,14 +434,16 @@ $statusMap = [
 
             <?php if (empty($emprestimos)): ?>
                 <!-- Exibido quando o array de empréstimos está vazio -->
-                <p class="text-muted">
-                    <i class="fa-solid fa-inbox me-1"></i>
-                    Você ainda não possui empréstimos registrados.
-                </p>
+                <div class="form-card text-center" style="padding: 48px;">
+                    <i class="fa-solid fa-inbox mb-3" style="font-size: 3rem; color: var(--text-dim);"></i>
+                    <p class="text-muted" style="margin-bottom: 0;">
+                        Você ainda não possui empréstimos registrados.
+                    </p>
+                </div>
 
             <?php else: ?>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -443,17 +457,29 @@ $statusMap = [
                         <tbody>
                             <?php foreach ($emprestimos as $emp): ?>
                                 <?php
+                                    // Determina o status real baseado na data de devolução
+                                    $statusReal = $emp['status_emprestimo'];
+                                    
+                                    // Se o campo status estiver vazio ou nulo, calcula baseado na devolução
+                                    if (empty($statusReal)) {
+                                        if ($emp['data_devolucao'] && $emp['data_devolucao'] != '0000-00-00') {
+                                            $statusReal = 'Devolvido';
+                                        } else {
+                                            $statusReal = 'Pendente';
+                                        }
+                                    }
+                                    
                                     // Pega o label e a classe CSS do status atual
-                                    $st = $statusMap[$emp['status']] ?? ['label' => $emp['status'], 'class' => 'text-secondary'];
+                                    $st = $statusMap[$statusReal] ?? ['label' => $statusReal, 'class' => 'text-secondary'];
                                 ?>
                                 <tr>
-                                    <td><?= $h($emp['id_emprestimo']) ?></td>
+                                    <td><small style="color: var(--text-dim);"><?= $h($emp['id_emprestimo']) ?></small></td>
                                     <td><?= $h($emp['titulo']) ?></td>
-                                    <td><?= $h($emp['autor']) ?></td>
+                                    <td><?= $h($emp['nome_autor']) ?></td>
                                     <!-- date() reformata a data do MySQL (Y-m-d) para o padrão BR (d/m/Y) -->
                                     <td><?= date('d/m/Y', strtotime($emp['data_emprestimo'])) ?></td>
                                     <td>
-                                        <?php if ($emp['data_devolucao']): ?>
+                                        <?php if ($emp['data_devolucao'] && $emp['data_devolucao'] != '0000-00-00'): ?>
                                             <?= date('d/m/Y', strtotime($emp['data_devolucao'])) ?>
                                         <?php else: ?>
                                             <span class="text-muted">—</span>
@@ -461,6 +487,7 @@ $statusMap = [
                                     </td>
                                     <td>
                                         <span class="<?= $st['class'] ?> fw-semibold">
+                                            <i class="fa-solid fa-circle" style="font-size: .4rem; margin-right: 6px;"></i>
                                             <?= $h($st['label']) ?>
                                         </span>
                                     </td>
