@@ -33,6 +33,7 @@ private mysqli $db; // 1. Declara explicitamente
             l.ano_publicacao, 
             c.nome AS categoria_nome,
             e.nome AS editora_nome,
+            l.sinopse,       -- ← linha nova
             l.status,
             l.capa          -- ← linha nova
         FROM Livros l

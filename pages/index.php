@@ -1,8 +1,3 @@
-<?php
-// session_start();
-// include ("../config/conexao.php");
-// include ("../config/crud.php");
-?>
 
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -53,6 +48,6 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
-    <script src="../assets/js/intro.js"></script>
+    <script src="../assets/js/andromeda.js"></script>
 </body>
 </html>
