@@ -2,7 +2,38 @@
 session_start();
 require_once "../config/conexao.php";
 require_once "../config/dados.php";
+require_once "../config/crud.php";
 $mysqli->set_charset("utf8mb4");
+
+$reservaMessage = null;
+$reservaType = 'success';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reservar_livro') {
+    if (empty($_SESSION['id_usuario'])) {
+        $reservaMessage = 'Faça login para reservar obras.';
+        $reservaType = 'danger';
+    } else {
+        $idLivro = (int) ($_POST['livro_id'] ?? 0);
+        $livro = buscarLivroPorId($mysqli, $idLivro);
+
+        if (!$livro) {
+            $reservaMessage = 'Livro não encontrado.';
+            $reservaType = 'danger';
+        } elseif ($livro['quantidade'] > 0) {
+            $reservaMessage = 'Este livro está disponível. Faça o empréstimo em vez de reservar.';
+            $reservaType = 'warning';
+        } elseif (jaReservado($mysqli, $idLivro, (int) $_SESSION['id_usuario'])) {
+            $reservaMessage = 'Você já possui uma reserva ativa para este livro.';
+            $reservaType = 'warning';
+        } elseif (criarReserva($mysqli, $idLivro, (int) $_SESSION['id_usuario'])) {
+            $reservaMessage = 'Reserva registrada com sucesso! Assim que o livro retornar, você poderá retirá-lo.';
+            $reservaType = 'success';
+        } else {
+            $reservaMessage = 'Não foi possível completar a reserva. Tente novamente mais tarde.';
+            $reservaType = 'danger';
+        }
+    }
+}
 
 $repo = new \App\Repository\LivroRepository($mysqli);
 try {
@@ -17,6 +48,13 @@ $livrosJson = json_encode($livros, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_
 $totalLivros = count($livros);
 $categorias  = array_values(array_filter(array_unique(array_column($livros, 'categoria_nome'))));
 $totalCats   = count($categorias);
+
+// Carrega reservas do usuário se estiver logado
+$minhasReservas = [];
+if (!empty($_SESSION['id_usuario'])) {
+    $minhasReservas = listarReservasUsuario($mysqli, (int) $_SESSION['id_usuario']);
+}
+$minhasReservasJson = json_encode($minhasReservas, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?: '[]';
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -46,6 +84,11 @@ $totalCats   = count($categorias);
     <div id="grain"></div>
     <div id="canvas-dim"></div>
     <div id="webgl"></div>
+    <?php if ($reservaMessage): ?>
+    <div class="alert alert-<?= htmlspecialchars($reservaType, ENT_QUOTES, 'UTF-8') ?>" role="alert" style="position:fixed;top:80px;right:20px;z-index:2000;min-width:260px;padding:12px 16px;border-radius:4px;">
+        <?= htmlspecialchars($reservaMessage, ENT_QUOTES, 'UTF-8') ?>
+    </div>
+    <?php endif; ?>
 
     <div id="reticle">
         <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -73,7 +116,7 @@ $totalCats   = count($categorias);
             <a href="catalogo.php" class="nav-item active"><i class="fa-solid fa-layer-group"></i><span>Catálogo</span></a>
             <a href="perfil.php" class="nav-item"><i class="fa-solid fa-user-astronaut"></i><span>Meu Perfil</span></a>
             <a href="emprestimos.php" class="nav-item"><i class="fa-solid fa-bookmark"></i><span>Empréstimos</span></a>
-            <a href="reservas.php" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i><span>Reservas</span></a>
+            <a href="#" class="nav-item" id="nav-reservas" onclick="event.preventDefault(); abrirPainelReservas();"><i class="fa-solid fa-clock-rotate-left"></i><span>Reservas</span></a>
         </div>
         <div class="nav-foot">
             <a href="index.php" class="nav-item"><i class="fa-solid fa-rocket"></i><span>Início</span></a>
@@ -206,7 +249,21 @@ $totalCats   = count($categorias);
         <div id="ed-sections"></div>
     </div>
 
-
+    <form id="reserva-form" method="post" style="display:none;">
+        <input type="hidden" name="action" value="reservar_livro">
+        <input type="hidden" name="livro_id" id="reserva-livro-id" value="">
+    </form>
+    <div id="reservas-panel" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1999; overflow-y:auto;">
+        <div style="max-width:600px; margin:80px auto; background:var(--void-glass); border:1px solid var(--border-hairline); border-radius:8px; padding:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0; color:var(--text); font-size:1.5rem;">Minhas Reservas</h2>
+                <button onclick="fecharPainelReservas()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-dim);"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="reservas-lista-container" style="max-height:400px; overflow-y:auto;">
+                <!-- Será preenchido por JavaScript -->
+            </div>
+        </div>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
@@ -218,6 +275,37 @@ $totalCats   = count($categorias);
 
     <script>
         const LIVROS = <?php echo $livrosJson; ?>;
+        const MINHAS_RESERVAS = <?php echo $minhasReservasJson; ?>;
+        
+        function abrirPainelReservas() {
+            const panel = document.getElementById('reservas-panel');
+            const container = document.getElementById('reservas-lista-container');
+            
+            if (MINHAS_RESERVAS.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-dim); text-align:center; padding:20px;">Você não possui reservas ativas.</p>';
+            } else {
+                container.innerHTML = MINHAS_RESERVAS.map(r => `
+                    <div style="padding:12px; border-bottom:1px solid var(--border-hairline); margin-bottom:8px;">
+                        <div style="color:var(--am); font-size:0.85rem; font-weight:600; margin-bottom:4px;">${r.categoria || '—'}</div>
+                        <div style="color:var(--text); font-weight:600; margin-bottom:4px;">${r.titulo || '—'}</div>
+                        <div style="color:var(--text-dim); font-size:0.85rem; margin-bottom:8px;">${r.autor || '—'}</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem;">
+                            <span style="color:var(--text-dim);">Reservado em: ${new Date(r.data_reserva).toLocaleDateString('pt-BR')}</span>
+                            <span style="color:var(--am); font-weight:600;">${r.status_livro || '—'}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            panel.style.display = 'block';
+        }
+        
+        function fecharPainelReservas() {
+            document.getElementById('reservas-panel').style.display = 'none';
+        }
+        
+        document.getElementById('reservas-panel').addEventListener('click', function(e) {
+            if (e.target === this) fecharPainelReservas();
+        });
     </script>
     <script src="../assets/js/catalogo.js"></script>
 </body>

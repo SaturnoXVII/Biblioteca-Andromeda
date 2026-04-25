@@ -676,6 +676,7 @@
         document.getElementById('bp-expand').addEventListener('click',()=>{ if(selBook) openModal(selBook.data); });
 
         function openModal(d) {
+            modalBook = d;
             const mc=document.getElementById('md-art-canvas');
             mc.width=mc.parentElement.clientWidth||720; mc.height=240;
             // ── USA CAPA REAL SE DISPONÍVEL ──────────────────────────
@@ -690,6 +691,10 @@
             document.getElementById('md-sv').textContent=d.status||'—';
             const ms=document.getElementById('md-status');
             ms.className='sbadge '+statusClass(d.status); ms.textContent=d.status||'—';
+            const mdReserveBtn = document.getElementById('md-reserve');
+            const isReservable = (d.status || '').toLowerCase().includes('indis');
+            mdReserveBtn.disabled = !isReservable;
+            mdReserveBtn.textContent = isReservable ? 'Reservar Obra' : 'Somente livros indisponíveis podem ser reservados';
             const rel=LIVROS.filter(l=>l.categoria_nome===d.categoria_nome&&l.titulo!==d.titulo).slice(0,4);
             document.getElementById('md-related').innerHTML=rel.length===0
                 ?'<p style="font-size:.8rem;color:var(--text-dim);font-style:italic;">Nenhuma obra relacionada</p>'
@@ -698,6 +703,19 @@
             document.querySelector('.md-scroll').scrollTop=0;
         }
         document.getElementById('modal-close').addEventListener('click',()=>document.getElementById('modal-overlay').classList.remove('open'));
+        
+        let modalBook = null;
+        document.getElementById('md-reserve').addEventListener('click',()=>{
+            if (!modalBook) return;
+            const status = (modalBook.status || '').toLowerCase();
+            if (!status.includes('indis')) {
+                alert('Somente livros indisponíveis podem ser reservados.');
+                return;
+            }
+            const form = document.getElementById('reserva-form');
+            document.getElementById('reserva-livro-id').value = modalBook.id_livro;
+            form.submit();
+        });
 
         /* ═══════════════════════════════════════════════════════════════
            8. CONTROLES (NAVEGAÇÃO E RESET POR ZOOM)
