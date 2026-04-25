@@ -1,6 +1,3 @@
-<!-- Perfil do leitor, não podemos se esquecer de colocar a parte de emprestimos aqui, depois podemos linkala na parte do menu do catalogo que  mostra os emprestimos -->
-
-
 <?php
 // ═══════════════════════════════════════════════════════════════
 // BLOCO 1 — INICIALIZAÇÃO
@@ -23,18 +20,13 @@ $idUsuario = (int) $_SESSION['id_usuario'];
 
 // ═══════════════════════════════════════════════════════════════
 // BLOCO 2 — FUNÇÕES INTERNAS
-// Ficam aqui em vez de num Repository separado, já que tudo
-// está numa única página conforme solicitado.
 // ═══════════════════════════════════════════════════════════════
 
 /**
  * Busca todos os campos do usuário pelo id.
- * Retorna array associativo ou null se não encontrar.
  */
 function buscarUsuario(mysqli $db, int $id): ?array
 {
-    // Prepared statement: o ? é preenchido com $id de forma segura,
-    // impedindo SQL Injection mesmo que o valor fosse manipulado.
     $stmt = $db->prepare(
         "SELECT id_usuario, username, email, nome, sobrenome,
                 data_nascimento, telefone, endereco, nivel_acesso, senha
@@ -42,7 +34,7 @@ function buscarUsuario(mysqli $db, int $id): ?array
          WHERE id_usuario = ?
          LIMIT 1"
     );
-    $stmt->bind_param('i', $id); // 'i' = integer
+    $stmt->bind_param('i', $id);
     $stmt->execute();
     $usuario = $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -50,8 +42,7 @@ function buscarUsuario(mysqli $db, int $id): ?array
 }
 
 /**
- * Atualiza os campos editáveis do perfil (sem a senha).
- * Retorna true se alguma linha foi modificada no banco.
+ * Atualiza os campos editáveis do perfil.
  */
 function atualizarPerfil(mysqli $db, int $id, array $d): bool
 {
@@ -61,7 +52,6 @@ function atualizarPerfil(mysqli $db, int $id, array $d): bool
              telefone = ?, endereco = ?, data_nascimento = ?
          WHERE id_usuario = ?"
     );
-    // 'ssssss' = 6 strings, 'i' = 1 inteiro, na mesma ordem dos ?
     $stmt->bind_param(
         'ssssssi',
         $d['nome'], $d['sobrenome'], $d['email'],
@@ -69,14 +59,13 @@ function atualizarPerfil(mysqli $db, int $id, array $d): bool
         $id
     );
     $stmt->execute();
-    $ok = $stmt->affected_rows >= 0; // >= 0 pois 0 afetadas ainda é sucesso
+    $ok = $stmt->affected_rows >= 0;
     $stmt->close();
     return $ok;
 }
 
 /**
  * Verifica se o email já pertence a OUTRO usuário.
- * Evita duplicatas ao editar o perfil.
  */
 function emailDuplicado(mysqli $db, string $email, int $idAtual): bool
 {
@@ -94,12 +83,9 @@ function emailDuplicado(mysqli $db, string $email, int $idAtual): bool
 
 /**
  * Troca a senha do usuário.
- * Valida a senha atual antes de salvar a nova (com hash bcrypt).
- * Retorna uma string de erro ou null em caso de sucesso.
  */
 function trocarSenha(mysqli $db, int $id, string $hashAtual, string $atual, string $nova, string $conf): ?string
 {
-    // password_verify compara a senha digitada com o hash salvo no banco
     if (!password_verify($atual, $hashAtual)) {
         return 'Senha atual incorreta.';
     }
@@ -110,18 +96,16 @@ function trocarSenha(mysqli $db, int $id, string $hashAtual, string $atual, stri
         return 'A confirmação não coincide com a nova senha.';
     }
 
-    // password_hash aplica bcrypt — NUNCA salve senha em texto puro
     $hash = password_hash($nova, PASSWORD_DEFAULT);
     $stmt = $db->prepare("UPDATE usuarios SET senha = ? WHERE id_usuario = ?");
     $stmt->bind_param('si', $hash, $id);
     $stmt->execute();
     $stmt->close();
-    return null; // null = sem erro = sucesso
+    return null;
 }
 
 /**
  * Retorna todos os empréstimos do usuário com título e autor do livro.
- * O INNER JOIN conecta emprestimos → livros → autores para trazer o nome do autor.
  */
 function buscarEmprestimos(mysqli $db, int $idUsuario): array
 {
@@ -142,7 +126,6 @@ function buscarEmprestimos(mysqli $db, int $idUsuario): array
     $stmt->execute();
     $res = $stmt->get_result();
     $lista = [];
-    // Cada chamada a fetch_assoc() retorna uma linha; null indica fim do resultado
     while ($row = $res->fetch_assoc()) {
         $lista[] = $row;
     }
@@ -152,22 +135,14 @@ function buscarEmprestimos(mysqli $db, int $idUsuario): array
 
 // ═══════════════════════════════════════════════════════════════
 // BLOCO 3 — PROCESSAMENTO DAS ACTIONS (POST)
-// A página envia formulários para si mesma (action="perfil.php").
-// O campo oculto <input name="action"> diz qual operação executar.
-// Todo processamento acontece ANTES do HTML para poder redirecionar.
 // ═══════════════════════════════════════════════════════════════
-$erro    = null;  // mensagem de erro a exibir
-$sucesso = null;  // mensagem de sucesso a exibir
+$erro    = null;
+$sucesso = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    // Qual botão/formulário foi submetido?
     $action = $_POST['action'] ?? '';
 
-    // ── Action: editar perfil ────────────────────────────────
     if ($action === 'editar_perfil') {
-
-        // trim() remove espaços extras; filter_var valida o e-mail
         $dados = [
             'nome'            => trim($_POST['nome']            ?? ''),
             'sobrenome'       => trim($_POST['sobrenome']       ?? ''),
@@ -177,7 +152,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'data_nascimento' => trim($_POST['data_nascimento'] ?? ''),
         ];
 
-        // Validações básicas antes de tocar no banco
         if (empty($dados['nome']) || empty($dados['email'])) {
             $erro = 'Nome e e-mail são obrigatórios.';
         } elseif (!filter_var($dados['email'], FILTER_VALIDATE_EMAIL)) {
@@ -190,16 +164,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // ── Action: trocar senha ─────────────────────────────────
     if ($action === 'trocar_senha') {
-
-        // Busca o hash atual do banco para validar a senha digitada
         $usuarioTemp = buscarUsuario($mysqli, $idUsuario);
         $erroSenha   = trocarSenha(
             $mysqli,
             $idUsuario,
-            $usuarioTemp['senha'],          // hash salvo no banco
-            $_POST['senha_atual']   ?? '',  // digitada pelo usuário
+            $usuarioTemp['senha'],
+            $_POST['senha_atual']   ?? '',
             $_POST['senha_nova']    ?? '',
             $_POST['senha_conf']    ?? ''
         );
@@ -214,24 +185,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ═══════════════════════════════════════════════════════════════
 // BLOCO 4 — LEITURA DOS DADOS PARA EXIBIÇÃO
-// Feito APÓS o processamento para refletir qualquer atualização
-// que acabou de acontecer na mesma requisição.
 // ═══════════════════════════════════════════════════════════════
 $usuario     = buscarUsuario($mysqli, $idUsuario);
 $emprestimos = buscarEmprestimos($mysqli, $idUsuario);
 
-// Segurança extra: sessão inválida
 if (!$usuario) {
     session_destroy();
     header('Location: login.php');
     exit;
 }
 
-// Helper: htmlspecialchars() escapa caracteres especiais para evitar XSS
-// ao imprimir dados do banco diretamente no HTML.
 $h = fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
 
-// Mapa de cores/labels para o status do empréstimo
 $statusMap = [
     'Pendente'  => ['label' => 'Pendente',  'class' => 'text-info'],
     'Devolvido' => ['label' => 'Devolvido', 'class' => 'text-success'],
@@ -244,17 +209,21 @@ $statusMap = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Andrômeda · Meu Perfil</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="../assets/css/catalogo.css">
     <link rel="stylesheet" href="../assets/css/perfil.css">
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════
-     NAVEGAÇÃO LATERAL — mesma do catálogo.php
-════════════════════════════════════════════════════════════ -->
+<div id="webgl"></div>
+<div id="grain"></div>
+<div id="reticle"></div>
+<div id="reticle-dot"></div>
+
 <nav id="nav">
     <div class="nav-logo">
         <span class="nav-logo-text">Andrômeda</span>
@@ -271,118 +240,90 @@ $statusMap = [
     </div>
 </nav>
 
-<!-- ═══════════════════════════════════════════════════════════
-     CONTEÚDO PRINCIPAL
-════════════════════════════════════════════════════════════ -->
-<div class="container py-5" style="margin-left: 80px;">
+<main class="main-wrapper py-5">
 
-    <!-- Mensagens de feedback (sucesso ou erro) -->
     <?php if ($sucesso): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fa-solid fa-circle-check me-2"></i><?= $h($sucesso) ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-success alert-dismissible fade show align-items-center w-100" role="alert" style="max-width: 1100px;">
+            <i class="fa-solid fa-circle-check fs-5 me-3 text-info"></i> 
+            <div><?= $h($sucesso) ?></div>
+            <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="alert"></button>
         </div>
     <?php endif; ?>
     <?php if ($erro): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fa-solid fa-triangle-exclamation me-2"></i><?= $h($erro) ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-danger alert-dismissible fade show align-items-center w-100" role="alert" style="max-width: 1100px;">
+            <i class="fa-solid fa-triangle-exclamation fs-5 me-3 text-danger"></i>
+            <div><?= $h($erro) ?></div>
+            <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="alert"></button>
         </div>
     <?php endif; ?>
 
-    <!-- ── Cabeçalho do perfil ─────────────────────────────── -->
-    <div class="perfil-header">
-        <div class="perfil-user-info">
+    <div class="perfil-header w-100">
+        <div class="perfil-user-info d-flex align-items-center w-100">
             <div class="perfil-user-avatar">
                 <i class="fa-solid fa-user-astronaut"></i>
             </div>
-            <div class="perfil-user-details">
+            <div class="perfil-user-details ms-3">
                 <h2><?= $h($usuario['nome']) ?> <?= $h($usuario['sobrenome']) ?></h2>
                 <div class="perfil-user-meta">
-                    @<?= $h($usuario['username']) ?> · <?= $h($usuario['nivel_acesso']) ?>
+                    @<?= $h($usuario['username']) ?> <span class="mx-2 text-secondary">·</span> <?= $h($usuario['nivel_acesso']) ?>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ── Abas de navegação interna ──────────────────────── -->
-    <!--
-        As abas usam o sistema de tabs do Bootstrap.
-        Cada <a data-bs-target="#..."> mostra um painel <div id="...">.
-        Não há redirecionamento — tudo ocorre no cliente via JS do Bootstrap.
-    -->
-    <ul class="nav nav-tabs mb-4" id="perfilTabs" role="tablist">
+    <ul class="nav nav-tabs mb-4 w-100" id="perfilTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-dados" type="button">
-                <i class="fa-solid fa-id-card me-1"></i> Dados Pessoais
+                <i class="fa-solid fa-id-card me-2"></i> Dados Pessoais
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-senha" type="button">
-                <i class="fa-solid fa-lock me-1"></i> Alterar Senha
+                <i class="fa-solid fa-lock me-2"></i> Alterar Senha
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-emprestimos" type="button">
-                <i class="fa-solid fa-bookmark me-1"></i> Meus Empréstimos
-                <!-- Badge com total de empréstimos -->
-                <span class="badge bg-secondary ms-1"><?= count($emprestimos) ?></span>
+                <i class="fa-solid fa-bookmark me-2"></i> Meus Empréstimos
+                <span class="badge bg-secondary ms-2"><?= count($emprestimos) ?></span>
             </button>
         </li>
     </ul>
 
-    <div class="tab-content">
-
-        <!-- ════════════════════════════════════════════════════
-             ABA 1 — DADOS PESSOAIS
-             Formulário que envia POST para perfil.php
-             com action="editar_perfil"
-        ═════════════════════════════════════════════════════ -->
-        <div class="tab-pane fade show active" id="tab-dados">
+    <div class="tab-content pb-5 w-100">
+        <div class="tab-pane fade show active w-100" id="tab-dados">
             <div class="form-card">
-                <!--
-                    action="perfil.php" → envia para a própria página
-                    method="POST"       → dados vão no corpo da requisição (não na URL)
-                -->
                 <form action="perfil.php" method="POST">
-                    <!-- Campo oculto que identifica qual action processar no PHP -->
                     <input type="hidden" name="action" value="editar_perfil">
 
-                    <div class="row g-3">
+                    <div class="row g-4">
                         <div class="col-md-6">
                             <label class="form-label">Nome</label>
-                            <!-- value= preenche o campo com o dado atual do banco -->
-                            <input type="text" name="nome" class="form-control"
-                                   value="<?= $h($usuario['nome']) ?>" required>
+                            <input type="text" name="nome" class="form-control" value="<?= $h($usuario['nome']) ?>" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Sobrenome</label>
-                            <input type="text" name="sobrenome" class="form-control"
-                                   value="<?= $h($usuario['sobrenome']) ?>">
+                            <input type="text" name="sobrenome" class="form-control" value="<?= $h($usuario['sobrenome']) ?>">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">E-mail</label>
-                            <input type="email" name="email" class="form-control"
-                                   value="<?= $h($usuario['email']) ?>" required>
+                            <input type="email" name="email" class="form-control" value="<?= $h($usuario['email']) ?>" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Telefone</label>
-                            <input type="text" name="telefone" class="form-control"
-                                   value="<?= $h($usuario['telefone']) ?>">
+                            <input type="text" name="telefone" class="form-control" value="<?= $h($usuario['telefone']) ?>">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Data de Nascimento</label>
-                            <input type="date" name="data_nascimento" class="form-control"
-                                   value="<?= $h($usuario['data_nascimento']) ?>">
+                            <input type="date" name="data_nascimento" class="form-control" value="<?= $h($usuario['data_nascimento']) ?>">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Endereço</label>
-                            <input type="text" name="endereco" class="form-control"
-                                   value="<?= $h($usuario['endereco']) ?>">
+                            <input type="text" name="endereco" class="form-control" value="<?= $h($usuario['endereco']) ?>">
                         </div>
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-floppy-disk me-1"></i> Salvar Alterações
+                        <div class="col-12 mt-4 pt-4 border-top border-secondary border-opacity-25">
+                            <button type="submit" class="btn btn-primary btn-glow">
+                                <i class="fa-solid fa-floppy-disk me-2"></i> Salvar Alterações
                             </button>
                         </div>
                     </div>
@@ -390,149 +331,98 @@ $statusMap = [
             </div>
         </div>
 
-        <!-- ════════════════════════════════════════════════════
-             ABA 2 — ALTERAR SENHA
-             Formulário separado com action="trocar_senha"
-        ═════════════════════════════════════════════════════ -->
-        <div class="tab-pane fade" id="tab-senha">
-            <div class="form-card" style="max-width: 450px;">
+        <div class="tab-pane fade w-100" id="tab-senha">
+            <div class="form-card" style="max-width: 550px;">
                 <form action="perfil.php" method="POST">
                     <input type="hidden" name="action" value="trocar_senha">
 
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label class="form-label">Senha Atual</label>
-                        <!--
-                            type="password" → o browser não mostra o texto digitado
-                            autocomplete="current-password" → hint para gerenciadores de senha
-                        -->
-                        <input type="password" name="senha_atual" class="form-control"
-                               autocomplete="current-password" required>
+                        <input type="password" name="senha_atual" class="form-control" autocomplete="current-password" required>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label class="form-label">Nova Senha</label>
-                        <input type="password" name="senha_nova" class="form-control"
-                               autocomplete="new-password" minlength="6" required>
-                        <div class="form-text">Mínimo de 6 caracteres.</div>
+                        <input type="password" name="senha_nova" class="form-control" autocomplete="new-password" minlength="6" required>
+                        <div class="form-text mt-2"><i class="fa-solid fa-circle-info me-1"></i> Mínimo de 6 caracteres.</div>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label class="form-label">Confirmar Nova Senha</label>
-                        <input type="password" name="senha_conf" class="form-control"
-                               autocomplete="new-password" minlength="6" required>
+                        <input type="password" name="senha_conf" class="form-control" autocomplete="new-password" minlength="6" required>
                     </div>
-                    <button type="submit" class="btn btn-warning">
-                        <i class="fa-solid fa-key me-1"></i> Alterar Senha
-                    </button>
+                    <div class="mt-4 pt-4 border-top border-secondary border-opacity-25">
+                        <button type="submit" class="btn btn-warning btn-glow w-100">
+                            <i class="fa-solid fa-shield-halved me-2"></i> Atualizar Credenciais
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
 
-        <!-- ════════════════════════════════════════════════════
-             ABA 3 — EMPRÉSTIMOS
-             Apenas leitura: tabela com os dados do banco
-        ═════════════════════════════════════════════════════ -->
-        <div class="tab-pane fade" id="tab-emprestimos">
-
+        <div class="tab-pane fade w-100" id="tab-emprestimos">
             <?php if (empty($emprestimos)): ?>
-                <!-- Exibido quando o array de empréstimos está vazio -->
-                <div class="form-card text-center" style="padding: 48px;">
-                    <i class="fa-solid fa-inbox mb-3" style="font-size: 3rem; color: var(--text-dim);"></i>
-                    <p class="text-muted" style="margin-bottom: 0;">
-                        Você ainda não possui empréstimos registrados.
+                <div class="form-card text-center py-5">
+                    <div class="empty-state-icon mx-auto mb-4">
+                        <i class="fa-solid fa-satellite-dish"></i>
+                    </div>
+                    <p class="text-muted text-uppercase" style="font-family: var(--font-mono); letter-spacing: 1.5px; margin-bottom: 0;">
+                        Nenhum registro de exploração no acervo.
                     </p>
                 </div>
-
             <?php else: ?>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Título</th>
-                                <th>Autor</th>
-                                <th>Retirada</th>
-                                <th>Devolução</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($emprestimos as $emp): ?>
-                                <?php
-                                    // Determina o status real baseado na data de devolução
-                                    $statusReal = $emp['status_emprestimo'];
-                                    
-                                    // Se o campo status estiver vazio ou nulo, calcula baseado na devolução
-                                    if (empty($statusReal)) {
-                                        if ($emp['data_devolucao'] && $emp['data_devolucao'] != '0000-00-00') {
-                                            $statusReal = 'Devolvido';
-                                        } else {
-                                            $statusReal = 'Pendente';
-                                        }
-                                    }
-                                    
-                                    // Pega o label e a classe CSS do status atual
-                                    $st = $statusMap[$statusReal] ?? ['label' => $statusReal, 'class' => 'text-secondary'];
-                                ?>
+                <div class="form-card p-0 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead style="background: rgba(42, 162, 246, 0.05);">
                                 <tr>
-                                    <td><small style="color: var(--text-dim);"><?= $h($emp['id_emprestimo']) ?></small></td>
-                                    <td><?= $h($emp['titulo']) ?></td>
-                                    <td><?= $h($emp['nome_autor']) ?></td>
-                                    <!-- date() reformata a data do MySQL (Y-m-d) para o padrão BR (d/m/Y) -->
-                                    <td><?= date('d/m/Y', strtotime($emp['data_emprestimo'])) ?></td>
-                                    <td>
-                                        <?php if ($emp['data_devolucao'] && $emp['data_devolucao'] != '0000-00-00'): ?>
-                                            <?= date('d/m/Y', strtotime($emp['data_devolucao'])) ?>
-                                        <?php else: ?>
-                                            <span class="text-muted">—</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <span class="<?= $st['class'] ?> fw-semibold">
-                                            <i class="fa-solid fa-circle" style="font-size: .4rem; margin-right: 6px;"></i>
-                                            <?= $h($st['label']) ?>
-                                        </span>
-                                    </td>
+                                    <th class="ps-4"># ID</th>
+                                    <th>Título / Obra</th>
+                                    <th>Autor</th>
+                                    <th>Retirada</th>
+                                    <th>Devolução</th>
+                                    <th class="pe-4">Status</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($emprestimos as $emp): ?>
+                                    <?php
+                                        $statusReal = $emp['status_emprestimo'];
+                                        if (empty($statusReal)) {
+                                            $statusReal = ($emp['data_devolucao'] && $emp['data_devolucao'] != '0000-00-00') ? 'Devolvido' : 'Pendente';
+                                        }
+                                        $st = $statusMap[$statusReal] ?? ['label' => $statusReal, 'class' => 'text-secondary'];
+                                    ?>
+                                    <tr>
+                                        <td class="ps-4"><span style="color: var(--text-dim); font-family: var(--font-mono);"><?= $h($emp['id_emprestimo']) ?></span></td>
+                                        <td class="fw-bold" style="color: var(--am3); font-size: 1.05rem;"><?= $h($emp['titulo']) ?></td>
+                                        <td style="color: var(--text-dim);"><?= $h($emp['nome_autor']) ?></td>
+                                        <td style="font-family: var(--font-mono); font-size: 0.85rem;"><i class="fa-regular fa-calendar me-2 text-muted"></i><?= date('d/m/Y', strtotime($emp['data_emprestimo'])) ?></td>
+                                        <td style="font-family: var(--font-mono); font-size: 0.85rem;">
+                                            <?php if ($emp['data_devolucao'] && $emp['data_devolucao'] != '0000-00-00'): ?>
+                                                <i class="fa-solid fa-check text-success me-2"></i><?= date('d/m/Y', strtotime($emp['data_devolucao'])) ?>
+                                            <?php else: ?>
+                                                <span class="text-muted">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="pe-4">
+                                            <span class="<?= $st['class'] ?> fw-semibold badge-status">
+                                                <i class="fa-solid fa-circle" style="font-size: .4rem; margin-right: 6px; vertical-align: middle;"></i>
+                                                <?= $h($st['label']) ?>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             <?php endif; ?>
-
-        </div><!-- /tab-emprestimos -->
-
-    </div><!-- /tab-content -->
-</div><!-- /container -->
+        </div>
+    </div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
-// ═══════════════════════════════════════════════════════════════
-// BLOCO JS — Reabre a aba correta após submit do formulário
-//
-// Problema: após o POST, a página recarrega e sempre abre a aba 1.
-// Solução: antes de enviar, salva qual aba está ativa no localStorage.
-//          Ao carregar, verifica e reabre a aba salva.
-// ═══════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-    const CHAVE = 'perfil_aba_ativa';
-
-    // Reabre a aba salva (se houver)
-    const abaSalva = localStorage.getItem(CHAVE);
-    if (abaSalva) {
-        const btn = document.querySelector(`[data-bs-target="${abaSalva}"]`);
-        if (btn) new bootstrap.Tab(btn).show();
-        localStorage.removeItem(CHAVE); // limpa após usar
-    }
-
-    // Antes de qualquer submit, salva qual aba está aberta
-    document.querySelectorAll('form').forEach(form => {
-        form.addEventListener('submit', () => {
-            const abaAtiva = document.querySelector('.nav-link.active[data-bs-target]');
-            if (abaAtiva) localStorage.setItem(CHAVE, abaAtiva.dataset.bsTarget);
-        });
-    });
-});
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="../assets/js/perfil.js"></script>
 
 </body>
 </html>

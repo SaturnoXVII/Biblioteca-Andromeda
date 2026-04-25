@@ -1,0 +1,390 @@
+/* ═══════════════════════════════════════════════════
+   DESIGN AVALON PREMIUM (Perfil, Scrollbar & Fundo)
+═══════════════════════════════════════════════════ */
+:root {
+  --am: #2aa2f6;
+  --am2: #14599d;
+  --am3: #e0f0ff;
+  --accent: #a960ee;
+  --void: #020305;
+  --void-glass: rgba(5, 10, 18, 0.65);
+  --border-hairline: rgba(42, 162, 246, 0.15);
+  --border-glow: rgba(42, 162, 246, 0.3);
+  --text-main: #fdfcf0;
+  --text-dim: rgba(253, 252, 240, 0.5);
+  --font-display: "Cormorant Garamond", serif;
+  --font-sans: "Montserrat", sans-serif;
+  --font-mono: "Space Mono", monospace;
+}
+
+html,
+body {
+  /* IMPORTANTE: O fundo real agora é pintado pelo Three.js. 
+       Isso resolve o bug de transparência e AdditiveBlending. */
+  background-color: transparent !important;
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  min-height: 100%;
+  margin: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  cursor: none !important;
+}
+
+/* ── BARRA DE ROLAGEM PERSONALIZADA (SCROLLBAR) ──── */
+::-webkit-scrollbar {
+  width: 14px;
+  background: var(--void);
+}
+::-webkit-scrollbar-track {
+  background: rgba(2, 3, 5, 0.95);
+  border-left: 1px solid var(--border-hairline);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--am2), var(--am));
+  border-radius: 12px;
+  border: 4px solid rgba(2, 3, 5, 0.95);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--am), var(--accent));
+}
+
+/* ── LAYOUT CORRIGIDO (Fim do espaço em branco) ──── */
+.main-wrapper {
+  margin-left: 80px !important;
+  width: calc(100% - 80px) !important;
+  max-width: none !important;
+  padding: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 10;
+}
+
+.perfil-header,
+.nav-tabs,
+.tab-content,
+.alert {
+  max-width: 1100px;
+}
+
+/* ── Efeitos de Fundo 3D (Z-Index Ajustado) ──────── */
+#webgl,
+#grain {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+#webgl {
+  z-index: 0;
+} /* Agora as estrelas aparecem sem conflito */
+#grain {
+  z-index: 1;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+}
+
+/* ── Cursor Magnético Animado ────────────── */
+#reticle,
+#reticle-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate3d(-50%, -50%, 0);
+  will-change: transform;
+}
+#reticle {
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--am);
+  border-radius: 50%;
+  transition:
+    width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    height 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    border-color 0.3s;
+}
+#reticle.hover {
+  width: 55px;
+  height: 55px;
+  border-color: var(--am3);
+  border-style: dashed;
+  background: rgba(42, 162, 246, 0.05);
+}
+#reticle-dot {
+  width: 4px;
+  height: 4px;
+  background: var(--am3);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--am);
+}
+
+/* ── Header do Perfil (Glass Card Refinado) ──────── */
+.perfil-header {
+  background: linear-gradient(
+    135deg,
+    rgba(10, 25, 45, 0.6),
+    rgba(2, 3, 5, 0.8)
+  );
+  border: 1px solid var(--border-glow);
+  border-radius: 20px;
+  margin-bottom: 40px;
+  padding: 40px;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+.perfil-header::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--am), transparent);
+  opacity: 0.5;
+}
+.perfil-user-avatar {
+  width: 85px;
+  height: 85px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(42, 162, 246, 0.2), transparent);
+  border: 2px solid var(--am);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2.2rem;
+  color: var(--am3);
+  box-shadow: 0 0 30px rgba(42, 162, 246, 0.3);
+}
+.perfil-user-details h2 {
+  font-family: var(--font-display);
+  color: #fff;
+  font-size: 2.6rem;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+  text-shadow: 0 2px 15px rgba(0, 0, 0, 0.8);
+}
+.perfil-user-meta {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--am);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* ── Estilização das Abas (Tabs) ─────────── */
+.nav-tabs {
+  border-bottom: 1px solid var(--border-hairline);
+  margin-bottom: 35px;
+  gap: 15px;
+  border-radius: 0;
+  border: none;
+}
+.nav-tabs .nav-link {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  background: transparent;
+  border: none;
+  padding: 15px 25px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+.nav-tabs .nav-link::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--am);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+.nav-tabs .nav-link:hover {
+  color: var(--am3);
+}
+.nav-tabs .nav-link.active {
+  color: var(--am3);
+  background: rgba(42, 162, 246, 0.05);
+  text-shadow: 0 0 10px rgba(42, 162, 246, 0.5);
+}
+.nav-tabs .nav-link.active::after {
+  width: 100%;
+}
+.badge.bg-secondary {
+  background: var(--am) !important;
+  color: var(--void);
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(42, 162, 246, 0.5);
+}
+
+/* ── Formulários e Inputs ────────────────── */
+.form-card {
+  background: var(--void-glass);
+  border: 1px solid var(--border-hairline);
+  border-radius: 20px;
+  padding: 45px;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+.form-label {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+}
+
+.form-control {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid var(--border-hairline) !important;
+  color: var(--text-main) !important;
+  padding: 14px 20px !important;
+  border-radius: 10px !important;
+  transition: all 0.3s ease;
+  font-size: 0.95rem !important;
+}
+.form-control:focus {
+  background: rgba(42, 162, 246, 0.08) !important;
+  border-color: var(--am) !important;
+  box-shadow:
+    0 0 20px rgba(42, 162, 246, 0.3),
+    inset 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+}
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 30px #080d14 inset !important;
+  -webkit-text-fill-color: var(--text-main) !important;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.7);
+  cursor: none;
+}
+
+/* ── Botões Premium ──────────────────────── */
+.btn {
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-size: 0.85rem;
+  transition: all 0.3s;
+}
+.btn-glow {
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--am), var(--am2));
+  border: none;
+  color: white;
+  box-shadow: 0 5px 15px rgba(42, 162, 246, 0.2);
+}
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(42, 162, 246, 0.6);
+}
+.btn-warning {
+  background: transparent;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+}
+.btn-warning:hover {
+  background: var(--accent);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(169, 96, 238, 0.5);
+}
+
+/* ── Tabela de Empréstimos ───────────────── */
+.table {
+  --bs-table-bg: transparent;
+  color: var(--text-main);
+  margin-bottom: 0;
+}
+.table thead th {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  border-bottom: 1px solid rgba(42, 162, 246, 0.3);
+  padding: 18px 10px;
+  font-weight: normal;
+}
+.table tbody tr {
+  transition: background 0.3s;
+}
+.table tbody tr:hover {
+  background: rgba(42, 162, 246, 0.08);
+}
+.table td {
+  padding: 22px 10px;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 0.95rem;
+}
+
+.badge-status {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.text-info {
+  color: var(--am) !important;
+  text-shadow: 0 0 12px rgba(42, 162, 246, 0.6);
+}
+.text-success {
+  color: #00e676 !important;
+  text-shadow: 0 0 12px rgba(0, 230, 118, 0.5);
+}
+.text-danger {
+  color: #ff3366 !important;
+  text-shadow: 0 0 12px rgba(255, 51, 102, 0.5);
+}
+
+.empty-state-icon {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(42, 162, 246, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-hairline);
+  box-shadow: inset 0 0 20px rgba(42, 162, 246, 0.1);
+}
+.alert {
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  padding: 16px 20px;
+  font-weight: 500;
+  display: flex;
+  border: 1px solid transparent;
+}
+.alert-success {
+  background: rgba(42, 162, 246, 0.1);
+  border-color: var(--am);
+  color: var(--am3);
+  box-shadow: 0 0 20px rgba(42, 162, 246, 0.15);
+}
+.alert-danger {
+  background: rgba(255, 51, 102, 0.1);
+  border-color: #ff3366;
+  color: #ffb3c6;
+  box-shadow: 0 0 20px rgba(255, 51, 102, 0.15);
+}
