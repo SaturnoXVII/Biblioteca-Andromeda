@@ -2,21 +2,20 @@
 session_start();
 include "../config/conexao.php";
 
+$erro_msg = ""; // Variável adicionada para guardar o erro e não quebrar o layout
 
 // http://10.68.49.32/Biblioteca-Andromeda/
 
 // Mudanças que fiz no banco:
 // - Mudei o tipo da coluna senha para varchar(255) para poder armazenar as senhas criptografadas usando password_hash, que gera uma string mais longa do que 6 caracteres.
 
-
-
 // verifica se as informações foram enviadas
 if (isset($_POST['email']) && isset($_POST['senha'])) {
     // se as informações enviadas estiverem vazias, mostra essa mensagem
     if (empty($_POST['email'])) {
-        echo "Preencha seu e-mail";
+        $erro_msg = "Preencha seu e-mail";
     } else if (empty($_POST['senha'])) {
-        echo "Preencha sua senha";
+        $erro_msg = "Preencha sua senha";
     }
     // senão, ele armazena as informações em variáveis e continua o processo de login
     else {
@@ -56,16 +55,14 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
                 exit;
             } else {
                 // Se a senha estiver incorreta
-                echo "Falha ao logar! E-mail ou senha incorretos";
+                $erro_msg = "Acesso Negado: Credenciais inválidas.";
             }
         } else {
             // Se o e-mail não for encontrado
-            echo "Falha ao logar! E-mail ou senha incorretos";
+            $erro_msg = "Acesso Negado: Credenciais inválidas.";
         }
     }
 }
-
-
 ?>
 
 <!DOCTYPE html>
@@ -103,7 +100,6 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
 
     <main class="auth-wrapper">
 
-        <!-- ── Título flutuante cinematográfico ── -->
         <div class="auth-float-title">
             <h1 class="auth-brand">Andrômeda</h1>
             <span class="auth-brand-line"></span>
@@ -117,6 +113,13 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
             </div>
 
             <form method="POST" action="">
+
+                <?php if (!empty($erro_msg)): ?>
+                    <div class="auth-error reveal-error">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span><?php echo htmlspecialchars($erro_msg); ?></span>
+                    </div>
+                <?php endif; ?>
 
                 <div class="form-group">
                     <input type="text" name="email" placeholder="E-mail" required class="form-control interactable">
@@ -146,6 +149,6 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
-    <script src="../assets/js/login.js"></script>
+    <script src="../assets/js/animelogin.js"></script>
 </body>
 </html>

@@ -146,6 +146,6 @@ if (isset($_POST['email'])) {
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
-    <script src="../assets/js/cadleitores.js"></script>
+    <script src="../assets/js/animecadleitores.js"></script>
 </body>
 </html>

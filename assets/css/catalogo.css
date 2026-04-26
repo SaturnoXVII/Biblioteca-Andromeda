@@ -2,12 +2,12 @@
            VARIÁVEIS — AVALON / AZUL CÓSMICO (UI)
         ═══════════════════════════════════════════════════ */
 :root {
-  --am: #2aa2f6; /* Azul Cósmico (Cyan) */
-  --am2: #14599d; /* Deep Blue */
-  --am3: #e0f0ff; /* Starlight White */
-  --accent: #a960ee; /* Purple Nebula */
+  --am: #2aa2f6;
+  --am2: #14599d;
+  --am3: #e0f0ff;
+  --accent: #a960ee;
 
-  --void: #020305; /* Preto Profundo (Espaço Real) */
+  --void: #020305;
   --void-glass: rgba(2, 3, 5, 0.75);
   --border-hairline: rgba(42, 162, 246, 0.15);
 
@@ -224,7 +224,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════
-           NAVBAR (DESIGN ELEGANTE SEM ÍCONE DE LOGO)
+           NAVBAR
         ═══════════════════════════════════════════════════ */
 #nav {
   position: fixed;
@@ -349,7 +349,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════
-           HUD TOPO & MENU HAMBÚRGUER
+           HUD TOPO & MENU
         ═══════════════════════════════════════════════════ */
 #hud {
   position: fixed;
@@ -703,6 +703,12 @@ body {
   transform: translateY(-2px);
   border-color: var(--am);
 }
+.btn-prim:disabled {
+  opacity: 0.45;
+  cursor: not-allowed !important;
+  transform: none;
+  box-shadow: none;
+}
 .btn-sec {
   padding: 12px 16px;
   background: rgba(255, 255, 255, 0.02);
@@ -738,6 +744,7 @@ body {
   box-shadow: -15px 0 40px rgba(0, 0, 0, 0.8);
   display: flex;
   flex-direction: column;
+  max-height: calc(100vh - 32px);
 }
 #book-panel.open {
   right: 16px;
@@ -748,6 +755,7 @@ body {
   height: 180px;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 .bp-art canvas {
   width: 100%;
@@ -788,6 +796,10 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--am) transparent;
+  min-height: 0;
 }
 .bp-header {
   display: flex;
@@ -822,7 +834,6 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  margin-bottom: auto;
   padding: 16px;
   background: rgba(255, 255, 255, 0.02);
   border-radius: 8px;
@@ -842,6 +853,87 @@ body {
   color: var(--text-main);
   font-weight: 500;
 }
+
+/* ── SINOPSE NO PAINEL LATERAL ── */
+.bp-synopsis-wrap {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-hairline);
+  animation: synopseFadeIn 0.4s ease both;
+}
+
+.bp-synopsis-label {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--am);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bp-synopsis-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-hairline);
+}
+
+.bp-synopsis-text {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: var(--text-dim);
+  font-style: italic;
+  display: -webkit-box;
+  --webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+.bp-synopsis-text.expanded {
+  --webkit-line-clamp: unset;
+}
+
+.bp-synopsis-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 0.65rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--am);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: none !important;
+  background: none;
+  border: none;
+  padding: 0;
+  transition: opacity 0.2s;
+  opacity: 0.7;
+}
+.bp-synopsis-toggle:hover {
+  opacity: 1;
+}
+.bp-synopsis-toggle i {
+  font-size: 0.6rem;
+  transition: transform 0.3s;
+}
+.bp-synopsis-toggle.open i {
+  transform: rotate(180deg);
+}
+
+.bp-synopsis-empty {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-style: normal;
+  opacity: 0.45;
+  letter-spacing: 0.02em;
+}
+
 .bp-actions {
   display: flex;
   gap: 12px;
@@ -973,6 +1065,70 @@ body {
   font-size: 1rem;
   color: var(--text-dim);
   font-family: var(--font-sans);
+}
+
+/* ── SINOPSE NO MODAL ── */
+.md-synopsis-section {
+  margin-bottom: 36px;
+  padding: 28px 32px;
+  background: rgba(42, 162, 246, 0.03);
+  border: 1px solid var(--border-hairline);
+  border-left: 3px solid var(--am);
+  border-radius: 0 8px 8px 0;
+  position: relative;
+  overflow: hidden;
+  animation: synopseFadeIn 0.5s ease 0.2s both;
+}
+.md-synopsis-section::before {
+  content: '"';
+  position: absolute;
+  top: -20px;
+  left: 16px;
+  font-family: var(--font-display);
+  font-size: 8rem;
+  color: var(--am);
+  opacity: 0.06;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.md-synopsis-label {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--am);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.md-synopsis-label i {
+  font-size: 0.7rem;
+}
+
+.md-synopsis-text {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  line-height: 1.85;
+  color: rgba(253, 252, 240, 0.75);
+  font-style: italic;
+  position: relative;
+  z-index: 1;
+}
+
+.md-synopsis-empty {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-style: normal;
+  opacity: 0.5;
+}
+
+@keyframes synopseFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .md-grid {
@@ -1188,9 +1344,26 @@ body {
 .ed-hero-author {
   font-size: 1rem;
   color: var(--text-dim);
-  margin-bottom: 30px;
+  margin-bottom: 16px;
   font-style: italic;
 }
+
+/* ── SINOPSE NO HERO EDITORIAL ── */
+.ed-hero-synopsis {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--text-dim);
+  font-style: italic;
+  margin-bottom: 24px;
+  display: -webkit-box;
+  --webkit-line-clamp: 3;
+  --webkit-box-orient: vertical;
+  overflow: hidden;
+  border-left: 2px solid rgba(42, 162, 246, 0.3);
+  padding-left: 16px;
+}
+
 .ed-hero-meta {
   display: flex;
   gap: 12px;
@@ -1269,14 +1442,17 @@ body {
   overflow: hidden;
   transition:
     transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.4s;
+    box-shadow 0.4s,
+    border-color 0.3s;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-hairline);
 }
 .ed-book-card:hover {
   transform: translateY(-10px);
   z-index: 10;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8),
+              0 0 0 1px rgba(42, 162, 246, 0.3),
+              0 0 30px rgba(42, 162, 246, 0.08);
   border-color: var(--am);
 }
 .ed-book-art {
@@ -1296,11 +1472,60 @@ body {
 .ed-book-card:hover .ed-book-art canvas {
   opacity: 1;
 }
+
+/* ── OVERLAY DE SINOPSE NOS CARDS EDITORIAIS ── */
+.ed-book-synopsis-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(2,3,5,0.98) 0%, rgba(2,3,5,0.85) 45%, rgba(2,3,5,0.4) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 20px 16px 16px;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  z-index: 3;
+}
+.ed-book-card:hover .ed-book-synopsis-overlay {
+  opacity: 1;
+}
+
+.ed-book-synopsis-snippet {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: rgba(253, 252, 240, 0.8);
+  font-style: italic;
+  display: -webkit-box;
+  --webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.ed-book-cta {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--am);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ed-book-cta::after {
+  content: '→';
+  transition: transform 0.2s;
+}
+.ed-book-card:hover .ed-book-cta::after {
+  transform: translateX(4px);
+}
+
 .ed-book-status {
   position: absolute;
   top: 12px;
   right: 12px;
-  z-index: 2;
+  z-index: 4;
 }
 .ed-book-info {
   position: absolute;
@@ -1309,6 +1534,7 @@ body {
   right: 0;
   padding: 30px 20px 20px;
   background: linear-gradient(to top, rgba(2, 3, 5, 1), transparent);
+  z-index: 2;
 }
 .ed-book-info h4 {
   font-family: var(--font-display);

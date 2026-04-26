@@ -265,18 +265,42 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .btn-prim:active { transform: translateY(0); }
 
-/* ── Erro PHP ────────────────────────────────────── */
+/* ── Erro PHP (Estilo HUD Sci-Fi) ────────────────── */
 .auth-error {
-  margin-top: 16px; padding: 12px 16px;
-  border-radius: 8px;
-  background: rgba(255,51,102,.08);
-  border: 1px solid rgba(255,51,102,.25);
-  color: #ff3366;
-  font-family: var(--font-mono); font-size: .7rem; letter-spacing: .05em;
-  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px 18px;
+  border-radius: 4px; /* Bordas um pouco mais retas dão um ar mais digital */
+  background: linear-gradient(90deg, rgba(255, 51, 102, 0.15) 0%, rgba(255, 51, 102, 0.02) 100%);
+  border: 1px solid rgba(255, 51, 102, 0.15);
+  border-left: 3px solid #ff3366; /* Barra lateral de destaque */
+  color: #ff9eb5; /* Um vermelho mais suave/rosado para leitura confortável */
+  font-family: var(--font-mono); 
+  font-size: 0.65rem; /* Levemente menor para caber melhor */
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase; /* Deixa com mais cara de painel de navegação */
+  display: flex; 
+  align-items: center; 
+  gap: 14px;
+  box-shadow: 0 4px 20px rgba(255, 51, 102, 0.08);
+  backdrop-filter: blur(8px);
 }
-.auth-error i { opacity: .8; }
 
+.auth-error i { 
+  color: #ff3366;
+  font-size: 0.85rem;
+  text-shadow: 0 0 12px rgba(255, 51, 102, 0.8); /* Brilho neon no ícone */
+}
+
+/* Mantém a animação existente */
+.reveal-error {
+  animation: slideDownError 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideDownError {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 /* ── Links ──────────────────────────────────────── */
 .auth-links {
   margin-top: 22px; text-align: center;
@@ -312,3 +336,4 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .auth-wrapper { align-items: flex-start; padding: 40px 16px 40px; justify-content: flex-start; }
   .auth-float-title { margin-bottom: 20px; }
 }
+
