@@ -1,9 +1,3 @@
-/**
- * ╔══════════════════════════════════════════════════════════════════════════╗
- * ║  INTRO CINEMATOGRÁFICO — v5.0 FINAL CUT · IMAX · RELATIVISTIC            ║
- * ║  GALÁXIA ESPIRAL CIENTÍFICA + KERR BLACK HOLE VOLUMÉTRICO + WORMHOLE     ║
- * ╚══════════════════════════════════════════════════════════════════════════╝
- */
 
 document.addEventListener("DOMContentLoaded", () => {
   // ─── ELEMENTOS DOM ──────────────────────────────────────────────
@@ -67,13 +61,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // queda/gravidade 18-27s, túnel 27-36s, blackout 36-39s,
     // renascimento 39-45s e clímax/final 45-54.6s.
     MUSIC_OFFSET: 0,
-    TDE_INTERLUDE: 18.2,
-    CHAOS_START: 27.0,
-    IMAX_OPEN: 29.25,
-    TRAVEL_START: 32.7,
+    TDE_INTERLUDE: 18.65,
+    CHAOS_START: 27.85,
+    IMAX_OPEN: 29.75,
+    TRAVEL_START: 33.10,
     SILENCE_START: 36.8,
-    REBIRTH_START: 39.4,
-    FINAL_PULL: 45.0,
+    REBIRTH_START: 39.25,
+    FINAL_PULL: 45.45,
     END: 54.55,
   };
 
@@ -237,6 +231,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const camRoll = { z: 0 };
   const shakeCtrl = { lf: 0, mf: 0, hf: 0 };
   const breathCtrl = { amp: 0 };
+  const exposureCtrl = { value: 1.04 };
+  const cinemaCtrl = { dutch: 0, drift: 0, parallax: 0 };
 
   const ST = {
     started: false,
@@ -416,10 +412,10 @@ document.addEventListener("DOMContentLoaded", () => {
     alpha: true,
   });
   renderer.setSize(VIEW.w, VIEW.h);
-  renderer.setPixelRatio(Math.min(_dpr, TIER === "LOW" ? 1.0 : 1.7));
+  renderer.setPixelRatio(Math.min(_dpr, TIER === "LOW" ? 0.92 : TIER === "MID" ? 1.35 : 1.58));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  renderer.toneMappingExposure = exposureCtrl.value;
   mount.appendChild(renderer.domElement);
 
   // ═══════════════════════════════════════════════════════════════
@@ -1072,33 +1068,58 @@ document.addEventListener("DOMContentLoaded", () => {
   // ═══════════════════════════════════════════════════════════════
   function buildBlackHole() {
     const grp = new THREE.Group();
-    grp.name = "KerrBlackHole_TRUE_3D_Rig_SEM_OVERLAY_2D";
-    // Inclinação base: evita a leitura chapada/frontal e deixa o disco claramente tridimensional.
-    grp.rotation.set(-0.18, 0.22, 0.035);
+    grp.name = "KerrBlackHole_v6_HYPERREAL_JWST_REBUILD";
+    // Rebuild total: horizonte 3D oblíquo + disco volumétrico + lente gravitacional + poeira JWST.
+    grp.rotation.set(-0.255, 0.34, 0.035);
+    grp.scale.setScalar(1.0);
     scene.add(grp);
 
-    const BH_SEG = TIER === "LOW" ? 64 : 128;
-    const TORUS_SEG = TIER === "LOW" ? 192 : 512;
-    const GAS_COUNT = TIER === "LOW" ? 190 : TIER === "MID" ? 360 : 560;
+    const BH_SEG = TIER === "LOW" ? 72 : TIER === "MID" ? 112 : 160;
+    const TORUS_SEG = TIER === "LOW" ? 220 : TIER === "MID" ? 360 : 560;
+    const GAS_COUNT = TIER === "LOW" ? 240 : TIER === "MID" ? 520 : 900;
+    const DUST_COUNT = TIER === "LOW" ? 3600 : TIER === "MID" ? 7600 : 12600;
+    const MAGIC_COUNT = TIER === "LOW" ? 1400 : TIER === "MID" ? 3200 : 5200;
 
     const ctrl = {
       reveal: 0,
       spin: 0,
       plunge: 0,
       diskLift: 0,
+      majesty: 0,
+      iris: 0,
     };
 
     const COL = {
-      blue: new THREE.Vector3(0.22, 0.52, 1.0),
-      cyan: new THREE.Vector3(0.50, 0.84, 1.0),
-      amber: new THREE.Vector3(1.0, 0.54, 0.12),
-      gold: new THREE.Vector3(1.0, 0.78, 0.34),
-      red: new THREE.Vector3(0.86, 0.09, 0.035),
-      violet: new THREE.Vector3(0.62, 0.26, 1.0),
+      abyss: new THREE.Vector3(0.0, 0.0, 0.0),
+      blue: new THREE.Vector3(0.16, 0.42, 1.0),
+      cyan: new THREE.Vector3(0.42, 0.82, 1.0),
+      ice: new THREE.Vector3(0.70, 0.92, 1.0),
+      amber: new THREE.Vector3(1.0, 0.48, 0.08),
+      gold: new THREE.Vector3(1.0, 0.76, 0.28),
+      whiteGold: new THREE.Vector3(1.0, 0.93, 0.68),
+      red: new THREE.Vector3(0.78, 0.06, 0.018),
+      violet: new THREE.Vector3(0.62, 0.22, 1.0),
+      magenta: new THREE.Vector3(1.0, 0.24, 0.64),
     };
 
-    function makeVolumeShellMaterial(colorA, colorB, fresnelPower, alphaMul) {
-      return regMat(
+    function shaderHeader() {
+      return `
+        precision highp float;
+        float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);}
+        float noise(vec2 p){
+          vec2 i=floor(p),f=fract(p),u=f*f*(3.0-2.0*f);
+          return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),u.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),u.x),u.y);
+        }
+        float fbm(vec2 p){
+          float f=0.0,w=0.5;
+          for(int i=0;i<5;i++){f+=w*noise(p);p*=2.07;w*=0.5;}
+          return f;
+        }
+      `;
+    }
+
+    function makeVolumeShellMaterial(name, colorA, colorB, colorC, fresnelPower, alphaMul) {
+      const mat = regMat(
         new THREE.ShaderMaterial({
           transparent: true,
           depthWrite: false,
@@ -1110,24 +1131,29 @@ document.addEventListener("DOMContentLoaded", () => {
             uOpacity: { value: 0 },
             uSpin: { value: 0 },
             uPlunge: { value: 0 },
+            uMajesty: { value: 0 },
             uColorA: { value: colorA },
             uColorB: { value: colorB },
+            uColorC: { value: colorC },
           },
           vertexShader: `
-            uniform float uT, uSpin, uPlunge;
+            uniform float uT, uSpin, uPlunge, uMajesty;
             varying vec3 vN;
             varying vec3 vView;
             varying vec3 vObj;
+            varying float vRad;
             void main(){
               vec3 p = position;
               float a = atan(p.z, p.x);
               float r = length(p.xz);
-              float twist = sin(r * 0.34 + uT * 0.55 + a * 2.0) * 0.035 * uSpin;
+              float drag = sin(a * 3.0 + r * 0.42 - uT * (0.35 + uSpin * 0.75));
+              float twist = drag * 0.042 * (0.3 + uSpin + uPlunge * 0.7);
               float c = cos(twist);
               float s = sin(twist);
               p.xz = mat2(c,-s,s,c) * p.xz;
-              p *= 1.0 + 0.012 * sin(uT * 1.4 + a * 5.0) * uPlunge;
+              p *= 1.0 + 0.018 * sin(uT * 1.2 + a * 5.0) * (uPlunge * 0.45 + uMajesty * 0.25);
               vObj = p;
+              vRad = r;
               vec4 mv = modelViewMatrix * vec4(p, 1.0);
               vView = -mv.xyz;
               vN = normalize(normalMatrix * normal);
@@ -1135,39 +1161,42 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           `,
           fragmentShader: `
-            precision highp float;
-            uniform float uT, uOpacity, uSpin, uPlunge;
-            uniform vec3 uColorA, uColorB;
+            ${shaderHeader()}
+            uniform float uT, uOpacity, uSpin, uPlunge, uMajesty;
+            uniform vec3 uColorA, uColorB, uColorC;
             varying vec3 vN;
             varying vec3 vView;
             varying vec3 vObj;
+            varying float vRad;
             void main(){
               vec3 n = normalize(vN);
               vec3 v = normalize(vView);
               vec3 o = normalize(vObj);
               float mu = max(dot(n, v), 0.0);
               float fresnel = pow(1.0 - mu, ${fresnelPower.toFixed(2)});
-              float equator = exp(-abs(o.y) * 9.0);
-              float polar = 1.0 - exp(-pow(abs(o.y) * 2.8, 1.65));
+              float equator = exp(-abs(o.y) * 9.2);
+              float polar = smoothstep(0.16, 0.92, abs(o.y));
               float a = atan(vObj.z, vObj.x);
-              float frameDrag = 0.5 + 0.5 * sin(a * 8.0 - uT * (1.0 + uSpin * 2.6) + length(vObj.xz) * 0.95);
-              float turbulence = 0.5 + 0.5 * sin(a * 17.0 - uT * (2.1 + uSpin * 4.0) + equator * 2.5);
-              float shear = mix(0.82, 1.24, frameDrag * 0.68 + turbulence * 0.32);
-              float opticalDepth = equator * (1.35 + uPlunge * 0.52) + fresnel * 0.58;
-              float synch = pow(max(dot(normalize(vec3(-o.z, 0.0, o.x) + 1e-5), v), 0.0), 2.6) * (0.28 + equator * 0.72);
-              float pulse = 0.92 + 0.08 * sin(uT * 1.55 + a * 2.8 + turbulence * 1.4);
-              vec3 col = mix(uColorA, uColorB, clamp(frameDrag * 0.76 + polar * 0.24, 0.0, 1.0));
-              col += uColorB * fresnel * 0.18;
-              col += mix(uColorA, uColorB, 0.5) * synch * 0.55;
-              float alpha = (opticalDepth * 0.40 + fresnel * 0.36 + equator * 0.10 + synch * 0.22) * shear * pulse * uOpacity * ${alphaMul.toFixed(2)} * (0.44 + uPlunge * 0.32);
-              gl_FragColor = vec4(col * alpha * 1.22, alpha * 0.38);
+              float filament = fbm(vec2(a * 1.9 - uT * (0.10 + uSpin * 0.12), length(vObj.xz) * 0.55 + uT * 0.035));
+              float kerr = 0.5 + 0.5 * sin(a * 9.0 - uT * (1.2 + uSpin * 3.3) + filament * 3.5);
+              float caustic = pow(max(0.0, sin(a * 13.0 + length(vObj) * 0.9 - uT * (1.5 + uSpin * 2.0))), 8.0);
+              float synch = pow(max(dot(normalize(vec3(-o.z, 0.0, o.x) + 1e-5), v), 0.0), 2.4) * (0.30 + equator * 0.70);
+              vec3 col = mix(uColorA, uColorB, clamp(kerr * 0.74 + polar * 0.22, 0.0, 1.0));
+              col = mix(col, uColorC, caustic * (0.52 + uMajesty * 0.38));
+              col += uColorC * fresnel * 0.26 + uColorB * synch * 0.56;
+              float pulse = 0.90 + 0.10 * sin(uT * 1.85 + filament * 6.28318 + a * 2.0);
+              float alpha = (equator * 0.34 + fresnel * 0.42 + caustic * 0.18 + synch * 0.20) * pulse;
+              alpha *= uOpacity * ${alphaMul.toFixed(2)} * (0.46 + uPlunge * 0.32 + uMajesty * 0.22);
+              gl_FragColor = vec4(col * alpha * 1.45, alpha * 0.52);
             }
           `,
         }),
       );
+      mat.name = name;
+      return mat;
     }
 
-    // 1) Horizonte de eventos: esfera física 3D, escura, oblíqua e com rim Fresnel.
+    // 1) HORIZONTE DE EVENTOS — 3D puro, oblíquo e com borda de lente.
     const horizonMat = regMat(
       new THREE.ShaderMaterial({
         transparent: false,
@@ -1177,9 +1206,10 @@ document.addEventListener("DOMContentLoaded", () => {
           uT: { value: 0 },
           uSpin: { value: 0 },
           uPlunge: { value: 0 },
+          uMajesty: { value: 0 },
         },
         vertexShader: `
-          uniform float uT, uSpin, uPlunge;
+          uniform float uT, uSpin, uPlunge, uMajesty;
           varying vec3 vN;
           varying vec3 vView;
           varying vec3 vObj;
@@ -1187,11 +1217,12 @@ document.addEventListener("DOMContentLoaded", () => {
             vec3 p = position;
             float a = atan(p.z, p.x);
             float r = length(p.xz);
-            float twist = (1.0 - smoothstep(0.0, ${EH_R.toFixed(3)}, r)) * (0.10 + uSpin * 0.08);
-            float c = cos(twist);
-            float s = sin(twist);
+            float oblateness = 0.74 + 0.035 * sin(a * 2.0 - uT * 0.8) * (uSpin + uPlunge * 0.6);
+            p.y *= oblateness;
+            float frame = (1.0 - smoothstep(0.0, ${EH_R.toFixed(3)}, r)) * (0.11 + uSpin * 0.09 + uMajesty * 0.04);
+            float c = cos(frame);
+            float s = sin(frame);
             p.xz = mat2(c,-s,s,c) * p.xz;
-            p.y *= 0.82 + 0.035 * sin(uT * 1.3 + a * 4.0) * uPlunge;
             vObj = p;
             vec4 mv = modelViewMatrix * vec4(p, 1.0);
             vView = -mv.xyz;
@@ -1201,54 +1232,62 @@ document.addEventListener("DOMContentLoaded", () => {
         `,
         fragmentShader: `
           precision highp float;
-          uniform float uT, uSpin, uPlunge;
+          uniform float uT, uSpin, uPlunge, uMajesty;
           varying vec3 vN;
           varying vec3 vView;
           varying vec3 vObj;
           void main(){
             vec3 n = normalize(vN);
             vec3 v = normalize(vView);
-            float fresnel = pow(1.0 - max(dot(n, v), 0.0), 3.4);
-            float equator = exp(-abs(normalize(vObj).y) * 20.0);
+            vec3 o = normalize(vObj);
+            float fresnel = pow(1.0 - max(dot(n, v), 0.0), 3.15);
+            float equator = exp(-abs(o.y) * 18.0);
             float a = atan(vObj.z, vObj.x);
-            float kerr = equator * (0.45 + 0.55 * sin(a * 8.0 - uT * (2.0 + uSpin * 3.0)));
-            vec3 abyss = vec3(0.0, 0.0, 0.0);
-            vec3 coldEdge = vec3(0.015, 0.032, 0.055) * fresnel * (0.5 + uSpin);
-            vec3 redEdge = vec3(0.12, 0.028, 0.008) * kerr * 0.045 * (0.35 + uPlunge);
-            gl_FragColor = vec4(abyss + coldEdge + redEdge, 1.0);
+            float photonLeak = equator * (0.5 + 0.5 * sin(a * 10.0 - uT * (2.0 + uSpin * 3.2)));
+            vec3 edgeBlue = vec3(0.025, 0.055, 0.095) * fresnel * (0.75 + uMajesty * 0.7);
+            vec3 edgeRed = vec3(0.16, 0.028, 0.005) * photonLeak * 0.050 * (0.45 + uPlunge + uMajesty * 0.4);
+            vec3 abyss = vec3(0.0);
+            gl_FragColor = vec4(abyss + edgeBlue + edgeRed, 1.0);
           }
         `,
       }),
     );
     const horizon = new THREE.Mesh(new THREE.SphereGeometry(EH_R, BH_SEG, BH_SEG), horizonMat);
-    horizon.name = "EventHorizon_Oblate_3D";
-    horizon.scale.set(1.24, 0.80, 1.24);
-    horizon.renderOrder = 9;
+    horizon.name = "EventHorizon_KerrOblate_TRUE_3D";
+    horizon.scale.set(1.36, 0.86, 1.36);
+    horizon.renderOrder = 14;
     grp.add(horizon);
 
-    // 2) Ergosfera e halos: volumes esféricos reais envolvendo o centro.
-    const ergosphereMat = makeVolumeShellMaterial(COL.blue, COL.amber, 2.1, 1.0);
-    const ergosphere = new THREE.Mesh(new THREE.SphereGeometry(BH_SCALE.ERGOSPHERE, BH_SEG, BH_SEG), ergosphereMat);
-    ergosphere.name = "Ergosphere_Volume_3D";
-    ergosphere.scale.set(1.38, 0.68, 1.38);
-    ergosphere.renderOrder = 4;
+    // 2) Volumes de lente/ergosfera/corona — inspirados em caustics e frame dragging.
+    const shadowMat = makeVolumeShellMaterial("ShadowAureole_EHT_OrangeBlue_3D", COL.red, COL.amber, COL.ice, 2.55, 0.72);
+    const shadowAura = new THREE.Mesh(new THREE.SphereGeometry(EH_R * 2.22, BH_SEG, BH_SEG), shadowMat);
+    shadowAura.name = "BlackHoleShadow_Aureole_TRUE_3D";
+    shadowAura.scale.set(1.42, 0.56, 1.42);
+    shadowAura.renderOrder = 9;
+    grp.add(shadowAura);
+
+    const ergosphereMat = makeVolumeShellMaterial("Ergosphere_FrameDragging_Caustic_3D", COL.blue, COL.violet, COL.gold, 2.0, 1.05);
+    const ergosphere = new THREE.Mesh(new THREE.SphereGeometry(BH_SCALE.ERGOSPHERE * 1.08, BH_SEG, BH_SEG), ergosphereMat);
+    ergosphere.name = "Ergosphere_KerrVolume_TRUE_3D";
+    ergosphere.scale.set(1.62, 0.62, 1.62);
+    ergosphere.renderOrder = 5;
     grp.add(ergosphere);
 
-    const coronaMat = makeVolumeShellMaterial(COL.cyan, COL.blue, 2.85, 0.82);
-    const corona = new THREE.Mesh(new THREE.SphereGeometry(DISK_OUT * 0.46, BH_SEG, BH_SEG), coronaMat);
-    corona.name = "Corona_Spherical_Volume_3D";
-    corona.scale.set(1.02, 0.42, 1.02);
-    corona.renderOrder = 2;
+    const coronaMat = makeVolumeShellMaterial("SynchrotronCorona_BlueGold_3D", COL.cyan, COL.blue, COL.whiteGold, 2.9, 0.86);
+    const corona = new THREE.Mesh(new THREE.SphereGeometry(DISK_OUT * 0.48, BH_SEG, BH_SEG), coronaMat);
+    corona.name = "SynchrotronCorona_Spherical_TRUE_3D";
+    corona.scale.set(1.08, 0.40, 1.08);
+    corona.renderOrder = 3;
     grp.add(corona);
 
-    const haloMat = makeVolumeShellMaterial(COL.violet, COL.cyan, 4.0, 0.62);
-    const halo = new THREE.Mesh(new THREE.SphereGeometry(DISK_OUT * 0.72, BH_SEG, BH_SEG), haloMat);
-    halo.name = "Gravitational_Lensing_Halo_3D";
-    halo.scale.set(1.12, 0.46, 1.12);
-    halo.renderOrder = 1;
+    const haloMat = makeVolumeShellMaterial("OuterLensingHalo_JWSTViolet_3D", COL.violet, COL.cyan, COL.magenta, 4.15, 0.56);
+    const halo = new THREE.Mesh(new THREE.SphereGeometry(DISK_OUT * 0.84, BH_SEG, BH_SEG), haloMat);
+    halo.name = "OuterLensingHalo_TRUE_3D";
+    halo.scale.set(1.18, 0.40, 1.18);
+    halo.renderOrder = 2;
     grp.add(halo);
 
-    // 3) Disco de acreção: camadas tubulares 3D, não RingGeometry/PlaneGeometry.
+    // 3) Disco de acreção volumétrico — camadas de torus com cor de plasma, Doppler e redshift.
     const diskMat = regMat(
       new THREE.ShaderMaterial({
         transparent: true,
@@ -1262,9 +1301,10 @@ document.addEventListener("DOMContentLoaded", () => {
           uSpin: { value: 0 },
           uPlunge: { value: 0 },
           uDiskLift: { value: 0 },
+          uMajesty: { value: 0 },
         },
         vertexShader: `
-          uniform float uT, uSpin, uPlunge, uDiskLift;
+          uniform float uT, uSpin, uPlunge, uDiskLift, uMajesty;
           varying vec3 vPos;
           varying vec3 vNormalW;
           varying float vRad;
@@ -1274,13 +1314,14 @@ document.addEventListener("DOMContentLoaded", () => {
             vec3 p = position;
             float rad = length(p.xy);
             float a = atan(p.y, p.x);
-            float shear = (2.2 / (pow(max(rad, 0.2), 0.72))) * uSpin;
+            float shear = (2.85 / (pow(max(rad, 0.2), 0.76))) * (0.55 + uSpin);
             float c = cos(shear);
             float s = sin(shear);
             p.xy = mat2(c,-s,s,c) * p.xy;
-            float verticalWave = sin(a * 3.0 + uT * 0.9) * 0.035 + sin(a * 7.0 - uT * 1.25) * 0.018;
-            p.z += verticalWave * (0.4 + uSpin + uDiskLift);
-            p.z *= 1.0 + uDiskLift * 0.85 + uPlunge * 1.15;
+            float breathing = sin(a * 3.0 + uT * 0.72) * 0.055 + sin(a * 8.0 - uT * 1.36) * 0.026;
+            float knot = sin(rad * 1.62 - uT * 1.1 + a * 4.0) * 0.018;
+            p.z += (breathing + knot) * (0.45 + uSpin + uDiskLift + uMajesty * 0.36);
+            p.z *= 1.0 + uDiskLift * 1.25 + uPlunge * 1.45;
             vPos = p;
             vRad = rad;
             vTube = abs(p.z);
@@ -1290,93 +1331,91 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         `,
         fragmentShader: `
-          precision highp float;
-          uniform float uT, uOpacity, uSpin, uPlunge, uDiskLift;
+          ${shaderHeader()}
+          uniform float uT, uOpacity, uSpin, uPlunge, uDiskLift, uMajesty;
           varying vec3 vPos;
           varying vec3 vNormalW;
           varying float vRad;
           varying float vTube;
           varying float vLayer;
-
-          float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);}
-          float n(vec2 p){
-            vec2 i=floor(p),f=fract(p),u=f*f*(3.0-2.0*f);
-            return mix(mix(h(i),h(i+vec2(1,0)),u.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),u.x),u.y);
-          }
-          float fbm(vec2 p){
-            float f=0.0,w=0.5;
-            for(int i=0;i<6;i++){f+=w*n(p);p*=2.07;w*=0.5;}
-            return f;
-          }
           void main(){
             float rad = max(vRad, 0.001);
             float a = atan(vPos.y, vPos.x);
-            float orbit = 2.9 / (pow(rad, 1.45) + 0.15);
-            float swirl = a + uT * orbit * (1.0 + uSpin * 0.85);
+            float orbit = 3.65 / (pow(rad, 1.43) + 0.12);
+            float swirl = a + uT * orbit * (1.0 + uSpin * 0.95);
 
-            float beta = clamp(0.70 * sqrt(${DISK_IN.toFixed(3)} / rad), 0.0, 0.94);
-            float cosTheta = sin(a - 0.60);
-            float doppler = sqrt(1.0 - beta * beta) / max(0.075, 1.0 - beta * cosTheta);
-            float beam = pow(doppler, 3.15);
+            float beta = clamp(0.74 * sqrt(${DISK_IN.toFixed(3)} / rad), 0.0, 0.965);
+            float cosTheta = sin(a - 0.55);
+            float doppler = sqrt(max(0.0, 1.0 - beta * beta)) / max(0.058, 1.0 - beta * cosTheta);
+            float beam = pow(doppler, 3.35);
 
-            float inner = smoothstep(${DISK_IN.toFixed(3)}, ${(DISK_IN + 0.65).toFixed(3)}, rad);
-            float outer = 1.0 - smoothstep(${(DISK_OUT - 3.8).toFixed(3)}, ${DISK_OUT.toFixed(3)}, rad);
+            float inner = smoothstep(${DISK_IN.toFixed(3)}, ${(DISK_IN + 0.42).toFixed(3)}, rad);
+            float outer = 1.0 - smoothstep(${(DISK_OUT - 4.8).toFixed(3)}, ${DISK_OUT.toFixed(3)}, rad);
             float radialMask = inner * outer;
 
-            float tubeCore = exp(-pow(vTube * 3.1, 2.0));
-            float tubeGlow = exp(-pow(vTube * 0.86, 2.0)) * 0.22;
-            float volume = max(tubeCore, tubeGlow * (0.7 + uDiskLift));
+            float tubeCore = exp(-pow(vTube * 2.76, 2.0));
+            float tubeHalo = exp(-pow(vTube * 0.67, 2.0)) * (0.22 + uDiskLift * 0.20 + uPlunge * 0.18);
+            float volume = max(tubeCore, tubeHalo);
 
-            vec2 uv = vec2(rad * 1.12, swirl * 1.18);
-            float gas = fbm(uv + vec2(uT * 0.025, -uT * 0.04));
-            float filaments = fbm(uv * 3.4 + vec2(-uT * 0.10, uT * 0.03));
-            float rings = 0.5 + 0.5 * sin(rad * 5.4 - uT * 0.58 + filaments * 3.0);
-            rings *= 0.5 + 0.5 * sin(rad * 13.5 + gas * 4.0);
+            vec2 uv = vec2(rad * 1.05, swirl * 1.18);
+            float gas = fbm(uv + vec2(uT * 0.026, -uT * 0.044));
+            float fine = fbm(uv * 3.5 + vec2(-uT * 0.12, uT * 0.05));
+            float magnetic = fbm(vec2(swirl * 3.0 - uT * 0.18, rad * 2.25 + fine * 1.7));
+            float rings = 0.5 + 0.5 * sin(rad * 5.8 - uT * 0.62 + fine * 3.5);
+            rings *= 0.55 + 0.45 * sin(rad * 15.5 + gas * 5.0 - uT * 0.33);
+            float clumps = pow(max(0.0, magnetic), 2.1);
 
-            float density = radialMask * volume * (gas * 0.60 + filaments * 0.32 + rings * 0.22);
-            float temp = clamp(${(DISK_IN * 1.55).toFixed(3)} / rad, 0.0, 1.0) * doppler;
-            float gravRed = smoothstep(${DISK_IN.toFixed(3)}, ${(DISK_IN + 3.5).toFixed(3)}, rad);
+            float density = radialMask * volume * (gas * 0.48 + fine * 0.34 + rings * 0.22 + clumps * 0.28);
+            float temp = clamp(${(DISK_IN * 1.68).toFixed(3)} / rad, 0.0, 1.0) * doppler;
+            float gravRed = smoothstep(${DISK_IN.toFixed(3)}, ${(DISK_IN + 3.8).toFixed(3)}, rad);
 
-            vec3 red = vec3(0.50, 0.045, 0.020);
-            vec3 amber = vec3(1.0, 0.42, 0.09);
-            vec3 gold = vec3(1.0, 0.78, 0.34);
+            vec3 red = vec3(0.42, 0.030, 0.012);
+            vec3 amber = vec3(1.0, 0.38, 0.055);
+            vec3 gold = vec3(1.0, 0.76, 0.24);
+            vec3 whiteHot = vec3(1.0, 0.94, 0.72);
             vec3 blue = vec3(0.46, 0.76, 1.0);
-            vec3 col = mix(red, amber, smoothstep(0.08, 0.36, temp));
-            col = mix(col, gold, smoothstep(0.30, 0.62, temp));
-            col = mix(col, blue, smoothstep(0.66, 1.12, temp));
-            col *= mix(1.38, 0.72, gravRed) * beam;
+            vec3 col = mix(red, amber, smoothstep(0.05, 0.31, temp));
+            col = mix(col, gold, smoothstep(0.22, 0.56, temp));
+            col = mix(col, whiteHot, smoothstep(0.45, 0.78, temp));
+            col = mix(col, blue, smoothstep(0.78, 1.18, temp));
+            col *= mix(1.30, 0.66, gravRed) * clamp(beam, 0.40, 4.9);
 
-            float photonLift = exp(-pow((rad - ${PHOTON_R.toFixed(3)}) * 1.5, 2.0)) * (0.28 + uPlunge * 0.8);
-            col += vec3(0.52,0.82,1.0) * photonLift;
+            float photonLift = exp(-pow((rad - ${PHOTON_R.toFixed(3)}) * 1.85, 2.0)) * (0.42 + uPlunge * 1.05 + uMajesty * 0.48);
+            float innerFire = exp(-pow((rad - ${(DISK_IN + 0.34).toFixed(3)}) * 1.65, 2.0)) * (0.24 + uSpin * 0.34);
+            col += vec3(0.62,0.88,1.0) * photonLift;
+            col += vec3(1.0,0.72,0.24) * innerFire;
+            col += vec3(0.52,0.30,1.0) * clumps * 0.12 * uMajesty;
 
-            float alpha = density * uOpacity * (0.78 + beam * 0.18);
-            gl_FragColor = vec4(col * alpha * 2.35, alpha);
+            float alpha = density * uOpacity * (0.76 + beam * 0.13 + uMajesty * 0.14);
+            gl_FragColor = vec4(col * alpha * 2.70, alpha);
           }
         `,
       }),
     );
 
     const disk = new THREE.Group();
-    disk.name = "AccretionDisk_MULTI_TORUS_3D";
+    disk.name = "AccretionDisk_ThickPlasma_MULTI_TORUS_TRUE_3D";
     const diskLayers = [
-      { major: (DISK_IN + 3.2) * 0.5, minor: 1.25, z: 0.34, sx: 1.02, sy: 0.94 },
-      { major: (DISK_IN + DISK_OUT) * 0.35, minor: 2.25, z: 0.26, sx: 1.05, sy: 0.90 },
-      { major: (DISK_IN + DISK_OUT) * 0.50, minor: 3.65, z: 0.19, sx: 1.08, sy: 0.86 },
-      { major: (DISK_IN + DISK_OUT) * 0.66, minor: 4.85, z: 0.145, sx: 1.12, sy: 0.82 },
+      { major: (DISK_IN + 2.40) * 0.50, minor: 0.70, z: 0.30, sx: 1.04, sy: 0.92, rx: Math.PI / 2.10 },
+      { major: (DISK_IN + 5.40) * 0.54, minor: 1.30, z: 0.24, sx: 1.08, sy: 0.88, rx: Math.PI / 2.07 },
+      { major: (DISK_IN + DISK_OUT) * 0.33, minor: 2.15, z: 0.19, sx: 1.12, sy: 0.84, rx: Math.PI / 2.03 },
+      { major: (DISK_IN + DISK_OUT) * 0.49, minor: 3.50, z: 0.145, sx: 1.18, sy: 0.78, rx: Math.PI / 1.99 },
+      { major: (DISK_IN + DISK_OUT) * 0.66, minor: 4.85, z: 0.115, sx: 1.25, sy: 0.72, rx: Math.PI / 1.96 },
     ];
     diskLayers.forEach((layer, i) => {
-      const geo = new THREE.TorusGeometry(layer.major, layer.minor, 52, TORUS_SEG);
+      const geo = new THREE.TorusGeometry(layer.major, layer.minor, TIER === "LOW" ? 38 : 54, TORUS_SEG);
       geo.scale(layer.sx, layer.sy, layer.z);
       const mesh = new THREE.Mesh(geo, diskMat);
-      mesh.name = `AccretionDiskLayer_${i + 1}_3D`;
-      mesh.rotation.x = Math.PI / 2.05;
-      mesh.rotation.z = i * 0.08;
-      mesh.renderOrder = 3;
+      mesh.name = `AccretionDisk_VolumetricLayer_${i + 1}`;
+      mesh.rotation.x = layer.rx;
+      mesh.rotation.y = (i - 2) * 0.012;
+      mesh.rotation.z = i * 0.105;
+      mesh.renderOrder = 4;
       disk.add(mesh);
     });
     grp.add(disk);
 
-    // 4) Arco lenteado: tubos curvos em 3D, passando atrás/por cima do horizonte.
+    // 4) Disco lenteado — arcos tubulares acima/atrás do horizonte como nas visualizações relativísticas da NASA.
     const lensedDiskMat = regMat(
       new THREE.ShaderMaterial({
         transparent: true,
@@ -1389,16 +1428,17 @@ document.addEventListener("DOMContentLoaded", () => {
           uOpacity: { value: 0 },
           uSpin: { value: 0 },
           uPlunge: { value: 0 },
+          uMajesty: { value: 0 },
         },
         vertexShader: `
-          uniform float uT, uSpin, uPlunge;
+          uniform float uT, uSpin, uPlunge, uMajesty;
           varying vec3 vPos;
           varying vec2 vUv;
           void main(){
             vec3 p = position;
             float a = atan(p.z, p.x);
-            p.y += sin(a * 2.0 + uT * 0.55) * 0.025 * (0.4 + uSpin);
-            p *= 1.0 + 0.018 * sin(uT * 1.2 + a * 3.0) * uPlunge;
+            p.y += sin(a * 2.0 + uT * 0.55) * 0.025 * (0.5 + uSpin + uMajesty);
+            p *= 1.0 + 0.018 * sin(uT * 1.2 + a * 3.0) * (uPlunge + uMajesty * 0.35);
             vPos = p;
             vUv = uv;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
@@ -1406,56 +1446,60 @@ document.addEventListener("DOMContentLoaded", () => {
         `,
         fragmentShader: `
           precision highp float;
-          uniform float uT, uOpacity, uSpin, uPlunge;
+          uniform float uT, uOpacity, uSpin, uPlunge, uMajesty;
           varying vec3 vPos;
           varying vec2 vUv;
           void main(){
             float a = atan(vPos.z, vPos.x);
             float axial = smoothstep(0.0, 1.0, vUv.x);
-            float approach = 0.5 + 0.5 * sin(a - 0.42);
-            float pulse = 0.72 + 0.28 * sin(a * 9.5 - uT * (2.2 + uSpin * 2.8));
-            float tube = pow(1.0 - abs(vUv.y - 0.5) * 2.0, 2.1);
-            float caustic = pow(sin(vUv.x * 3.14159265), 1.55) * pow(1.0 - abs(vUv.y - 0.5) * 2.0, 0.8);
-            float doppler = mix(0.68, 1.42, pow(approach, 1.2));
-            vec3 receding = vec3(1.0, 0.38, 0.06);
-            vec3 hot = vec3(1.0, 0.74, 0.22);
-            vec3 approaching = vec3(0.56, 0.84, 1.0);
-            vec3 col = mix(receding, hot, smoothstep(0.0, 0.46, axial));
+            float approach = 0.5 + 0.5 * sin(a - 0.46);
+            float pulse = 0.74 + 0.26 * sin(a * 10.5 - uT * (2.35 + uSpin * 2.9));
+            float tube = pow(1.0 - abs(vUv.y - 0.5) * 2.0, 2.25);
+            float caustic = pow(sin(vUv.x * 3.14159265), 1.35) * pow(1.0 - abs(vUv.y - 0.5) * 2.0, 0.72);
+            float split = smoothstep(0.18, 0.78, caustic + approach * 0.22);
+            float doppler = mix(0.58, 1.68, pow(approach, 1.25));
+            vec3 receding = vec3(1.0, 0.28, 0.035);
+            vec3 hot = vec3(1.0, 0.76, 0.20);
+            vec3 approaching = vec3(0.55, 0.86, 1.0);
+            vec3 col = mix(receding, hot, smoothstep(0.0, 0.48, axial));
             col = mix(col, approaching, pow(approach, 1.15));
-            col += vec3(0.72, 0.90, 1.0) * caustic * 0.35;
-            float alpha = tube * (0.58 + caustic * 0.95) * pulse * uOpacity * (0.72 + uPlunge * 0.35);
-            gl_FragColor = vec4(col * doppler * alpha * 4.9, alpha * 0.9);
+            col += vec3(0.82, 0.95, 1.0) * caustic * (0.42 + uMajesty * 0.45);
+            col += vec3(0.66, 0.33, 1.0) * split * 0.10 * uMajesty;
+            float alpha = tube * (0.56 + caustic * 1.05) * pulse * uOpacity * (0.76 + uPlunge * 0.42 + uMajesty * 0.18);
+            gl_FragColor = vec4(col * doppler * alpha * 5.25, alpha * 0.92);
           }
         `,
       }),
     );
 
     const lensedDisk = new THREE.Group();
-    lensedDisk.name = "LensedAccretionArcs_TUBE_3D";
-    function makeArcTube(radius, yLift, zDepth, startA, endA, tubeR, name, tilt) {
+    lensedDisk.name = "LensedAccretionArcs_Relativistic_TUBES_TRUE_3D";
+    function makeArcTube(radius, yLift, zDepth, startA, endA, tubeR, name, tilt, ySquash = 1.0) {
       const pts = [];
-      const STEPS = 94;
+      const STEPS = TIER === "LOW" ? 78 : 112;
       for (let i = 0; i <= STEPS; i++) {
         const k = i / STEPS;
         const a = startA + (endA - startA) * k;
-        const y = Math.sin(k * Math.PI) * yLift;
-        pts.push(new THREE.Vector3(Math.cos(a) * radius, y, Math.sin(a) * radius + zDepth));
+        const y = Math.sin(k * Math.PI) * yLift * ySquash;
+        const ripple = Math.sin(k * Math.PI * 5.0) * 0.035;
+        pts.push(new THREE.Vector3(Math.cos(a) * radius, y + ripple, Math.sin(a) * radius + zDepth));
       }
       const curve = new THREE.CatmullRomCurve3(pts);
-      const geo = new THREE.TubeGeometry(curve, STEPS, tubeR, 14, false);
+      const geo = new THREE.TubeGeometry(curve, STEPS, tubeR, TIER === "LOW" ? 10 : 16, false);
       const mesh = new THREE.Mesh(geo, lensedDiskMat);
       mesh.name = name;
       mesh.rotation.x = tilt;
-      mesh.renderOrder = 8;
+      mesh.renderOrder = 12;
       lensedDisk.add(mesh);
       return mesh;
     }
-    makeArcTube(DISK_OUT * 0.46, 1.25, -0.35, -Math.PI * 0.95, Math.PI * 0.95, 0.040, "BackLensedArc_Main_3D", 0.12);
-    makeArcTube(DISK_OUT * 0.37, 0.95, -0.20, -Math.PI * 0.78, Math.PI * 0.82, 0.026, "BackLensedArc_Inner_3D", 0.10);
-    makeArcTube(DISK_OUT * 0.58, 1.72, -0.55, -Math.PI * 0.88, Math.PI * 0.88, 0.024, "BackLensedArc_Outer_3D", 0.15);
+    makeArcTube(DISK_OUT * 0.47, 1.45, -0.38, -Math.PI * 0.97, Math.PI * 0.97, 0.048, "BackLensedArc_Primary_EinsteinBridge", 0.15, 1.0);
+    makeArcTube(DISK_OUT * 0.36, 1.02, -0.20, -Math.PI * 0.82, Math.PI * 0.86, 0.030, "BackLensedArc_InnerBlueShift", 0.12, 0.94);
+    makeArcTube(DISK_OUT * 0.61, 1.92, -0.62, -Math.PI * 0.90, Math.PI * 0.90, 0.025, "BackLensedArc_OuterRedShift", 0.17, 1.05);
+    makeArcTube(DISK_OUT * 0.52, -1.10, 0.25, Math.PI * 0.10, Math.PI * 1.90, 0.020, "FrontLensedArc_SubtleLowerEcho", -0.08, 0.72);
     grp.add(lensedDisk);
 
-    // 5) Esfera de fótons e ISCO: múltiplos torus 3D inclinados, formando volume orbital.
+    // 5) Esfera de fótons / ISCO: múltiplos anéis inclinados para reforçar volume e hiper-realismo.
     const photonMat = regMat(
       new THREE.ShaderMaterial({
         transparent: true,
@@ -1468,15 +1512,16 @@ document.addEventListener("DOMContentLoaded", () => {
           uOpacity: { value: 0 },
           uSpin: { value: 0 },
           uPlunge: { value: 0 },
+          uMajesty: { value: 0 },
         },
         vertexShader: `
-          uniform float uT, uSpin, uPlunge;
+          uniform float uT, uSpin, uPlunge, uMajesty;
           varying vec2 vUv;
           varying vec3 vPos;
           void main(){
             vec3 p = position;
             float a = atan(p.y, p.x);
-            p *= 1.0 + 0.035 * sin(uT * 2.2 + a * 5.0) * (0.5 + uSpin + uPlunge);
+            p *= 1.0 + 0.040 * sin(uT * 2.4 + a * 5.5) * (0.5 + uSpin + uPlunge + uMajesty * 0.35);
             vUv = uv;
             vPos = p;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
@@ -1484,34 +1529,37 @@ document.addEventListener("DOMContentLoaded", () => {
         `,
         fragmentShader: `
           precision highp float;
-          uniform float uT, uOpacity, uSpin, uPlunge;
+          uniform float uT, uOpacity, uSpin, uPlunge, uMajesty;
           varying vec2 vUv;
           varying vec3 vPos;
           void main(){
             float a = atan(vPos.y, vPos.x);
-            float tube = pow(1.0 - abs(vUv.y - 0.5) * 2.0, 3.4);
-            float interference = 0.62 + 0.38 * sin(a * 18.0 - uT * (5.0 + uSpin * 4.0));
-            float doppler = 0.5 + 0.5 * sin(a - 0.55);
-            vec3 c = mix(vec3(1.0,0.42,0.08), vec3(0.65,0.90,1.0), doppler);
-            c = mix(c, vec3(1.0), pow(tube, 6.0) * 0.32);
-            float alpha = tube * interference * uOpacity * (0.85 + uPlunge * 0.7);
-            gl_FragColor = vec4(c * alpha * 7.6, alpha);
+            float tube = pow(1.0 - abs(vUv.y - 0.5) * 2.0, 3.7);
+            float interference = 0.60 + 0.40 * sin(a * 24.0 - uT * (5.4 + uSpin * 4.2));
+            float lace = 0.5 + 0.5 * sin(a * 53.0 + uT * 1.2);
+            float doppler = 0.5 + 0.5 * sin(a - 0.58);
+            vec3 c = mix(vec3(1.0,0.34,0.045), vec3(0.58,0.90,1.0), doppler);
+            c = mix(c, vec3(1.0,0.94,0.72), pow(tube, 7.0) * 0.42);
+            c += vec3(0.58,0.32,1.0) * lace * 0.08 * uMajesty;
+            float alpha = tube * interference * uOpacity * (0.86 + uPlunge * 0.82 + uMajesty * 0.28);
+            gl_FragColor = vec4(c * alpha * 8.4, alpha);
           }
         `,
       }),
     );
 
     const photonRing = new THREE.Group();
-    photonRing.name = "PhotonSphere_MULTI_RING_3D";
-    const photonGeo = new THREE.TorusGeometry(PHOTON_R * 1.12, 0.032, 28, TORUS_SEG);
-    const photonTilts = [0, Math.PI * 0.36, -Math.PI * 0.36, Math.PI * 0.5];
+    photonRing.name = "PhotonSphere_MultipleInclinedRings_TRUE_3D";
+    const photonGeo = new THREE.TorusGeometry(PHOTON_R * 1.13, 0.034, TIER === "LOW" ? 22 : 30, TORUS_SEG);
+    const photonTilts = [0, Math.PI * 0.31, -Math.PI * 0.31, Math.PI * 0.50, -Math.PI * 0.50, Math.PI * 0.15];
     photonTilts.forEach((tilt, i) => {
       const ring = new THREE.Mesh(photonGeo, photonMat);
-      ring.name = `PhotonOrbit_${i + 1}_3D`;
+      ring.name = `PhotonOrbit_Kerr_${i + 1}`;
       ring.rotation.x = Math.PI / 2.05 + tilt;
-      ring.rotation.y = i * 0.16;
-      ring.scale.set(1.18 + i * 0.025, 1.0, 1.0);
-      ring.renderOrder = 10;
+      ring.rotation.y = i * 0.135;
+      ring.rotation.z = i * 0.05;
+      ring.scale.set(1.16 + i * 0.022, 1.0 - i * 0.010, 1.0);
+      ring.renderOrder = 15;
       photonRing.add(ring);
     });
     grp.add(photonRing);
@@ -1528,6 +1576,7 @@ document.addEventListener("DOMContentLoaded", () => {
           uOpacity: { value: 0 },
           uSpin: { value: 0 },
           uPlunge: { value: 0 },
+          uMajesty: { value: 0 },
         },
         vertexShader: `
           uniform float uT, uSpin;
@@ -1536,7 +1585,7 @@ document.addEventListener("DOMContentLoaded", () => {
           void main(){
             vec3 p = position;
             float a = atan(p.y, p.x);
-            p.z += sin(a * 6.0 + uT * 2.0) * 0.022 * (0.3 + uSpin);
+            p.z += sin(a * 6.0 + uT * 2.0) * 0.024 * (0.4 + uSpin);
             vUv = uv;
             vPos = p;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
@@ -1544,32 +1593,102 @@ document.addEventListener("DOMContentLoaded", () => {
         `,
         fragmentShader: `
           precision highp float;
-          uniform float uT, uOpacity, uSpin;
+          uniform float uT, uOpacity, uSpin, uMajesty;
           varying vec2 vUv;
           varying vec3 vPos;
           void main(){
             float a = atan(vPos.y, vPos.x);
-            float tube = pow(1.0 - abs(vUv.y - 0.5) * 2.0, 2.7);
-            float dash = smoothstep(0.18, 1.0, 0.5 + 0.5 * sin(a * 34.0 - uT * (2.8 + uSpin)));
-            vec3 col = mix(vec3(1.0,0.28,0.06), vec3(0.34,0.74,1.0), dash);
-            float alpha = tube * (0.38 + dash * 0.62) * uOpacity;
-            gl_FragColor = vec4(col * alpha * 4.2, alpha * 0.82);
+            float tube = pow(1.0 - abs(vUv.y - 0.5) * 2.0, 2.8);
+            float dash = smoothstep(0.08, 1.0, 0.5 + 0.5 * sin(a * 38.0 - uT * (3.0 + uSpin * 1.2)));
+            vec3 col = mix(vec3(1.0,0.25,0.04), vec3(0.34,0.78,1.0), dash);
+            col += vec3(1.0,0.82,0.44) * tube * 0.18;
+            float alpha = tube * (0.34 + dash * 0.66) * uOpacity * (0.9 + uMajesty * 0.2);
+            gl_FragColor = vec4(col * alpha * 4.6, alpha * 0.84);
           }
         `,
       }),
     );
     const iscoRing = new THREE.Group();
-    iscoRing.name = "ISCO_MULTI_TORUS_3D";
-    for (let i = 0; i < 3; i++) {
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(ISCO_R * (1.65 + i * 0.22), 0.017, 20, TORUS_SEG), iscoMat);
-      ring.rotation.x = Math.PI / 2.05 + (i - 1) * 0.08;
-      ring.rotation.y = (i - 1) * 0.13;
-      ring.renderOrder = 7;
+    iscoRing.name = "ISCO_OrbitalGuide_Rings_TRUE_3D";
+    for (let i = 0; i < 4; i++) {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(ISCO_R * (1.58 + i * 0.20), 0.018, 20, TORUS_SEG), iscoMat);
+      ring.rotation.x = Math.PI / 2.05 + (i - 1.5) * 0.075;
+      ring.rotation.y = (i - 1.5) * 0.11;
+      ring.renderOrder = 8;
       iscoRing.add(ring);
     }
     grp.add(iscoRing);
 
-    // 6) Hotspots: esferas reais orbitando em profundidade.
+    // 6) Caustics / filamentos gravitacionais: curvas 3D douradas e azuladas, aparecem só na revelação/ergosfera.
+    const causticMat = regMat(
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        depthTest: true,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        uniforms: {
+          uT: { value: 0 },
+          uOpacity: { value: 0 },
+          uSpin: { value: 0 },
+          uPlunge: { value: 0 },
+          uMajesty: { value: 0 },
+        },
+        vertexShader: `
+          uniform float uT, uSpin, uPlunge;
+          varying vec2 vUv;
+          varying vec3 vPos;
+          void main(){
+            vec3 p = position;
+            float a = atan(p.z, p.x);
+            p.y += sin(a * 4.0 + uT * 0.9) * 0.035 * (0.3 + uSpin + uPlunge);
+            vUv = uv;
+            vPos = p;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+          }
+        `,
+        fragmentShader: `
+          precision highp float;
+          uniform float uT, uOpacity, uSpin, uPlunge, uMajesty;
+          varying vec2 vUv;
+          varying vec3 vPos;
+          void main(){
+            float tube = pow(1.0 - abs(vUv.y - 0.5) * 2.0, 2.6);
+            float a = atan(vPos.z, vPos.x);
+            float flow = 0.55 + 0.45 * sin(vUv.x * 22.0 - uT * (2.2 + uSpin) + a * 2.0);
+            vec3 col = mix(vec3(0.30,0.70,1.0), vec3(1.0,0.74,0.24), smoothstep(0.2,1.0,flow));
+            col = mix(col, vec3(1.0,0.36,0.95), 0.12 * uMajesty);
+            float alpha = tube * flow * uOpacity * (0.78 + uPlunge * 0.5 + uMajesty * 0.22);
+            gl_FragColor = vec4(col * alpha * 3.8, alpha * 0.72);
+          }
+        `,
+      }),
+    );
+    const causticLines = new THREE.Group();
+    causticLines.name = "GravitationalCaustics_FilamentCurves_TRUE_3D";
+    for (let j = 0; j < (TIER === "LOW" ? 8 : 14); j++) {
+      const pts = [];
+      const steps = TIER === "LOW" ? 72 : 112;
+      const base = rnd(DISK_IN + 1.2, DISK_OUT * 0.88);
+      const phase = rnd(0, Math.PI * 2);
+      const height = rnd(0.24, 1.65) * (j % 2 ? 1 : -1);
+      for (let i = 0; i <= steps; i++) {
+        const k = i / steps;
+        const a = phase + k * Math.PI * rnd(1.4, 2.9);
+        const r = base + Math.sin(k * Math.PI * 2.0 + phase) * rnd(0.14, 0.75);
+        pts.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(k * Math.PI) * height, Math.sin(a) * r));
+      }
+      const curve = new THREE.CatmullRomCurve3(pts);
+      const geo = new THREE.TubeGeometry(curve, steps, rnd(0.006, 0.016), 8, false);
+      const mesh = new THREE.Mesh(geo, causticMat);
+      mesh.rotation.x = rnd(-0.10, 0.12);
+      mesh.rotation.y = rnd(-0.10, 0.10);
+      mesh.renderOrder = 11;
+      causticLines.add(mesh);
+    }
+    grp.add(causticLines);
+
+    // 7) Hotspots e gás: microesferas reais orbitando em 3D para tirar leitura chapada.
     const hotspotMat = regMat(
       new THREE.ShaderMaterial({
         transparent: true,
@@ -1581,16 +1700,17 @@ document.addEventListener("DOMContentLoaded", () => {
           uOpacity: { value: 0 },
           uSpin: { value: 0 },
           uPlunge: { value: 0 },
+          uMajesty: { value: 0 },
         },
         vertexShader: `
-          uniform float uT, uSpin, uPlunge;
+          uniform float uT, uSpin, uPlunge, uMajesty;
           varying vec3 vN;
           varying vec3 vView;
           varying float vPulse;
           void main(){
             vec3 p = position;
-            vPulse = 0.82 + 0.18 * sin(uT * (4.0 + uSpin * 2.0) + position.x * 12.0);
-            p *= 0.92 + vPulse * 0.14 + uPlunge * 0.08;
+            vPulse = 0.78 + 0.22 * sin(uT * (4.2 + uSpin * 2.2) + position.x * 13.0 + uMajesty * 2.0);
+            p *= 0.90 + vPulse * 0.16 + uPlunge * 0.12;
             vec4 mv = modelViewMatrix * vec4(p, 1.0);
             vView = -mv.xyz;
             vN = normalize(normalMatrix * normal);
@@ -1599,36 +1719,36 @@ document.addEventListener("DOMContentLoaded", () => {
         `,
         fragmentShader: `
           precision highp float;
-          uniform float uOpacity;
+          uniform float uOpacity, uMajesty;
           varying vec3 vN;
           varying vec3 vView;
           varying float vPulse;
           void main(){
             vec3 n = normalize(vN);
             vec3 v = normalize(vView);
-            float light = max(dot(n, normalize(vec3(-0.25, 0.42, 0.86))), 0.0);
+            float light = max(dot(n, normalize(vec3(-0.30, 0.46, 0.82))), 0.0);
             float rim = pow(1.0 - max(dot(n, v), 0.0), 2.0);
-            vec3 col = mix(vec3(1.0,0.30,0.07), vec3(0.70,0.92,1.0), rim);
-            float alpha = (0.42 + light * 0.82 + rim * 1.25) * uOpacity * vPulse;
-            gl_FragColor = vec4(col * alpha * 2.9, alpha * 0.84);
+            vec3 col = mix(vec3(1.0,0.25,0.045), vec3(0.66,0.92,1.0), rim);
+            col += vec3(1.0,0.80,0.36) * light * 0.18 + vec3(0.58,0.24,1.0) * uMajesty * rim * 0.08;
+            float alpha = (0.38 + light * 0.86 + rim * 1.35) * uOpacity * vPulse;
+            gl_FragColor = vec4(col * alpha * 3.1, alpha * 0.84);
           }
         `,
       }),
     );
     const hotspotGrp = new THREE.Group();
-    hotspotGrp.name = "HotspotSpheres_Orbiting_3D";
-    const hotspotGeo = new THREE.SphereGeometry(0.095, 18, 18);
-    for (let i = 0; i < 13; i++) {
-      const a = (i / 13) * Math.PI * 2 + rnd(-0.14, 0.14);
-      const r = rnd(DISK_IN + 0.62, DISK_IN + 4.6);
+    hotspotGrp.name = "HotspotSpheres_DopplerOrbit_TRUE_3D";
+    const hotspotGeo = new THREE.SphereGeometry(0.088, TIER === "LOW" ? 14 : 20, TIER === "LOW" ? 14 : 20);
+    for (let i = 0; i < (TIER === "LOW" ? 12 : 22); i++) {
+      const a = (i / (TIER === "LOW" ? 12 : 22)) * Math.PI * 2 + rnd(-0.12, 0.12);
+      const r = rnd(DISK_IN + 0.58, DISK_IN + 5.6);
       const h = new THREE.Mesh(hotspotGeo, hotspotMat);
-      h.position.set(Math.cos(a) * r, rnd(-0.42, 0.42), Math.sin(a) * r);
-      h.scale.setScalar(rnd(0.78, 1.7));
+      h.position.set(Math.cos(a) * r, rnd(-0.50, 0.50), Math.sin(a) * r);
+      h.scale.setScalar(rnd(0.70, 1.90));
       hotspotGrp.add(h);
     }
     grp.add(hotspotGrp);
 
-    // 7) Volume de gás: InstancedMesh de microesferas 3D no disco, sincronizado com a opacidade do disco.
     const gasMat = new THREE.MeshBasicMaterial({
       color: 0xffb15f,
       transparent: true,
@@ -1636,30 +1756,125 @@ document.addEventListener("DOMContentLoaded", () => {
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
-    const gasGeo = new THREE.SphereGeometry(0.055, 10, 10);
+    const gasGeo = new THREE.SphereGeometry(0.050, TIER === "LOW" ? 8 : 10, TIER === "LOW" ? 8 : 10);
     const gasVolume = new THREE.InstancedMesh(gasGeo, gasMat, GAS_COUNT);
-    gasVolume.name = "AccretionGasMicroSpheres_Instanced_3D";
+    gasVolume.name = "AccretionGasMicroSpheres_Instanced_TRUE_3D";
     const m4 = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const s3 = new THREE.Vector3();
     const p3 = new THREE.Vector3();
     for (let i = 0; i < GAS_COUNT; i++) {
-      const r = rnd(DISK_IN + 0.65, DISK_OUT * 0.92);
+      const r = rnd(DISK_IN + 0.55, DISK_OUT * 0.94);
       const a = Math.random() * Math.PI * 2;
-      const y = gaussianRandom() * THREE.MathUtils.lerp(0.08, 0.62, r / DISK_OUT);
+      const y = gaussianRandom() * THREE.MathUtils.lerp(0.08, 0.78, r / DISK_OUT);
       p3.set(Math.cos(a) * r, y, Math.sin(a) * r);
-      s3.setScalar(rnd(0.45, 1.55) * THREE.MathUtils.lerp(1.2, 0.55, r / DISK_OUT));
-      q.setFromEuler(new THREE.Euler(rnd(-0.3, 0.3), rnd(0, Math.PI), rnd(-0.3, 0.3)));
+      s3.setScalar(rnd(0.42, 1.65) * THREE.MathUtils.lerp(1.35, 0.52, r / DISK_OUT));
+      q.setFromEuler(new THREE.Euler(rnd(-0.35, 0.35), rnd(0, Math.PI), rnd(-0.35, 0.35)));
       m4.compose(p3, q, s3);
       gasVolume.setMatrixAt(i, m4);
     }
     gasVolume.instanceMatrix.needsUpdate = true;
-    gasVolume.renderOrder = 6;
+    gasVolume.renderOrder = 7;
     grp.add(gasVolume);
 
-    // 8) Jatos relativísticos: cones/cilindros 3D no eixo polar.
-    function makeJetMaterial(colorA, colorB) {
-      return regMat(
+    // 8) Poeira JWST + magia sutil: partículas profundas ao redor, não desenham o BH, só dão grandeza.
+    function makeOrbitPointCloud(name, count, radiusMin, radiusMax, heightMul, paletteMode) {
+      const geo = new THREE.BufferGeometry();
+      const pos = new Float32Array(count * 3);
+      const col = new Float32Array(count * 3);
+      const seed = new Float32Array(count);
+      const size = new Float32Array(count);
+      for (let i = 0; i < count; i++) {
+        const r = rnd(radiusMin, radiusMax) * (Math.random() < 0.28 ? rnd(0.38, 0.78) : 1.0);
+        const arm = Math.floor(Math.random() * 5);
+        const a = Math.random() * Math.PI * 2 + arm * 0.18 + Math.log(r + 1.0) * 0.72;
+        const y = gaussianRandom() * heightMul * THREE.MathUtils.lerp(0.28, 1.1, r / radiusMax);
+        pos[i * 3] = Math.cos(a) * r + gaussianRandom() * 0.18;
+        pos[i * 3 + 1] = y;
+        pos[i * 3 + 2] = Math.sin(a) * r + gaussianRandom() * 0.18;
+        const warm = new THREE.Color(0xffb15f);
+        const cold = new THREE.Color(0x63b7ff);
+        const violet = new THREE.Color(0xa960ee);
+        const white = new THREE.Color(0xffffff);
+        const c = paletteMode === 0 ? warm.clone().lerp(cold, Math.pow(Math.random(), 2.2) * 0.65) : cold.clone().lerp(violet, Math.random() * 0.72).lerp(white, Math.random() * 0.16);
+        if (Math.random() < 0.12) c.lerp(new THREE.Color(0xff6fa7), 0.45);
+        col[i * 3] = c.r;
+        col[i * 3 + 1] = c.g;
+        col[i * 3 + 2] = c.b;
+        seed[i] = Math.random();
+        size[i] = rnd(0.45, paletteMode === 0 ? 2.2 : 1.55) * (Math.random() < 0.025 ? rnd(2.0, 4.6) : 1.0);
+      }
+      geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+      geo.setAttribute("aSeed", new THREE.BufferAttribute(seed, 1));
+      geo.setAttribute("aSize", new THREE.BufferAttribute(size, 1));
+      const mat = regMat(
+        new THREE.ShaderMaterial({
+          transparent: true,
+          depthWrite: false,
+          depthTest: true,
+          blending: THREE.AdditiveBlending,
+          vertexColors: true,
+          uniforms: {
+            uT: { value: 0 },
+            uOpacity: { value: 0 },
+            uSpin: { value: 0 },
+            uPlunge: { value: 0 },
+            uMajesty: { value: 0 },
+          },
+          vertexShader: `
+            uniform float uT, uSpin, uPlunge, uMajesty;
+            attribute float aSeed, aSize;
+            varying vec3 vC;
+            varying float vA;
+            void main(){
+              vec3 p = position;
+              float r = length(p.xz);
+              float a = atan(p.z, p.x);
+              a += uT * (0.035 + aSeed * 0.030) * (0.4 + uSpin * 0.65);
+              float inflow = smoothstep(0.15, 1.0, uPlunge) * (1.0 - smoothstep(2.2, 18.0, r));
+              r *= mix(1.0, 0.44 + aSeed * 0.35, inflow * 0.35);
+              p.x = cos(a) * r;
+              p.z = sin(a) * r;
+              p.y += sin(uT * (0.9 + aSeed) + aSeed * 20.0) * 0.018 * (1.0 + uMajesty);
+              vec4 mv = modelViewMatrix * vec4(p, 1.0);
+              gl_Position = projectionMatrix * mv;
+              float tw = 0.72 + 0.28 * sin(uT * (1.3 + aSeed * 4.0) + aSeed * 32.0);
+              gl_PointSize = clamp((64.0 / -mv.z) * aSize * tw * (1.0 + uPlunge * 1.3 + uMajesty * 0.45), 0.22, 36.0);
+              vC = color;
+              vA = tw;
+            }
+          `,
+          fragmentShader: `
+            uniform float uOpacity, uMajesty;
+            varying vec3 vC;
+            varying float vA;
+            void main(){
+              vec2 p = gl_PointCoord * 2.0 - 1.0;
+              float r2 = dot(p,p);
+              if(r2 > 1.0) discard;
+              float core = exp(-r2 * 8.0);
+              float halo = exp(-r2 * 2.2) * 0.30;
+              float rim = pow(1.0 - sqrt(max(0.0, 1.0 - r2)), 2.0) * 0.12;
+              vec3 c = vC + vec3(0.38,0.70,1.0) * rim * uMajesty;
+              float a = (core + halo) * uOpacity * vA;
+              gl_FragColor = vec4(c * a * (1.8 + uMajesty * 0.55), a);
+            }
+          `,
+        }),
+      );
+      const pts = new THREE.Points(geo, mat);
+      pts.name = name;
+      pts.renderOrder = 1;
+      grp.add(pts);
+      return { pts, mat };
+    }
+    const dustCloud = makeOrbitPointCloud("JWST_InfraredDustAroundBH", DUST_COUNT, DISK_IN + 2.0, DISK_OUT * 1.65, 2.6, 0);
+    const magicDust = makeOrbitPointCloud("QuantumMagicGlints_SubtlePremium", MAGIC_COUNT, DISK_IN + 0.7, DISK_OUT * 1.05, 1.15, 1);
+
+    // 9) Jatos relativísticos discretos: eixo polar controlado para não roubar o disco.
+    function makeJetMaterial(colorA, colorB, name) {
+      const mat = regMat(
         new THREE.ShaderMaterial({
           transparent: true,
           depthWrite: false,
@@ -1671,22 +1886,23 @@ document.addEventListener("DOMContentLoaded", () => {
             uOpacity: { value: 0 },
             uSpin: { value: 0 },
             uPlunge: { value: 0 },
+            uMajesty: { value: 0 },
             uColorA: { value: colorA },
             uColorB: { value: colorB },
           },
           vertexShader: `
-            uniform float uT, uSpin, uPlunge;
+            uniform float uT, uSpin, uPlunge, uMajesty;
             varying vec3 vPos;
             varying vec2 vUv;
             void main(){
               vec3 p = position;
               float yN = position.y / 12.0;
-              float swirl = sin(yN * 8.0 + uT * 2.25) * 0.10 * (0.4 + uSpin);
+              float swirl = sin(yN * 8.0 + uT * 2.25) * 0.10 * (0.35 + uSpin + uMajesty * 0.25);
               float c = cos(swirl);
               float s = sin(swirl);
               p.xz = mat2(c,-s,s,c) * p.xz;
-              p.x += sin(yN * 10.0 + uT * 3.6) * 0.04 * uPlunge;
-              p.z += cos(yN * 9.0 - uT * 2.8) * 0.04 * uPlunge;
+              p.x += sin(yN * 10.0 + uT * 3.6) * 0.04 * (uPlunge + uMajesty * 0.35);
+              p.z += cos(yN * 9.0 - uT * 2.8) * 0.04 * (uPlunge + uMajesty * 0.35);
               vPos = p;
               vUv = uv;
               gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
@@ -1694,63 +1910,67 @@ document.addEventListener("DOMContentLoaded", () => {
           `,
           fragmentShader: `
             precision highp float;
-            uniform float uT, uOpacity, uSpin, uPlunge;
+            uniform float uT, uOpacity, uSpin, uPlunge, uMajesty;
             uniform vec3 uColorA, uColorB;
             varying vec3 vPos;
             varying vec2 vUv;
             void main(){
               float axial = smoothstep(-12.0, 12.0, vPos.y);
               float radius = length(vPos.xz);
-              float core = exp(-radius * radius * 11.0);
-              float sheath = exp(-radius * radius * 2.2) * 0.30;
-              float knots = 0.70 + 0.30 * sin(axial * 44.0 - uT * (5.0 + uSpin * 3.0));
+              float core = exp(-radius * radius * 12.5);
+              float sheath = exp(-radius * radius * 2.0) * 0.26;
+              float knots = 0.66 + 0.34 * sin(axial * 46.0 - uT * (5.1 + uSpin * 3.2));
               vec3 col = mix(uColorA, uColorB, axial);
-              float alpha = (core + sheath) * knots * uOpacity * (0.72 + uPlunge * 0.72);
-              gl_FragColor = vec4(col * alpha * 2.55, alpha * 0.56);
+              col += vec3(1.0,0.92,0.70) * core * 0.10 * uMajesty;
+              float alpha = (core + sheath) * knots * uOpacity * (0.72 + uPlunge * 0.68 + uMajesty * 0.28);
+              gl_FragColor = vec4(col * alpha * 2.7, alpha * 0.55);
             }
           `,
         }),
       );
+      mat.name = name;
+      return mat;
     }
-    const jetMatA = makeJetMaterial(COL.blue, COL.cyan);
-    const jetMatB = makeJetMaterial(COL.violet, COL.cyan);
-    const jetGeo = new THREE.ConeGeometry(1.65, 24, 52, 18, true);
+    const jetMatA = makeJetMaterial(COL.blue, COL.cyan, "NorthJet_BlueSynchrotron");
+    const jetMatB = makeJetMaterial(COL.violet, COL.cyan, "SouthJet_VioletSynchrotron");
+    const jetGeo = new THREE.ConeGeometry(1.70, 25.0, TIER === "LOW" ? 40 : 64, 18, true);
     const jetA = new THREE.Mesh(jetGeo, jetMatA);
     jetA.name = "NorthRelativisticJet_TRUE_3D";
-    jetA.position.y = 13.6;
-    jetA.scale.set(0.32, 1.0, 0.32);
+    jetA.position.y = 14.1;
+    jetA.scale.set(0.30, 1.0, 0.30);
     grp.add(jetA);
     const jetB = new THREE.Mesh(jetGeo, jetMatB);
     jetB.name = "SouthRelativisticJet_TRUE_3D";
-    jetB.position.y = -13.6;
+    jetB.position.y = -14.1;
     jetB.rotation.z = Math.PI;
-    jetB.scale.set(0.24, 0.82, 0.24);
+    jetB.scale.set(0.23, 0.84, 0.23);
     grp.add(jetB);
 
-    // 9) Campo magnético: tubos/toroides 3D, não textura plana.
+    // 10) Linhas magnéticas como torus knots: toque mágico + científico sem poluir.
     const magLines = new THREE.Group();
-    magLines.name = "MagneticField_TorusKnots_3D";
+    magLines.name = "MagneticField_TorusKnots_Premium_3D";
     const magMats = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 8; i++) {
       const mat = new THREE.MeshBasicMaterial({
-        color: [0x2aa2f6, 0xa960ee, 0xff9d42][i % 3],
+        color: [0x2aa2f6, 0xa960ee, 0xffa64a, 0x8fd8ff][i % 4],
         transparent: true,
         opacity: 0,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       });
       const geo = new THREE.TorusKnotGeometry(
-        3.0 + i * 0.48,
-        0.006 + i * 0.0013,
-        TIER === "LOW" ? 112 : 220,
+        3.0 + i * 0.43,
+        0.006 + i * 0.0012,
+        TIER === "LOW" ? 124 : 240,
         8,
         2 + (i % 2),
-        3,
+        3 + (i % 3),
       );
       const line = new THREE.Mesh(geo, mat);
-      line.rotation.x = Math.PI * (0.20 + i * 0.048);
-      line.rotation.y = Math.PI * (0.12 + i * 0.082);
-      line.scale.set(1.0, 0.50 + i * 0.035, 1.0);
+      line.rotation.x = Math.PI * (0.19 + i * 0.045);
+      line.rotation.y = Math.PI * (0.10 + i * 0.078);
+      line.rotation.z = i * 0.16;
+      line.scale.set(1.0, 0.47 + i * 0.030, 1.0);
       magLines.add(line);
       magMats.push(mat);
     }
@@ -1761,6 +1981,8 @@ document.addEventListener("DOMContentLoaded", () => {
       ctrl,
       horizon,
       horizonMat,
+      shadowAura,
+      shadowMat,
       ergosphere,
       ergosphereMat,
       disk,
@@ -1775,10 +1997,16 @@ document.addEventListener("DOMContentLoaded", () => {
       coronaMat,
       halo,
       haloMat,
+      causticLines,
+      causticMat,
       hotspotGrp,
       hotspotMat,
       gasVolume,
       gasMat,
+      dustCloud: dustCloud.pts,
+      dustMat: dustCloud.mat,
+      magicDust: magicDust.pts,
+      magicMat: magicDust.mat,
       jetA,
       jetB,
       jetMatA,
@@ -1949,7 +2177,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // TÚNEL DE SINGULARIDADE — DISTORÇÃO DE ESPAÇO TEMPO APLICADA
   // ═══════════════════════════════════════════════════════════════
   function buildTunnel() {
-    const N = Math.round(52000 * TIER_FACTOR),
+    const N = Math.round(46000 * TIER_FACTOR),
       geo = new THREE.BufferGeometry();
     const pos = new Float32Array(N * 3),
       col = new Float32Array(N * 3),
@@ -1970,7 +2198,7 @@ document.addEventListener("DOMContentLoaded", () => {
         lO = lane * 0.785398,
         sp = a + lO * 0.18;
       const r =
-        6 + Math.pow(Math.random(), 0.34) * 330 + Math.sin(lO * 3.0) * 8;
+        10 + Math.pow(Math.random(), 0.38) * 360 + Math.sin(lO * 3.0) * 6;
       pos[i * 3] = Math.cos(sp) * r;
       pos[i * 3 + 1] = Math.sin(sp) * r;
       pos[i * 3 + 2] = -Math.random() * 8600;
@@ -2000,26 +2228,26 @@ document.addEventListener("DOMContentLoaded", () => {
         varying vec3 vC; varying float vA,vRad,vAngle,vGate,vSpeed,vLens,vDepth;
         void main(){
           vec3 p=position; float speedNorm=clamp(uSpeed/520.0,0.0,1.0);
-          float zFlow=mod(abs(p.z)-uSpeed*(1.45+aRnd*0.92),8600.0); p.z=-zFlow;
+          float zFlow=mod(abs(p.z)-uSpeed*(1.18+aRnd*0.62),8600.0); p.z=-zFlow;
           float z01=clamp(abs(p.z)/8600.0,0.0,1.0);
           float gravWell=1.0-smoothstep(0.0,1.0,z01);
           float r=length(p.xy); float a=atan(p.y,p.x);
-          float helix=uT*mix(0.06,0.28,speedNorm)+uTwist*p.z*0.000075+sin(p.z*0.0025+uT*0.95+aRnd*6.28318)*0.24*speedNorm;
+          float helix=uT*mix(0.035,0.18,speedNorm)+uTwist*p.z*0.000055+sin(p.z*0.0022+uT*0.72+aRnd*6.28318)*0.16*speedNorm;
           a+=helix+sin(r*0.035-uT*1.8+p.z*0.0015)*0.04*speedNorm;
           float radialPulse=sin(p.z*0.007-uT*2.6+aRnd*18.0)*0.06;
-          float pinch=(0.10+0.55*speedNorm)*(0.35+gravWell*0.85);
+          float pinch=(0.08+0.42*speedNorm)*(0.28+gravWell*0.72);
           float lensing=1.0-pinch/(1.0+r*0.032);
           float tidal=1.0+radialPulse+sin(a*6.0-uT*2.1)*0.028*speedNorm;
           r*=max(0.12,lensing)*tidal;
           p.x=cos(a)*r + sin(p.z*0.004+a*2.0)*0.18*(0.6+gravWell*1.4)*speedNorm;
           p.y=sin(a)*r + cos(p.z*0.004-a*2.0)*0.18*(0.6+gravWell*1.4)*speedNorm;
-          float timeWarp=sin(p.z*0.005-uT*8.0)*0.55*speedNorm;
+          float timeWarp=sin(p.z*0.0045-uT*5.8)*0.34*speedNorm;
           p.xy*=1.0+timeWarp/(r*0.026+1.0);
           p.xy*=mix(1.0,0.72,gravWell*speedNorm);
           vec4 mv=modelViewMatrix*vec4(p,1.0); gl_Position=projectionMatrix*mv;
           float gate=smoothstep(260.0,-260.0,p.z);
           float cathedral=0.55+0.45*pow(abs(sin(r*0.055-uT*2.4)),3.0);
-          gl_PointSize=(138.0/-mv.z)*(0.72+aRnd*1.8)*mix(0.95,3.6,speedNorm)*cathedral*mix(0.85,1.35,gravWell);
+          gl_PointSize=(112.0/-mv.z)*(0.70+aRnd*1.55)*mix(0.85,2.75,speedNorm)*cathedral*mix(0.82,1.18,gravWell);
           vC=color; vA=gate; vRad=clamp(r/330.0,0.0,1.0); vAngle=a; vGate=cathedral; vSpeed=speedNorm; vLens=gravWell; vDepth=z01;
         }
       `,
@@ -2029,10 +2257,10 @@ document.addEventListener("DOMContentLoaded", () => {
           vec2 p=gl_PointCoord-0.5; float ca=cos(vAngle),sa=sin(vAngle);
           vec2 q=mat2(ca,-sa,sa,ca)*p;
           float core=exp(-dot(p,p)*22.0);
-          float streak=exp(-abs(q.y)*mix(30.0,8.0,vSpeed))*exp(-abs(q.x)*mix(9.0,1.8,vSpeed));
+          float streak=exp(-abs(q.y)*mix(34.0,12.0,vSpeed))*exp(-abs(q.x)*mix(11.0,2.8,vSpeed));
           float halo=exp(-dot(p,p)*4.2)*mix(0.16,0.32,vLens);
           float ring=exp(-pow(length(p)-0.36,2.0)*42.0)*0.18*vLens;
-          float lensBloom=exp(-abs(q.y)*8.5)*exp(-abs(q.x)*2.2)*0.22*vLens*vSpeed;
+          float lensBloom=exp(-abs(q.y)*10.5)*exp(-abs(q.x)*3.0)*0.16*vLens*vSpeed;
           float a=(core*0.74+streak*0.95+halo+ring+lensBloom)*vA*uOpacity*vGate;
           vec3 blueShift=vec3(0.45,0.78,1.0),violetShift=vec3(0.72,0.35,1.0),redShift=vec3(1.0,0.26,0.08),goldShift=vec3(1.0,0.72,0.22);
           vec3 gravTint=mix(vec3(0.55,0.86,1.0),vec3(1.0,0.72,0.22),vLens*0.65);
@@ -2042,7 +2270,7 @@ document.addEventListener("DOMContentLoaded", () => {
           c=mix(c,gravTint,0.28+vLens*0.25);
           c+=vec3(0.78,0.92,1.0)*core*(0.42+vLens*0.36);
           c+=vec3(0.52,0.82,1.0)*ring*0.85;
-          gl_FragColor=vec4(c*a*3.8,a);
+          gl_FragColor=vec4(c*a*2.75,a*0.88);
         }
       `,
       }),
@@ -3005,6 +3233,210 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   const REBIRTH = buildRebirthGalaxy();
 
+
+  // ═══════════════════════════════════════════════════════════════
+  // REFORÇO DO ATO FINAL — NASCIMENTO DE GALÁXIA EM ESCALA ÉPICA
+  // ═══════════════════════════════════════════════════════════════
+  function enhanceRebirthGrandeur(R) {
+    const crownCount = TIER === "LOW" ? 18000 : TIER === "MID" ? 42000 : 72000;
+    const crownGeo = new THREE.BufferGeometry();
+    const pos = new Float32Array(crownCount * 3);
+    const col = new Float32Array(crownCount * 3);
+    const rnds = new Float32Array(crownCount * 4);
+    const sizes = new Float32Array(crownCount);
+    const maxR = 310;
+
+    for (let i = 0; i < crownCount; i++) {
+      const i3 = i * 3;
+      const i4 = i * 4;
+      const arm = Math.floor(Math.random() * 6);
+      const armPhase = (arm / 6) * Math.PI * 2;
+      const r = 8 + Math.pow(Math.random(), 1.78) * maxR;
+      const a = armPhase + Math.log(r / 4.4) / Math.tan(0.205) + gaussianRandom() * THREE.MathUtils.lerp(0.10, 0.45, r / maxR);
+      const bloomCluster = Math.pow(Math.random(), 2.4) * THREE.MathUtils.lerp(0.8, 8.0, r / maxR);
+      const ca = Math.random() * Math.PI * 2;
+      const warp = Math.sin(a * 1.32 + armPhase) * Math.pow(r / maxR, 1.55) * 18.0;
+      pos[i3] = Math.cos(a) * r + Math.cos(ca) * bloomCluster;
+      pos[i3 + 1] = gaussianRandom() * THREE.MathUtils.lerp(0.42, 3.0, r / maxR) + warp * 0.18;
+      pos[i3 + 2] = Math.sin(a) * r + Math.sin(ca) * bloomCluster;
+
+      const distN = r / maxR;
+      const palette = Math.random();
+      let c = palette < 0.40 ? new THREE.Color(0x7ec8ff) : palette < 0.70 ? new THREE.Color(0xb785ff) : palette < 0.88 ? new THREE.Color(0xff8ec8) : new THREE.Color(0xffd07a);
+      if (distN < 0.18) c.lerp(new THREE.Color(0xffe4a8), 0.72);
+      if (Math.random() < 0.09) c.lerp(new THREE.Color(0xffffff), 0.42);
+      col[i3] = c.r;
+      col[i3 + 1] = c.g;
+      col[i3 + 2] = c.b;
+
+      rnds[i4] = Math.random();
+      rnds[i4 + 1] = Math.random();
+      rnds[i4 + 2] = Math.random();
+      rnds[i4 + 3] = distN;
+      sizes[i] = rnd(0.55, 1.95) * (Math.random() < 0.018 ? rnd(2.2, 5.0) : 1.0);
+    }
+
+    crownGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    crownGeo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    crownGeo.setAttribute("aRnd", new THREE.BufferAttribute(rnds, 4));
+    crownGeo.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+
+    const crownMat = regMat(
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexColors: true,
+        uniforms: {
+          uT: { value: 0 },
+          uOpacity: { value: 0 },
+          uGrow: { value: 0 },
+          uBloom: { value: 0 },
+          uSpiral: { value: 0 },
+        },
+        vertexShader: `
+          attribute vec4 aRnd;
+          attribute float aSize;
+          uniform float uT, uOpacity, uGrow, uBloom, uSpiral;
+          varying vec3 vC;
+          varying float vA;
+          varying float vCore;
+          void main(){
+            vec3 target = position;
+            float distN = aRnd.w;
+            float a0 = aRnd.x * 6.28318;
+            float seedR = pow(aRnd.y, 0.42) * 7.0;
+            vec3 seed = vec3(cos(a0) * seedR, (aRnd.z - 0.5) * 4.0, sin(a0) * seedR);
+            float delay = distN * 0.36 + aRnd.x * 0.08;
+            float grow = smoothstep(delay, 1.0, uGrow);
+            vec3 p = mix(seed, target, grow);
+            float r = length(p.xz);
+            float a = atan(p.z, p.x);
+            a += (1.0 - grow) * (12.0 + aRnd.y * 8.0) + uT * 0.010 * uSpiral;
+            p.x = cos(a) * r;
+            p.z = sin(a) * r;
+            p.y += sin(uT * 0.70 + aRnd.z * 50.0) * 0.72 * uSpiral * (1.0 - distN);
+            p.xz *= 1.0 + sin(uT * 1.35 + aRnd.x * 6.28318) * 0.020 * uBloom * (1.0 - distN * 0.72);
+            vec4 mv = modelViewMatrix * vec4(p, 1.0);
+            gl_Position = projectionMatrix * mv;
+            float core = 1.0 - smoothstep(0.0, 0.16, distN);
+            gl_PointSize = clamp((60.0 / -mv.z) * aSize * mix(0.18, 1.45, grow) * (1.0 + core * 1.2 + uBloom * 0.45), 0.25, 54.0);
+            vC = color;
+            vA = grow * uOpacity;
+            vCore = core;
+          }
+        `,
+        fragmentShader: `
+          varying vec3 vC;
+          varying float vA;
+          varying float vCore;
+          void main(){
+            vec2 p = gl_PointCoord * 2.0 - 1.0;
+            float r2 = dot(p,p);
+            if(r2 > 1.0) discard;
+            float z = sqrt(max(0.0, 1.0-r2));
+            float sphere = 0.32 + 0.68 * z;
+            float core = exp(-r2 * 9.5);
+            float halo = exp(-r2 * 2.0) * 0.36;
+            vec3 c = vC * sphere + vec3(1.0,0.84,0.48) * vCore * 0.72;
+            float a = (core + halo) * vA;
+            gl_FragColor = vec4(c * a * 2.65, a);
+          }
+        `,
+      }),
+    );
+    const crown = new THREE.Points(crownGeo, crownMat);
+    crown.name = "FinalAct_NewGalaxy_CrownOfFirstLight";
+    crown.rotation.x = -Math.PI * 0.5 + 0.025;
+    crown.rotation.z = 0.035;
+    R.grp.add(crown);
+
+    const veilMats = [];
+    function makeVeil(name, size, rot, y, colorA, colorB) {
+      const mat = regMat(
+        new THREE.ShaderMaterial({
+          transparent: true,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          blending: THREE.AdditiveBlending,
+          uniforms: {
+            uT: { value: 0 },
+            uOpacity: { value: 0 },
+            uGrow: { value: 0 },
+            uColorA: { value: colorA },
+            uColorB: { value: colorB },
+          },
+          vertexShader: `varying vec2 vUv; uniform float uGrow; void main(){vUv=uv; vec3 p=position*mix(0.18,1.0,smoothstep(0.0,1.0,uGrow)); gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);}`,
+          fragmentShader: `
+            precision highp float;
+            uniform float uT,uOpacity,uGrow;
+            uniform vec3 uColorA,uColorB;
+            varying vec2 vUv;
+            float h(vec2 p){return fract(sin(dot(p,vec2(41.7,289.1)))*43758.5453123);}
+            float n(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.0-2.0*f);return mix(mix(h(i),h(i+vec2(1,0)),u.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),u.x),u.y);}
+            float fbm(vec2 p){float f=0.0,w=0.5;for(int i=0;i<5;i++){f+=w*n(p);p*=2.05;w*=0.5;}return f;}
+            void main(){
+              vec2 uv=vUv-0.5; uv.x*=1.58;
+              float r=length(uv)*2.0;
+              float a=atan(uv.y,uv.x);
+              float cloud=fbm(vec2(a*2.4+uT*0.020,r*3.2-uT*0.026));
+              float fil=exp(-pow(abs(sin(a*6.0+r*7.2-uT*0.18+cloud*2.8)),0.62)*2.15);
+              float mask=smoothstep(1.05,0.06,r)*smoothstep(0.14,0.92,cloud)*fil*smoothstep(0.0,1.0,uGrow);
+              vec3 c=mix(uColorA,uColorB,cloud+vUv.y*0.22);
+              c+=vec3(1.0,0.88,0.58)*exp(-r*3.2)*0.82;
+              float alpha=mask*uOpacity*0.40;
+              gl_FragColor=vec4(c*alpha*2.9,alpha);
+            }
+          `,
+        }),
+      );
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(size, size), mat);
+      mesh.name = name;
+      mesh.rotation.x = -Math.PI * 0.5 + rot.x;
+      mesh.rotation.y = rot.y;
+      mesh.rotation.z = rot.z;
+      mesh.position.y = y;
+      R.grp.add(mesh);
+      veilMats.push(mat);
+      return mesh;
+    }
+
+    const veil1 = makeVeil("FinalAct_JWSTNebulaVeil_BlueViolet", 760, { x: 0.00, y: 0.00, z: 0.06 }, -2.0, new THREE.Vector3(0.20,0.58,1.0), new THREE.Vector3(0.72,0.32,1.0));
+    const veil2 = makeVeil("FinalAct_JWSTNebulaVeil_AmberMagenta", 640, { x: 0.035, y: 0.02, z: -0.11 }, -1.4, new THREE.Vector3(1.0,0.40,0.16), new THREE.Vector3(1.0,0.26,0.72));
+
+    const haloMats = [];
+    const haloGroup = new THREE.Group();
+    haloGroup.name = "FinalAct_GoldenHaloRings_3D";
+    for (let i = 0; i < 4; i++) {
+      const mat = new THREE.MeshBasicMaterial({
+        color: [0xffd27a, 0x7ec8ff, 0xa960ee, 0xffffff][i],
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+      const tor = new THREE.Mesh(new THREE.TorusGeometry(38 + i * 34, 0.055 + i * 0.020, 12, TIER === "LOW" ? 180 : 320), mat);
+      tor.rotation.x = Math.PI / 2 + (i - 1.5) * 0.035;
+      tor.rotation.y = (i - 1.5) * 0.055;
+      tor.rotation.z = i * 0.12;
+      haloGroup.add(tor);
+      haloMats.push(mat);
+    }
+    R.grp.add(haloGroup);
+
+    Object.assign(R, {
+      crown,
+      crownMat,
+      veil1,
+      veil2,
+      veilMats,
+      haloGroup,
+      haloMats,
+    });
+    return R;
+  }
+  enhanceRebirthGrandeur(REBIRTH);
+
   // ═══════════════════════════════════════════════════════════════
   // START INTRO — COREOGRAFIA COMPLETA
   // ═══════════════════════════════════════════════════════════════
@@ -3092,8 +3524,8 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     // Reset
-    camera.position.set(-44, 192, 648);
-    camera.fov = 24;
+    camera.position.set(-76, 235, 760);
+    camera.fov = 21;
     camera.updateProjectionMatrix();
     lookTarget.set(0, 12, 0);
     camRoll.z = 0;
@@ -3104,9 +3536,10 @@ document.addEventListener("DOMContentLoaded", () => {
     chromaPass.uniforms.uStr.value = 0;
     barrelPass.uniforms.uStr.value = 0;
     vigPass.uniforms.uOpen.value = 0;
-    bloomPass.strength = 0.72;
-    bloomPass.radius = 0.48;
-    bloomPass.threshold = 0.045;
+    bloomPass.strength = 0.50;
+    bloomPass.radius = 0.36;
+    bloomPass.threshold = 0.058;
+    exposureCtrl.value = 0.98;
     HOST.starMat.uniforms.uSpeed.value = 1;
     HOST.starMat.uniforms.uTravel.value = 0;
     HOST.starMat.uniforms.uSuck.value = 0;
@@ -3192,32 +3625,34 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: 0.0,
       duration: 0.01,
-      pos: { x: -44, y: 192, z: 648 },
-      target: { x: 0, y: 12, z: 0 },
-      fov: 24,
-      roll: -0.012,
+      pos: { x: -76, y: 235, z: 760 },
+      target: { x: -4, y: 22, z: 0 },
+      fov: 21,
+      roll: -0.006,
       ease: "none",
     });
 
     tl.to(
       HOST.grp.rotation,
-      { y: "+=0.18", z: "+=0.025", duration: 12.5, ease: "none" },
+      { y: "+=0.12", z: "+=0.018", duration: 14.0, ease: "none" },
       0.0,
     );
 
     tl.to(
       bloomPass,
       {
-        strength: 0.65,
-        radius: 0.45,
-        threshold: 0.045,
+        strength: 0.46,
+        radius: 0.34,
+        threshold: 0.058,
         duration: 4.8,
         ease: "sine.inOut",
       },
       0.1,
     );
 
-    tl.to(breathCtrl, { amp: 0.18, duration: 5.0, ease: "sine.inOut" }, 0.1);
+    tl.to(breathCtrl, { amp: 0.11, duration: 5.0, ease: "sine.inOut" }, 0.1);
+    tl.to(cinemaCtrl, { drift: 0.18, parallax: 0.10, duration: 7.4, ease: "sine.inOut" }, 0.0);
+    tl.to(exposureCtrl, { value: 1.00, duration: 5.8, ease: "sine.inOut" }, 0.0);
     tl.to(
       shakeCtrl,
       { lf: 0.008, mf: 0.0, hf: 0.0, duration: 4.0, ease: "sine.inOut" },
@@ -3227,20 +3662,20 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: 0.1,
       duration: 4.5,
-      pos: { x: -32, y: 145, z: 510 },
-      target: { x: 0, y: 8.5, z: 12 },
-      fov: 26,
-      roll: -0.022,
+      pos: { x: -52, y: 178, z: 570 },
+      target: { x: -2, y: 13.5, z: 22 },
+      fov: 23,
+      roll: -0.016,
       ease: "power2.inOut",
     });
 
     camTo({
       at: 4.0,
       duration: 3.5,
-      pos: { x: 18, y: 65, z: 280 },
-      target: { x: 5, y: 4.0, z: 22 },
-      fov: 32,
-      roll: 0.005,
+      pos: { x: 42, y: 96, z: 330 },
+      target: { x: 8.0, y: 7.0, z: 36 },
+      fov: 28,
+      roll: 0.006,
       ease: "power2.inOut",
     });
 
@@ -3264,9 +3699,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       bloomPass,
       {
-        strength: 0.85,
-        radius: 0.55,
-        threshold: 0.035,
+        strength: 0.62,
+        radius: 0.42,
+        threshold: 0.046,
         duration: 3.0,
         ease: "sine.inOut",
       },
@@ -3283,20 +3718,20 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: 6.0,
       duration: 2.6,
-      pos: { x: 34, y: 24, z: 210 },
-      target: { x: 8, y: 3.5, z: 44 },
-      fov: 36,
-      roll: 0.012,
+      pos: { x: 72, y: 38, z: 235 },
+      target: { x: 12, y: 5.5, z: 52 },
+      fov: 32,
+      roll: 0.010,
       ease: "power2.inOut",
     });
 
     camTo({
       at: 7.9,
       duration: 2.3,
-      pos: { x: 18, y: 7.5, z: 108 },
-      target: { x: 2, y: 0.8, z: 12 },
-      fov: 44,
-      roll: 0.02,
+      pos: { x: 34, y: 13.5, z: 130 },
+      target: { x: 4.2, y: 1.4, z: 21 },
+      fov: 37,
+      roll: 0.016,
       ease: "power2.inOut",
     });
 
@@ -3305,19 +3740,19 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: 9.75,
       duration: 2.4,
-      pos: { x: 8.4, y: 1.5, z: 22.5 },
-      target: { x: -0.6, y: 0.0, z: 0.0 },
-      fov: 58,
-      roll: -0.012,
+      pos: { x: 20.5, y: 7.2, z: 38.0 },
+      target: { x: -1.4, y: 0.35, z: 0.0 },
+      fov: 42,
+      roll: -0.010,
       ease: "power3.out",
     });
 
     camTo({
-      at: 11.1,
-      duration: 1.8,
-      pos: { x: -7.8, y: -0.35, z: 16.2 },
-      target: { x: 0.0, y: 0.0, z: 0.0 },
-      fov: 63,
+      at: 11.05,
+      duration: 2.25,
+      pos: { x: -14.0, y: 2.8, z: 21.5 },
+      target: { x: -0.15, y: 0.05, z: 0.0 },
+      fov: 48,
       roll: Math.PI * 0.008,
       ease: "sine.inOut",
     });
@@ -3329,26 +3764,31 @@ document.addEventListener("DOMContentLoaded", () => {
     // Apagar estrelas de fundo
     toU(bgStars.mat.uniforms.uOpacity, 0.02, 3.0, 8.0, "power2.inOut");
 
-    toU(BH.diskMat.uniforms.uOpacity, 1.12, 2.8, 8.55, "power2.inOut");
-    toU(BH.lensedDiskMat.uniforms.uOpacity, 0.86, 2.3, 8.8, "power2.out");
-    toU(BH.coronaMat.uniforms.uOpacity, 0.28, 2.3, 8.92, "power2.inOut");
-    toU(BH.haloMat.uniforms.uOpacity, 0.20, 2.1, 9.0, "power2.inOut");
-    toU(BH.ergosphereMat.uniforms.uOpacity, 0.34, 2.0, 9.08, "power2.inOut");
-    toU(BH.photonMat.uniforms.uOpacity, 1.46, 1.55, 9.55, "power2.out");
-    toU(BH.iscoMat.uniforms.uOpacity, 0.86, 1.6, 9.78, "power2.inOut");
-    toU(BH.hotspotMat.uniforms.uOpacity, 0.92, 1.4, 9.95, "power2.inOut");
-    toU(BH.jetMatA.uniforms.uOpacity, 0.24, 1.8, 10.0, "sine.inOut");
-    toU(BH.jetMatB.uniforms.uOpacity, 0.16, 1.8, 10.0, "sine.inOut");
-    tl.to(BH.ctrl, { reveal: 1.0, spin: 0.56, duration: 2.8, ease: "power2.out" }, 8.65);
-    tl.to(BH.grp.scale, { x: 1.03, y: 1.03, z: 1.03, duration: 2.4, ease: "sine.out" }, 8.7);
-    tl.to(BH.grp.rotation, { x: -0.11, y: 0.38, z: 0.028, duration: 2.4, ease: "power2.out" }, 8.7);
+    toU(BH.diskMat.uniforms.uOpacity, 1.12, 2.2, 8.25, "power2.inOut");
+    toU(BH.lensedDiskMat.uniforms.uOpacity, 0.90, 2.0, 8.50, "power2.out");
+    toU(BH.shadowMat.uniforms.uOpacity, 0.62, 1.9, 8.58, "power2.out");
+    toU(BH.coronaMat.uniforms.uOpacity, 0.42, 2.0, 8.72, "power2.inOut");
+    toU(BH.haloMat.uniforms.uOpacity, 0.32, 2.0, 8.82, "power2.inOut");
+    toU(BH.ergosphereMat.uniforms.uOpacity, 0.52, 1.8, 8.95, "power2.inOut");
+    toU(BH.photonMat.uniforms.uOpacity, 1.42, 1.35, 9.25, "power2.out");
+    toU(BH.iscoMat.uniforms.uOpacity, 1.05, 1.45, 9.45, "power2.inOut");
+    toU(BH.causticMat.uniforms.uOpacity, 0.52, 1.65, 9.15, "power2.out");
+    toU(BH.hotspotMat.uniforms.uOpacity, 0.78, 1.25, 9.65, "power2.inOut");
+    toU(BH.dustMat.uniforms.uOpacity, 0.62, 2.2, 8.80, "sine.inOut");
+    toU(BH.magicMat.uniforms.uOpacity, 0.38, 1.8, 9.40, "sine.out");
+    toU(BH.jetMatA.uniforms.uOpacity, 0.26, 1.8, 9.85, "sine.inOut");
+    toU(BH.jetMatB.uniforms.uOpacity, 0.18, 1.8, 9.85, "sine.inOut");
+    tl.to(BH.ctrl, { reveal: 1.0, spin: 0.68, majesty: 0.65, duration: 2.35, ease: "power2.out" }, 8.40);
+    tl.to(BH.grp.scale, { x: 1.06, y: 1.06, z: 1.06, duration: 2.8, ease: "sine.out" }, 8.55);
+    tl.to(BH.grp.rotation, { x: -0.18, y: 0.58, z: 0.035, duration: 2.5, ease: "power2.out" }, 8.55);
     BH.magMats.forEach((m, i) => {
-      tl.to(m, { opacity: 0.16 + i * 0.035, duration: 1.6, ease: "sine.out" }, 9.6 + i * 0.08);
+      tl.to(m, { opacity: 0.16 + i * 0.030, duration: 1.4, ease: "sine.out" }, 9.25 + i * 0.06);
     });
 
     toU(lensPass.uniforms.uRingBoost, 0.18, 1.6, 9.5, "power2.out");
     toU(warpPass.uniforms.uAmount, 0.08, 2.0, 9.8, "sine.inOut");
-    toU(chromaPass.uniforms.uStr, 0.005, 2.0, 9.8, "sine.inOut");
+    toU(chromaPass.uniforms.uStr, 0.003, 2.0, 9.8, "sine.inOut");
+    tl.to(exposureCtrl, { value: 0.94, duration: 3.2, ease: "sine.inOut" }, 8.9);
 
     tl.to(
       shakeCtrl,
@@ -3357,6 +3797,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     toU(HOST.starMat.uniforms.uTravel, 0.05, 1.5, 10.5, "power2.out");
     toU(HOST.starMat.uniforms.uSpeed, 5.0, 1.5, 10.5, "power2.out");
+    tl.to(cinemaCtrl, { drift: 0.08, parallax: 0.045, dutch: 0.35, duration: 2.8, ease: "sine.inOut" }, 10.3);
 
     // ═══════════════════════════════════════════════════════════════
     // ATO 3 — THE EYE OF THE BEHEMOTH
@@ -3366,9 +3807,9 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: BEAT.TDE_INTERLUDE - 2.0,
       duration: 1.25,
-      pos: { x: 8.2, y: 1.9, z: 12.0 },
-      target: { x: -1.8, y: 0.0, z: 0 },
-      fov: 64,
+      pos: { x: 15.2, y: 3.9, z: 16.8 },
+      target: { x: -1.8, y: 0.05, z: 0 },
+      fov: 54,
       roll: -Math.PI * 0.022,
       ease: "sine.inOut",
     });
@@ -3376,9 +3817,9 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: BEAT.TDE_INTERLUDE - 0.82,
       duration: 1.05,
-      pos: { x: -6.4, y: -0.25, z: 10.6 },
+      pos: { x: -10.8, y: 1.6, z: 13.2 },
       target: { x: 0.0, y: 0.0, z: 0 },
-      fov: 67,
+      fov: 56,
       roll: Math.PI * 0.012,
       ease: "power2.inOut",
     });
@@ -3435,14 +3876,18 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: D,
       duration: 2.5,
-      pos: { x: 10.5, y: 2.6, z: 13.4 },
-      target: { x: -2.8, y: 0.0, z: 0 },
-      fov: 63,
+      pos: { x: 17.2, y: 5.2, z: 18.5 },
+      target: { x: -3.6, y: 0.15, z: 0 },
+      fov: 55,
       roll: -Math.PI * 0.038,
       ease: "power2.inOut",
     });
 
-    tl.to(BH.ctrl, { spin: 0.88, diskLift: 0.52, duration: 2.4, ease: "power2.inOut" }, D);
+    tl.to(BH.ctrl, { spin: 0.98, diskLift: 0.62, majesty: 0.86, duration: 2.4, ease: "power2.inOut" }, D);
+    tl.to(BH.causticMat.uniforms.uOpacity, { value: 0.76, duration: 1.8, ease: "power2.out" }, D + 0.05);
+    tl.to(BH.dustMat.uniforms.uOpacity, { value: 0.72, duration: 1.8, ease: "power2.out" }, D + 0.10);
+    tl.to(BH.magicMat.uniforms.uOpacity, { value: 0.48, duration: 1.8, ease: "power2.out" }, D + 0.25);
+    tl.to(BH.shadowMat.uniforms.uOpacity, { value: 0.76, duration: 1.7, ease: "power2.out" }, D + 0.12);
     tl.to(BH.diskMat.uniforms.uOpacity, { value: 1.52, duration: 2.0, ease: "power2.inOut" }, D);
     tl.to(BH.lensedDiskMat.uniforms.uOpacity, { value: 1.08, duration: 2.0, ease: "power2.inOut" }, D + 0.15);
     tl.to(BH.photonMat.uniforms.uOpacity, { value: 1.95, duration: 2.0, ease: "power2.inOut" }, D);
@@ -3457,14 +3902,17 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: D + 2.0,
       duration: 3.0,
-      pos: { x: -9.6, y: -0.45, z: 8.2 },
-      target: { x: 1.25, y: 0, z: 0 },
-      fov: 72,
+      pos: { x: -14.8, y: -1.2, z: 11.4 },
+      target: { x: 1.35, y: 0, z: 0 },
+      fov: 61,
       roll: Math.PI * 0.042,
       ease: "power2.inOut",
     });
 
-    tl.to(BH.ctrl, { spin: 1.14, diskLift: 0.82, duration: 3.0, ease: "power2.inOut" }, D + 1.5);
+    tl.to(BH.ctrl, { spin: 1.26, diskLift: 0.92, majesty: 1.0, duration: 3.0, ease: "power2.inOut" }, D + 1.5);
+    tl.to(cinemaCtrl, { drift: 0.04, parallax: 0.025, dutch: 0.62, duration: 3.2, ease: "sine.inOut" }, D + 1.2);
+    tl.to(BH.causticMat.uniforms.uOpacity, { value: 0.92, duration: 2.4, ease: "power2.inOut" }, D + 1.55);
+    tl.to(BH.magicMat.uniforms.uOpacity, { value: 0.58, duration: 2.4, ease: "power2.inOut" }, D + 1.70);
     tl.to(BH.grp.rotation, { x: -0.06, y: 0.94, z: 0.05, duration: 3.0, ease: "sine.inOut" }, D + 1.55);
     tl.to(HOST.starMat.uniforms.uFrameDrag, { value: 0.90, duration: 3.0, ease: "power2.inOut" }, D + 1.5);
     tl.to(HOST.starMat.uniforms.uSpeed, { value: 132, duration: 3.0, ease: "power2.inOut" }, D + 1.5);
@@ -3491,9 +3939,9 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: D + 4.0,
       duration: dur4C,
-      pos: { x: 5.1, y: 0.14, z: 5.8 },
+      pos: { x: 7.4, y: 0.55, z: 7.6 },
       target: { x: 0.0, y: 0.0, z: 0 },
-      fov: 78,
+      fov: 68,
       roll: -Math.PI * 0.058,
       ease: "power2.in",
     });
@@ -3510,14 +3958,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Bloom mais controlado para preservar a leitura do disco, da lente e do horizonte.
     tl.to(bloomPass, { strength: 1.02, radius: 0.72, threshold: 0.038, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(BH.ctrl, { plunge: 0.64, spin: 1.32, diskLift: 1.06, duration: dur4C, ease: "power2.in" }, D + 4.0);
+    tl.to(BH.ctrl, { plunge: 0.68, spin: 1.48, diskLift: 1.14, majesty: 1.0, duration: dur4C, ease: "power2.in" }, D + 4.0);
+    tl.to(BH.causticMat.uniforms.uOpacity, { value: 1.10, duration: dur4C, ease: "power2.in" }, D + 4.0);
+    tl.to(BH.dustMat.uniforms.uOpacity, { value: 0.44, duration: dur4C, ease: "power2.in" }, D + 4.0);
+    tl.to(BH.magicMat.uniforms.uOpacity, { value: 0.70, duration: dur4C, ease: "power2.in" }, D + 4.0);
+    tl.to(BH.shadowMat.uniforms.uOpacity, { value: 0.92, duration: dur4C, ease: "power2.in" }, D + 4.0);
     tl.to(BH.diskMat.uniforms.uOpacity, { value: 0.78, duration: dur4C, ease: "power2.in" }, D + 4.0);
     tl.to(BH.lensedDiskMat.uniforms.uOpacity, { value: 1.52, duration: dur4C, ease: "power2.in" }, D + 4.0);
     tl.to(BH.photonMat.uniforms.uOpacity, { value: 2.35, duration: dur4C, ease: "power2.in" }, D + 4.0);
     tl.to(BH.hotspotMat.uniforms.uOpacity, { value: 1.18, duration: dur4C, ease: "power2.in" }, D + 4.0);
     tl.to(BH.jetMatA.uniforms.uOpacity, { value: 0.50, duration: dur4C, ease: "power2.in" }, D + 4.0);
     tl.to(BH.jetMatB.uniforms.uOpacity, { value: 0.34, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(shakeCtrl, { lf: 0.08, mf: 0.07, hf: 0.015, duration: dur4C, ease: "power2.in" }, D + 4.0);
+    tl.to(shakeCtrl, { lf: 0.055, mf: 0.045, hf: 0.008, duration: dur4C, ease: "power2.in" }, D + 4.0);
 
     // ═══════════════════════════════════════════════════════════════
     // ATO 5 — MERGULHO NO HORIZONTE
@@ -3526,9 +3978,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       bloomPass,
       {
-        strength: 1.85,
-        radius: 0.88,
-        threshold: 0.03,
+        strength: 1.08,
+        radius: 0.62,
+        threshold: 0.042,
         duration: 1.4,
         ease: "power1.inOut",
       },
@@ -3537,9 +3989,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       bloomPass,
       {
-        strength: 2.8,
-        radius: 1.22,
-        threshold: 0.024,
+        strength: 1.55,
+        radius: 0.84,
+        threshold: 0.036,
         duration: 1.6,
         ease: "power2.in",
       },
@@ -3548,18 +4000,18 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: C,
       duration: 1.8,
-      pos: { x: 6.4, y: 1.4, z: 10.8 },
-      target: { x: -0.6, y: 0, z: 0 },
-      fov: 68,
+      pos: { x: 10.4, y: 2.8, z: 12.8 },
+      target: { x: -1.0, y: 0, z: 0 },
+      fov: 58,
       roll: Math.PI * 0.022,
       ease: "power1.inOut",
     });
     camTo({
       at: C + 1.55,
       duration: 2.05,
-      pos: { x: -4.6, y: -0.22, z: 7.2 },
+      pos: { x: -7.4, y: 0.25, z: 9.2 },
       target: { x: 0.0, y: 0, z: 0 },
-      fov: 80,
+      fov: 66,
       roll: -Math.PI * 0.016,
       ease: "power2.inOut",
     });
@@ -3568,21 +4020,25 @@ document.addEventListener("DOMContentLoaded", () => {
     toU(lensPass.uniforms.uRadius, 0.02, 3.0, C, "power2.in");
     toU(lensPass.uniforms.uRingBoost, 0.20, 1.4, C + 0.5, "power1.inOut");
     toU(lensPass.uniforms.uRingBoost, 0.28, 1.8, C + 2.0, "power2.in");
-    toU(warpPass.uniforms.uAmount, 1.15, 1.5, C, "power1.inOut");
-    toU(warpPass.uniforms.uAmount, 3.6, 1.8, C + 1.8, "power3.in");
-    toU(chromaPass.uniforms.uStr, 0.11, 1.4, C + 0.6, "power1.inOut");
-    toU(chromaPass.uniforms.uStr, 0.44, 1.8, C + 2.0, "power3.in");
+    toU(warpPass.uniforms.uAmount, 0.95, 1.5, C, "power1.inOut");
+    tl.to(exposureCtrl, { value: 0.88, duration: 2.6, ease: "power2.inOut" }, C + 0.1);
+    toU(warpPass.uniforms.uAmount, 2.35, 1.8, C + 1.8, "power3.in");
+    toU(chromaPass.uniforms.uStr, 0.08, 1.4, C + 0.6, "power1.inOut");
+    toU(chromaPass.uniforms.uStr, 0.18, 1.8, C + 2.0, "power3.in");
     toU(barrelPass.uniforms.uStr, -0.05, 1.6, C + 0.4, "power1.inOut");
-    toU(barrelPass.uniforms.uStr, -0.12, 1.8, C + 2.0, "power3.in");
+    toU(barrelPass.uniforms.uStr, -0.055, 1.8, C + 2.0, "power3.in");
     toU(anamPass.uniforms.uStrength, 0.012, 1.2, C + 0.6, "sine.inOut");
 
-    tl.to(BH.ctrl, { plunge: 1.0, spin: 1.72, diskLift: 1.22, duration: 3.2, ease: "power3.in" }, C + 0.1);
-    tl.to(BH.photonMat.uniforms.uOpacity, { value: 2.95, duration: 1.8, ease: "power2.in" }, C + 0.4);
-    tl.to(BH.lensedDiskMat.uniforms.uOpacity, { value: 1.95, duration: 1.8, ease: "power2.in" }, C + 0.55);
+    tl.to(BH.ctrl, { plunge: 1.0, spin: 1.95, diskLift: 1.34, majesty: 1.0, iris: 1.0, duration: 3.2, ease: "power3.in" }, C + 0.1);
+    tl.to(BH.causticMat.uniforms.uOpacity, { value: 1.05, duration: 1.8, ease: "power2.in" }, C + 0.28);
+    tl.to(BH.magicMat.uniforms.uOpacity, { value: 0.68, duration: 1.8, ease: "power2.in" }, C + 0.36);
+    tl.to(BH.shadowMat.uniforms.uOpacity, { value: 1.08, duration: 1.8, ease: "power2.in" }, C + 0.40);
+    tl.to(BH.photonMat.uniforms.uOpacity, { value: 2.05, duration: 1.8, ease: "power2.in" }, C + 0.4);
+    tl.to(BH.lensedDiskMat.uniforms.uOpacity, { value: 1.25, duration: 1.8, ease: "power2.in" }, C + 0.55);
     tl.to(BH.ergosphereMat.uniforms.uOpacity, { value: 0.48, duration: 1.6, ease: "power2.in" }, C + 0.6);
     tl.to(BH.coronaMat.uniforms.uOpacity, { value: 0.36, duration: 1.8, ease: "power2.in" }, C + 0.7);
-    tl.to(BH.jetMatA.uniforms.uOpacity, { value: 0.72, duration: 1.5, ease: "power2.in" }, C + 0.8);
-    tl.to(BH.jetMatB.uniforms.uOpacity, { value: 0.52, duration: 1.5, ease: "power2.in" }, C + 0.8);
+    tl.to(BH.jetMatA.uniforms.uOpacity, { value: 0.48, duration: 1.5, ease: "power2.in" }, C + 0.8);
+    tl.to(BH.jetMatB.uniforms.uOpacity, { value: 0.34, duration: 1.5, ease: "power2.in" }, C + 0.8);
     tl.to(BH.grp.scale, { x: 1.13, y: 1.13, z: 1.13, duration: 2.4, ease: "power3.in" }, C + 1.0);
     tl.to(
       shakeCtrl,
@@ -3591,7 +4047,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     tl.to(
       shakeCtrl,
-      { mf: 0.20, hf: 0.03, duration: 1.8, ease: "power2.in" },
+      { mf: 0.12, hf: 0.015, duration: 1.8, ease: "power2.in" },
       C + 1.8,
     );
     tl.to(BH.grp.rotation, { x: -0.03, y: 1.18, z: 0.035, duration: 2.4, ease: "power2.inOut" }, C + 0.35);
@@ -3613,18 +4069,18 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: C + 3.0,
       duration: 2.2,
-      pos: { x: 0.42, y: 0.03, z: 3.15 },
+      pos: { x: 0.42, y: 0.03, z: 3.85 },
       target: { x: 0, y: 0, z: 0 },
-      fov: 92,
+      fov: 80,
       roll: 0,
       ease: "power4.in",
     });
     camTo({
       at: C + 4.15,
       duration: 0.95,
-      pos: { x: 0.02, y: 0.005, z: 2.05 },
-      target: { x: 0, y: 0, z: -0.18 },
-      fov: 100,
+      pos: { x: 0.035, y: 0.010, z: 2.65 },
+      target: { x: 0, y: 0, z: -0.20 },
+      fov: 86,
       roll: 0,
       ease: "power4.in",
     });
@@ -3667,29 +4123,29 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: T - 1.4,
       duration: 1.4,
-      pos: { x: 0.04, y: 0.008, z: -3.1 },
-      target: { x: 0, y: 0, z: -18 },
-      fov: 100,
+      pos: { x: 0.015, y: 0.003, z: -3.0 },
+      target: { x: 0, y: 0, z: -24 },
+      fov: 88,
       roll: 0,
       ease: "power2.inOut",
     });
     tl.to(
       camera,
       {
-        fov: 112,
+        fov: 96,
         duration: 1.0,
         ease: "power2.in",
         onUpdate: () => camera.updateProjectionMatrix(),
       },
       T - 0.85,
     );
-    toU(warpPass.uniforms.uAmount, 5.2, 0.85, T - 0.88, "power3.in");
-    toU(chromaPass.uniforms.uStr, 0.54, 0.72, T - 0.75, "power3.in");
+    toU(warpPass.uniforms.uAmount, 3.25, 0.85, T - 0.88, "power3.in");
+    toU(chromaPass.uniforms.uStr, 0.13, 0.72, T - 0.75, "power3.in");
     toU(barrelPass.uniforms.uStr, -0.08, 0.72, T - 0.75, "power3.in");
     toU(anamPass.uniforms.uStrength, 0.018, 0.78, T - 0.82, "power3.in");
     tl.to(
       shakeCtrl,
-      { mf: 0.28, hf: 0.1, duration: 0.65, ease: "power2.out" },
+      { mf: 0.16, hf: 0.045, duration: 0.65, ease: "power2.out" },
       T - 0.72,
     );
     tl.to(
@@ -3707,23 +4163,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     tl.add(() => {
       ST.tunneling = true;
-      shakeCtrl.hf = 0.012;
-      shakeCtrl.mf = 0.07;
-      shakeCtrl.lf = 0.032;
+      shakeCtrl.hf = 0.006;
+      shakeCtrl.mf = 0.045;
+      shakeCtrl.lf = 0.022;
       breathCtrl.amp = 0;
       BH.grp.visible = false;
       HOST.grp.visible = false;
       TUNNEL.pts.visible = true;
+      cinemaCtrl.drift = 0.015;
+      cinemaCtrl.parallax = 0.01;
+      cinemaCtrl.dutch = 0.18;
       cosmicGrp.visible = true;
       camRoll.z = 0;
       camera.rotation.z = 0;
       camera.position.set(0, 0, -86);
       lookTarget.set(0, 0, -1600);
-      camera.fov = 112;
+      camera.fov = 96;
       camera.updateProjectionMatrix();
       barrelPass.uniforms.uStr.value = 0;
       warpPass.uniforms.uAmount.value = 2.0;
-      chromaPass.uniforms.uStr.value = 0.18;
+      chromaPass.uniforms.uStr.value = 0.055;
       anamPass.uniforms.uStrength.value = 0.012;
       PASS_GALAXIES.forEach((g) => {
         g.visible = false;
@@ -3735,17 +4194,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }, T);
 
     toU(TUNNEL.mat.uniforms.uOpacity, 1.0, 0.85, T, "power2.out");
-    toU(TUNNEL.mat.uniforms.uSpeed, 340, 1.2, T, "power2.out");
-    toU(TUNNEL.mat.uniforms.uTwist, 2.35, travelDur * 0.45, T, "sine.inOut");
-    toU(TUNNEL.mat.uniforms.uTwist, 3.05, travelDur * 0.32, T + travelDur * 0.35, "sine.inOut");
-    toU(TUNNEL.mat.uniforms.uTwist, 2.1, travelDur * 0.25, T + travelDur * 0.72, "sine.out");
+    toU(TUNNEL.mat.uniforms.uSpeed, 260, 1.25, T, "power2.out");
+    toU(TUNNEL.mat.uniforms.uTwist, 1.45, travelDur * 0.45, T, "sine.inOut");
+    toU(TUNNEL.mat.uniforms.uTwist, 2.05, travelDur * 0.32, T + travelDur * 0.35, "sine.inOut");
+    toU(TUNNEL.mat.uniforms.uTwist, 1.25, travelDur * 0.25, T + travelDur * 0.72, "sine.out");
 
     tl.to(
       camera.position,
       {
-        x: 2.1,
-        y: 0.8,
-        z: -2100,
+        x: 0.8,
+        y: 0.28,
+        z: -1750,
         duration: travelDur * 0.34,
         ease: "sine.inOut",
       },
@@ -3754,9 +4213,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       camera.position,
       {
-        x: -1.6,
-        y: -0.6,
-        z: -4380,
+        x: -0.9,
+        y: -0.32,
+        z: -3980,
         duration: travelDur * 0.33,
         ease: "sine.inOut",
       },
@@ -3765,9 +4224,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       camera.position,
       {
-        x: 0.0,
-        y: 0.0,
-        z: -6200,
+        x: 0.18,
+        y: 0.06,
+        z: -5850,
         duration: travelDur * 0.33,
         ease: "sine.inOut",
       },
@@ -3776,9 +4235,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       lookTarget,
       {
-        x: 0.4,
-        y: 0.12,
-        z: -3100,
+        x: 0.25,
+        y: 0.08,
+        z: -2850,
         duration: travelDur * 0.34,
         ease: "sine.inOut",
       },
@@ -3787,9 +4246,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       lookTarget,
       {
-        x: -0.25,
-        y: -0.08,
-        z: -5450,
+        x: -0.18,
+        y: -0.06,
+        z: -5050,
         duration: travelDur * 0.33,
         ease: "sine.inOut",
       },
@@ -3800,7 +4259,7 @@ document.addEventListener("DOMContentLoaded", () => {
       {
         x: 0.0,
         y: 0.0,
-        z: -7350,
+        z: -6900,
         duration: travelDur * 0.33,
         ease: "sine.inOut",
       },
@@ -3808,12 +4267,12 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     tl.to(
       camRoll,
-      { z: Math.PI * 0.022, duration: travelDur * 0.45, ease: "sine.inOut" },
+      { z: Math.PI * 0.012, duration: travelDur * 0.45, ease: "sine.inOut" },
       T + 0.35,
     );
     tl.to(
       camRoll,
-      { z: -Math.PI * 0.015, duration: travelDur * 0.4, ease: "sine.inOut" },
+      { z: -Math.PI * 0.009, duration: travelDur * 0.4, ease: "sine.inOut" },
       T + travelDur * 0.48,
     );
     tl.to(
@@ -3824,7 +4283,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       camera,
       {
-        fov: 108,
+        fov: 94,
         duration: 2.0,
         ease: "sine.inOut",
         onUpdate: () => camera.updateProjectionMatrix(),
@@ -3834,7 +4293,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       camera,
       {
-        fov: 118,
+        fov: 102,
         duration: 2.8,
         ease: "sine.inOut",
         onUpdate: () => camera.updateProjectionMatrix(),
@@ -3844,28 +4303,28 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       camera,
       {
-        fov: 112,
+        fov: 96,
         duration: 2.4,
         ease: "sine.out",
         onUpdate: () => camera.updateProjectionMatrix(),
       },
       T + 5.2,
     );
-    toU(TUNNEL.mat.uniforms.uSpeed, 295, 1.35, T + 1.3, "sine.inOut");
-    toU(TUNNEL.mat.uniforms.uSpeed, 430, 1.55, T + 3.0, "sine.inOut");
-    toU(TUNNEL.mat.uniforms.uSpeed, 335, 1.45, T + 4.65, "sine.out");
-    toU(warpPass.uniforms.uAmount, 2.6, 1.35, T + 1.1, "sine.inOut");
-    toU(warpPass.uniforms.uAmount, 3.4, 1.45, T + 3.0, "sine.inOut");
-    toU(warpPass.uniforms.uAmount, 2.2, 1.3, T + 4.7, "sine.out");
-    toU(chromaPass.uniforms.uStr, 0.24, 1.2, T + 1.2, "sine.inOut");
-    toU(chromaPass.uniforms.uStr, 0.34, 1.35, T + 3.0, "sine.inOut");
-    toU(chromaPass.uniforms.uStr, 0.18, 1.25, T + 4.7, "sine.out");
+    toU(TUNNEL.mat.uniforms.uSpeed, 315, 1.35, T + 1.3, "sine.inOut");
+    toU(TUNNEL.mat.uniforms.uSpeed, 385, 1.55, T + 3.0, "sine.inOut");
+    toU(TUNNEL.mat.uniforms.uSpeed, 305, 1.45, T + 4.65, "sine.out");
+    toU(warpPass.uniforms.uAmount, 1.85, 1.35, T + 1.1, "sine.inOut");
+    toU(warpPass.uniforms.uAmount, 2.55, 1.45, T + 3.0, "sine.inOut");
+    toU(warpPass.uniforms.uAmount, 1.65, 1.3, T + 4.7, "sine.out");
+    toU(chromaPass.uniforms.uStr, 0.075, 1.2, T + 1.2, "sine.inOut");
+    toU(chromaPass.uniforms.uStr, 0.105, 1.35, T + 3.0, "sine.inOut");
+    toU(chromaPass.uniforms.uStr, 0.055, 1.25, T + 4.7, "sine.out");
     tl.to(
       bloomPass,
       {
-        strength: 1.35,
-        radius: 0.84,
-        threshold: 0.034,
+        strength: 0.82,
+        radius: 0.58,
+        threshold: 0.046,
         duration: 1.6,
         ease: "sine.inOut",
       },
@@ -3873,7 +4332,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     tl.to(
       shakeCtrl,
-      { mf: 0.05, hf: 0.0, lf: 0.035, duration: 2.6, ease: "sine.inOut" },
+      { mf: 0.028, hf: 0.0, lf: 0.018, duration: 2.6, ease: "sine.inOut" },
       T + 0.95,
     );
 
@@ -3905,17 +4364,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ATO 7 — BLACKOUT / SILÊNCIO
     toU(TUNNEL.mat.uniforms.uSpeed, 600, 0.38, S - 0.42, "power4.in");
-    toU(chromaPass.uniforms.uStr, 2.0, 0.34, S - 0.34, "power4.in");
-    toU(warpPass.uniforms.uAmount, 10.5, 0.34, S - 0.34, "power4.in");
+    toU(chromaPass.uniforms.uStr, 0.32, 0.34, S - 0.34, "power4.in");
+    toU(warpPass.uniforms.uAmount, 5.4, 0.34, S - 0.34, "power4.in");
     tl.to(
       bloomPass,
-      { strength: 8.8, radius: 2.35, duration: 0.42, ease: "power4.in" },
+      { strength: 4.8, radius: 1.35, duration: 0.42, ease: "power4.in" },
       S - 0.46,
     );
     tl.to(OV.flash, { opacity: 1, duration: 0.035, ease: "none" }, S - 0.09);
     tl.to(
       OV.hawking,
-      { opacity: 0.84, duration: 0.05, ease: "none" },
+      { opacity: 0.62, duration: 0.05, ease: "none" },
       S - 0.08,
     );
     tl.to(OV.flash, { opacity: 0, duration: 0.08, ease: "none" }, S - 0.015);
@@ -3943,9 +4402,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       bloomPass,
       {
-        strength: 1.2,
-        radius: 0.65,
-        threshold: 0.045,
+        strength: 0.95,
+        radius: 0.58,
+        threshold: 0.050,
         duration: 1.0,
         ease: "power1.out",
       },
@@ -3954,9 +4413,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       bloomPass,
       {
-        strength: 2.75,
-        radius: 1.15,
-        threshold: 0.025,
+        strength: 2.05,
+        radius: 0.92,
+        threshold: 0.032,
         duration: 1.4,
         ease: "power2.out",
       },
@@ -3985,13 +4444,17 @@ document.addEventListener("DOMContentLoaded", () => {
         ST.bhAlive = false;
       }
       REBIRTH.grp.visible = true;
-      camera.position.set(0, 0.8, 6);
+      cinemaCtrl.drift = 0.11;
+      cinemaCtrl.parallax = 0.065;
+      cinemaCtrl.dutch = 0.0;
+      camera.position.set(0.4, 1.4, 8.2);
       lookTarget.set(0, 0, 0);
-      camera.fov = 52;
+      camera.fov = 44;
       camera.updateProjectionMatrix();
-      bloomPass.strength = 2.75;
-      bloomPass.radius = 1.15;
-      bloomPass.threshold = 0.025;
+      bloomPass.strength = 1.68;
+      bloomPass.radius = 0.76;
+      bloomPass.threshold = 0.040;
+      exposureCtrl.value = 1.00;
       chromaPass.uniforms.uStr.value = 0;
       warpPass.uniforms.uAmount.value = 0;
       lensPass.uniforms.uActive.value = 0;
@@ -4008,40 +4471,52 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: R,
       duration: 2.8,
-      pos: { x: 0.8, y: 1.6, z: 18 },
+      pos: { x: 1.6, y: 3.2, z: 24 },
       target: { x: 0, y: 0, z: 0 },
-      fov: 46,
+      fov: 39,
       roll: 0,
       ease: "power2.out",
     });
     camTo({
       at: R + 1.55,
       duration: 6.1,
-      pos: { x: 18, y: 7.6, z: 66 },
+      pos: { x: 34, y: 16.0, z: 96 },
       target: { x: 0, y: 0, z: 0 },
-      fov: 40,
+      fov: 32,
       roll: -Math.PI * 0.016,
       ease: "sine.inOut",
     });
     camTo({
       at: R + 5.7,
       duration: 7.4,
-      pos: { x: -24, y: 15.5, z: 136 },
+      pos: { x: -48, y: 30.0, z: 198 },
       target: { x: 0, y: 0, z: 0 },
-      fov: 34,
+      fov: 28,
       roll: Math.PI * 0.02,
       ease: "sine.inOut",
     });
     camTo({
       at: BEAT.FINAL_PULL,
       duration: BEAT.END - BEAT.FINAL_PULL - 1.15,
-      pos: { x: 0, y: 25, z: 252 },
+      pos: { x: 0, y: 42, z: 345 },
       target: { x: 0, y: 0, z: 0 },
-      fov: 29,
+      fov: 25,
       roll: 0,
       ease: "sine.inOut",
     });
     toU(REBIRTH.quantumMat.uniforms.uOpacity, 1.0, 1.0, R + 0.02, "power2.out");
+    toU(REBIRTH.crownMat.uniforms.uOpacity, 1.0, 1.25, R + 0.04, "power2.out");
+    toU(REBIRTH.crownMat.uniforms.uGrow, 1.0, 12.8, R + 0.08, "expo.out");
+    toU(REBIRTH.crownMat.uniforms.uBloom, 1.0, 10.8, R + 0.30, "sine.inOut");
+    toU(REBIRTH.crownMat.uniforms.uSpiral, 1.0, 14.0, R + 0.42, "sine.inOut");
+    REBIRTH.veilMats.forEach((m, i) => {
+      toU(m.uniforms.uOpacity, i === 0 ? 0.82 : 0.58, 4.2, R + 0.70 + i * 0.70, "power2.out");
+      toU(m.uniforms.uGrow, 1.0, 8.4, R + 0.50 + i * 0.60, "expo.out");
+    });
+    REBIRTH.haloMats.forEach((m, i) => {
+      tl.to(m, { opacity: 0.30 - i * 0.035, duration: 1.5, ease: "power2.out" }, R + 0.24 + i * 0.16);
+      tl.to(m, { opacity: 0.08 + i * 0.018, duration: 8.5, ease: "power2.inOut" }, R + 2.4 + i * 0.30);
+    });
     toU(REBIRTH.shockMat.uniforms.uOpacity, 1.0, 0.42, R + 0.12, "power2.out");
     toU(REBIRTH.shockMat.uniforms.uScale, 1.9, 3.2, R + 0.12, "expo.out");
     toU(REBIRTH.shockMat.uniforms.uOpacity, 0.0, 2.4, R + 0.9, "power2.in");
@@ -4080,16 +4555,21 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     tl.to(
       bloomPass,
-      { strength: 3.4, radius: 1.35, threshold: 0.018, duration: 3.2 },
+      { strength: 2.48, radius: 0.96, threshold: 0.028, duration: 3.2, ease: "power2.out" },
       R + 0.2,
     );
     tl.to(
       bloomPass,
-      { strength: 2.05, radius: 0.92, threshold: 0.035, duration: 8.2 },
+      { strength: 1.58, radius: 0.72, threshold: 0.044, duration: 8.2, ease: "sine.inOut" },
       R + 5.8,
     );
-    tl.to(chromaPass.uniforms.uStr, { value: 0.18, duration: 2.2 }, R + 0.4);
-    tl.to(chromaPass.uniforms.uStr, { value: 0.035, duration: 6.0 }, R + 4.0);
+    REBIRTH.veilMats.forEach((m, i) => {
+      toU(m.uniforms.uOpacity, i === 0 ? 0.42 : 0.30, 5.5, R + 7.6 + i * 0.5, "power2.inOut");
+    });
+    tl.to(chromaPass.uniforms.uStr, { value: 0.045, duration: 2.2 }, R + 0.4);
+    tl.to(exposureCtrl, { value: 1.04, duration: 2.4, ease: "power2.out" }, R + 0.2);
+    tl.to(exposureCtrl, { value: 0.96, duration: 7.2, ease: "sine.inOut" }, R + 4.8);
+    tl.to(chromaPass.uniforms.uStr, { value: 0.02, duration: 6.0 }, R + 4.0);
     tl.to(shakeCtrl, { lf: 0.08, mf: 0.03, hf: 0, duration: 1.2 }, R + 0.2);
     tl.to(shakeCtrl, { lf: 0.015, mf: 0, hf: 0, duration: 5.0 }, R + 4.0);
     tl.to(
@@ -4284,6 +4764,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     REBIRTH.grp.rotation.y += dt * 0.012;
     REBIRTH.grp.rotation.z += dt * 0.004;
+    if (REBIRTH.crown) REBIRTH.crown.rotation.z += dt * 0.010;
+    if (REBIRTH.haloGroup) REBIRTH.haloGroup.rotation.z -= dt * 0.018;
+    if (REBIRTH.veil1) REBIRTH.veil1.rotation.z += dt * 0.003;
+    if (REBIRTH.veil2) REBIRTH.veil2.rotation.z -= dt * 0.004;
 
     if (ST.tunneling) {
       bgStars.pts.rotation.y += dt * 0.008;
@@ -4303,7 +4787,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (ST.bhAlive && BH.grp.visible) {
-      const bhSpin = 0.22 + (BH.ctrl?.spin || 0) * 1.35;
+      const bhSpin = 0.20 + (BH.ctrl?.spin || 0) * 1.22;
       const bhPlunge = BH.ctrl?.plunge || 0;
       const bhLift = BH.ctrl?.diskLift || 0;
 
@@ -4315,6 +4799,10 @@ document.addEventListener("DOMContentLoaded", () => {
       BH.ergosphere.rotation.y -= dt * (0.035 + bhSpin * 0.065);
       BH.corona.rotation.y += dt * (0.018 + bhSpin * 0.045);
       BH.halo.rotation.y -= dt * 0.012;
+      if (BH.shadowAura) BH.shadowAura.rotation.y += dt * (0.04 + bhSpin * 0.05);
+      if (BH.causticLines) BH.causticLines.rotation.y -= dt * (0.10 + bhSpin * 0.16);
+      if (BH.dustCloud) BH.dustCloud.rotation.y += dt * (0.016 + bhSpin * 0.018);
+      if (BH.magicDust) BH.magicDust.rotation.y -= dt * (0.05 + bhSpin * 0.06);
       BH.magLines.rotation.y += dt * (0.045 + bhSpin * 0.075);
       BH.jetA.scale.y = 1.0 + Math.sin(t * 3.2) * 0.025 + bhPlunge * 0.22;
       BH.jetB.scale.y = 0.82 + Math.cos(t * 2.7) * 0.022 + bhPlunge * 0.18;
@@ -4332,6 +4820,10 @@ document.addEventListener("DOMContentLoaded", () => {
         BH.iscoMat,
         BH.coronaMat,
         BH.haloMat,
+        BH.shadowMat,
+        BH.causticMat,
+        BH.dustMat,
+        BH.magicMat,
         BH.hotspotMat,
         BH.jetMatA,
         BH.jetMatB,
@@ -4342,20 +4834,28 @@ document.addEventListener("DOMContentLoaded", () => {
         if (u.uSpin) u.uSpin.value = bhSpin;
         if (u.uPlunge) u.uPlunge.value = bhPlunge;
         if (u.uDiskLift) u.uDiskLift.value = bhLift;
+        if (u.uMajesty) u.uMajesty.value = BH.ctrl?.majesty || 0;
       }
     }
 
     calcShake(t, dt);
     _basePos.copy(camera.position);
     const breath = Math.sin(t * 0.45) * breathCtrl.amp;
+    renderer.toneMappingExposure += (exposureCtrl.value - renderer.toneMappingExposure) * Math.min(1, dt * 3.8);
+
+    const cinemaDrift =
+      Math.sin(t * 0.155) * cinemaCtrl.drift +
+      Math.sin(t * 0.071 + 1.7) * cinemaCtrl.drift * 0.55;
+    const cinemaParallax =
+      Math.cos(t * 0.112 + 0.5) * cinemaCtrl.parallax;
 
     camera.position.set(
-      _basePos.x + _sh.x,
-      _basePos.y + _sh.y + breath,
+      _basePos.x + _sh.x + cinemaDrift,
+      _basePos.y + _sh.y + breath + cinemaParallax,
       _basePos.z,
     );
     camera.lookAt(lookTarget);
-    camera.rotateZ(camRoll.z + _sh.roll);
+    camera.rotateZ(camRoll.z + _sh.roll + Math.sin(t * 0.092) * cinemaCtrl.dutch * 0.012);
 
     updateBlackHoleProjection(t);
 
