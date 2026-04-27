@@ -1,3 +1,9 @@
+/**
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║  INTRO CINEMATOGRÁFICO — v6.2.1 HYPERREAL · MERGULHO SEM EXPLOSÃO            ║
+ * ║  GALÁXIA JWST + BURACO NEGRO 3D REFEITO + RENASCIMENTO ÉPICO     ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ */
 
 document.addEventListener("DOMContentLoaded", () => {
   // ─── ELEMENTOS DOM ──────────────────────────────────────────────
@@ -826,23 +832,29 @@ document.addEventListener("DOMContentLoaded", () => {
           float suck = smoothstep(0.0, 1.0, uSuck); 
           float drag = smoothstep(0.0, 1.0, uFrameDrag);
           
-          float collapsedRadius=max(0.18, radius*mix(1.0, 0.018, pow(suck,1.75)));
-          float currentRadius=mix(radius, collapsedRadius, suck);
+          float collapsedRadius = max(0.18, radius * mix(1.0, 0.58, pow(suck, 1.25)));
+          float currentRadius = mix(radius, collapsedRadius, suck);
           
-          // Efeito Lense-Thirring
-          angle += drag * (65.0 / (currentRadius + 0.5)) * (0.8 + aSeed * 0.4);
+          // Arraste Lense-Thirring mais elegante: curva a galáxia sem implodir/explodir as estrelas.
+          angle += drag * (16.0 / (currentRadius + 0.8)) * (0.8 + aSeed * 0.35);
           
-          p.x=cos(angle)*currentRadius; p.z=sin(angle)*currentRadius;
-          p.y *= mix(1.0, 0.005, max(suck, drag)); 
+          p.x = cos(angle) * currentRadius;
+          p.z = sin(angle) * currentRadius;
           
-          vec4 mv=modelViewMatrix*vec4(p,1.0); gl_Position=projectionMatrix*mv;
-          float pulse=0.92+0.08*sin(uT*mix(1.1,3.8,aTemp)+aSeed*6.28318)*sin(uT*0.73+aSeed*21.0);
-          float speedTravel=clamp(uSpeed/260.0,0.0,1.0);
-          float travel=max(uTravel,speedTravel);
-          float travelStretch=mix(1.0, 6.0, smoothstep(0.0,1.0,travel));
+          // Mantém a espessura da galáxia durante o mergulho para evitar o visual de colapso.
+          p.y *= mix(1.0, 0.62, max(suck, drag));
           
-          float dragBoost = 1.0 + drag * 5.0; 
-          gl_PointSize=clamp((72.0/-mv.z)*aSize*pulse*travelStretch*dragBoost, 0.25, 60.0);
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          gl_Position = projectionMatrix * mv;
+          float pulse = 0.92 + 0.08 * sin(uT * mix(1.1, 3.8, aTemp) + aSeed * 6.28318) * sin(uT * 0.73 + aSeed * 21.0);
+          float speedTravel = clamp(uSpeed / 260.0, 0.0, 1.0);
+          float travel = max(uTravel, speedTravel);
+          
+          // O mergulho agora vem do alongamento luminoso, não da destruição da galáxia.
+          float travelStretch = mix(1.0, 8.2, smoothstep(0.0, 1.0, travel));
+          
+          float dragBoost = 1.0 + drag * 1.8;
+          gl_PointSize = clamp((72.0 / -mv.z) * aSize * pulse * travelStretch * dragBoost, 0.25, 60.0);
           
           vColor=aColor; vAlpha=pulse; vTemp=aTemp; vTravel=travel; vRegion=aRegion; vDrag=drag; vSeed=aSeed;
         }
@@ -2177,7 +2189,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // TÚNEL DE SINGULARIDADE — DISTORÇÃO DE ESPAÇO TEMPO APLICADA
   // ═══════════════════════════════════════════════════════════════
   function buildTunnel() {
-    const N = Math.round(46000 * TIER_FACTOR),
+    const N = Math.round(36000 * TIER_FACTOR),
       geo = new THREE.BufferGeometry();
     const pos = new Float32Array(N * 3),
       col = new Float32Array(N * 3),
@@ -2245,9 +2257,9 @@ document.addEventListener("DOMContentLoaded", () => {
           p.xy*=1.0+timeWarp/(r*0.026+1.0);
           p.xy*=mix(1.0,0.72,gravWell*speedNorm);
           vec4 mv=modelViewMatrix*vec4(p,1.0); gl_Position=projectionMatrix*mv;
-          float gate=smoothstep(260.0,-260.0,p.z);
-          float cathedral=0.55+0.45*pow(abs(sin(r*0.055-uT*2.4)),3.0);
-          gl_PointSize=(112.0/-mv.z)*(0.70+aRnd*1.55)*mix(0.85,2.75,speedNorm)*cathedral*mix(0.82,1.18,gravWell);
+          float gate=smoothstep(340.0,-340.0,p.z);
+          float cathedral=0.62+0.38*pow(abs(sin(r*0.055-uT*2.4)),3.0);
+          gl_PointSize=(118.0/-mv.z)*(0.72+aRnd*1.48)*mix(0.88,2.55,speedNorm)*cathedral*mix(0.84,1.16,gravWell);
           vC=color; vA=gate; vRad=clamp(r/330.0,0.0,1.0); vAngle=a; vGate=cathedral; vSpeed=speedNorm; vLens=gravWell; vDepth=z01;
         }
       `,
@@ -2261,7 +2273,7 @@ document.addEventListener("DOMContentLoaded", () => {
           float halo=exp(-dot(p,p)*4.2)*mix(0.16,0.32,vLens);
           float ring=exp(-pow(length(p)-0.36,2.0)*42.0)*0.18*vLens;
           float lensBloom=exp(-abs(q.y)*10.5)*exp(-abs(q.x)*3.0)*0.16*vLens*vSpeed;
-          float a=(core*0.74+streak*0.95+halo+ring+lensBloom)*vA*uOpacity*vGate;
+          float a=(core*0.78+streak*1.05+halo+ring*1.18+lensBloom*1.08)*vA*uOpacity*vGate;
           vec3 blueShift=vec3(0.45,0.78,1.0),violetShift=vec3(0.72,0.35,1.0),redShift=vec3(1.0,0.26,0.08),goldShift=vec3(1.0,0.72,0.22);
           vec3 gravTint=mix(vec3(0.55,0.86,1.0),vec3(1.0,0.72,0.22),vLens*0.65);
           vec3 edgeColor=mix(violetShift,redShift,smoothstep(0.45,1.0,vRad));
@@ -2270,7 +2282,7 @@ document.addEventListener("DOMContentLoaded", () => {
           c=mix(c,gravTint,0.28+vLens*0.25);
           c+=vec3(0.78,0.92,1.0)*core*(0.42+vLens*0.36);
           c+=vec3(0.52,0.82,1.0)*ring*0.85;
-          gl_FragColor=vec4(c*a*2.75,a*0.88);
+          gl_FragColor=vec4(c*a*2.95,a*0.9);
         }
       `,
       }),
@@ -3797,30 +3809,32 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     toU(HOST.starMat.uniforms.uTravel, 0.05, 1.5, 10.5, "power2.out");
     toU(HOST.starMat.uniforms.uSpeed, 5.0, 1.5, 10.5, "power2.out");
-    tl.to(cinemaCtrl, { drift: 0.08, parallax: 0.045, dutch: 0.35, duration: 2.8, ease: "sine.inOut" }, 10.3);
+    tl.to(cinemaCtrl, { drift: 0.055, parallax: 0.035, dutch: 0.14, duration: 2.8, ease: "sine.inOut" }, 10.3);
 
     // ═══════════════════════════════════════════════════════════════
     // ATO 3 — THE EYE OF THE BEHEMOTH
     // ═══════════════════════════════════════════════════════════════
     tl.addLabel("ACT_3_HANDOFF", BEAT.TDE_INTERLUDE - 2.0);
 
+    // Órbita cinematográfica de 360° no buraco negro: menos vai-e-vem lateral,
+    // mais sensação de reverência, escala e continuidade orbital.
     camTo({
       at: BEAT.TDE_INTERLUDE - 2.0,
-      duration: 1.25,
-      pos: { x: 15.2, y: 3.9, z: 16.8 },
-      target: { x: -1.8, y: 0.05, z: 0 },
+      duration: 1.10,
+      pos: { x: 15.8, y: 4.2, z: 17.0 },
+      target: { x: -1.2, y: 0.05, z: 0 },
       fov: 54,
-      roll: -Math.PI * 0.022,
+      roll: -Math.PI * 0.012,
       ease: "sine.inOut",
     });
 
     camTo({
-      at: BEAT.TDE_INTERLUDE - 0.82,
-      duration: 1.05,
-      pos: { x: -10.8, y: 1.6, z: 13.2 },
-      target: { x: 0.0, y: 0.0, z: 0 },
-      fov: 56,
-      roll: Math.PI * 0.012,
+      at: BEAT.TDE_INTERLUDE - 0.95,
+      duration: 1.25,
+      pos: { x: 18.6, y: 4.8, z: 2.2 },
+      target: { x: -0.5, y: 0.04, z: 0 },
+      fov: 55,
+      roll: -Math.PI * 0.016,
       ease: "power2.inOut",
     });
 
@@ -3875,11 +3889,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // ── 4A · CRUZANDO O LIMITE ESTÁTICO (D ... D+2.0)
     camTo({
       at: D,
-      duration: 2.5,
-      pos: { x: 17.2, y: 5.2, z: 18.5 },
-      target: { x: -3.6, y: 0.15, z: 0 },
-      fov: 55,
-      roll: -Math.PI * 0.038,
+      duration: 1.55,
+      pos: { x: 13.8, y: 4.4, z: -13.6 },
+      target: { x: -1.8, y: 0.12, z: 0 },
+      fov: 56,
+      roll: -Math.PI * 0.014,
       ease: "power2.inOut",
     });
 
@@ -3896,30 +3910,58 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(BH.jetMatA.uniforms.uOpacity, { value: 0.30, duration: 1.8, ease: "sine.inOut" }, D + 0.15);
     tl.to(BH.jetMatB.uniforms.uOpacity, { value: 0.21, duration: 1.8, ease: "sine.inOut" }, D + 0.15);
 
-    tl.to(shakeCtrl, { lf: 0.01, mf: 0.03, hf: 0.008, duration: 2.0, ease: "sine.inOut" }, D);
+    tl.to(shakeCtrl, { lf: 0.008, mf: 0.018, hf: 0.002, duration: 2.0, ease: "sine.inOut" }, D);
 
-    // ── 4B · COROTAÇÃO NO LENSE-THIRRING (D+2.0 ... D+4.0)
+    // ── 4B · ÓRBITA COMPLETA NO LENSE-THIRRING (D+1.5 ... D+6.8)
     camTo({
-      at: D + 2.0,
-      duration: 3.0,
-      pos: { x: -14.8, y: -1.2, z: 11.4 },
-      target: { x: 1.35, y: 0, z: 0 },
+      at: D + 1.55,
+      duration: 1.60,
+      pos: { x: 1.4, y: 3.1, z: -18.8 },
+      target: { x: 0.0, y: 0.06, z: 0 },
+      fov: 58,
+      roll: -Math.PI * 0.010,
+      ease: "power2.inOut",
+    });
+    camTo({
+      at: D + 3.15,
+      duration: 1.60,
+      pos: { x: -13.2, y: 2.1, z: -14.6 },
+      target: { x: 0.8, y: 0.03, z: 0 },
+      fov: 59,
+      roll: Math.PI * 0.008,
+      ease: "power2.inOut",
+    });
+    camTo({
+      at: D + 4.75,
+      duration: 1.55,
+      pos: { x: -18.4, y: 1.2, z: -1.8 },
+      target: { x: 1.0, y: 0.0, z: 0 },
+      fov: 60,
+      roll: Math.PI * 0.012,
+      ease: "power2.inOut",
+    });
+    camTo({
+      at: D + 6.30,
+      duration: 1.55,
+      pos: { x: -12.0, y: 0.8, z: 13.6 },
+      target: { x: 0.0, y: 0.0, z: 0 },
       fov: 61,
-      roll: Math.PI * 0.042,
+      roll: Math.PI * 0.014,
       ease: "power2.inOut",
     });
 
     tl.to(BH.ctrl, { spin: 1.26, diskLift: 0.92, majesty: 1.0, duration: 3.0, ease: "power2.inOut" }, D + 1.5);
-    tl.to(cinemaCtrl, { drift: 0.04, parallax: 0.025, dutch: 0.62, duration: 3.2, ease: "sine.inOut" }, D + 1.2);
+    tl.to(cinemaCtrl, { drift: 0.03, parallax: 0.02, dutch: 0.12, duration: 3.2, ease: "sine.inOut" }, D + 1.2);
     tl.to(BH.causticMat.uniforms.uOpacity, { value: 0.92, duration: 2.4, ease: "power2.inOut" }, D + 1.55);
     tl.to(BH.magicMat.uniforms.uOpacity, { value: 0.58, duration: 2.4, ease: "power2.inOut" }, D + 1.70);
     tl.to(BH.grp.rotation, { x: -0.06, y: 0.94, z: 0.05, duration: 3.0, ease: "sine.inOut" }, D + 1.55);
-    tl.to(HOST.starMat.uniforms.uFrameDrag, { value: 0.90, duration: 3.0, ease: "power2.inOut" }, D + 1.5);
-    tl.to(HOST.starMat.uniforms.uSpeed, { value: 132, duration: 3.0, ease: "power2.inOut" }, D + 1.5);
+    tl.to(HOST.starMat.uniforms.uFrameDrag, { value: 0.18, duration: 3.0, ease: "power2.inOut" }, D + 1.5);
+    tl.to(HOST.starMat.uniforms.uSpeed, { value: 74, duration: 3.0, ease: "power2.inOut" }, D + 1.5);
 
-    tl.to(TIDAL.pMat.uniforms.uOpacity, { value: 0.8, duration: 2.5, ease: "sine.inOut" }, D + 1.8);
-    toU(warpPass.uniforms.uAmount, 0.65, 2.5, D + 1.8, "sine.inOut");
-    toU(chromaPass.uniforms.uStr, 0.045, 2.5, D + 1.8, "sine.inOut");
+    // Plasma tidal quase invisível: atmosfera gravitacional sem sensação de explosão.
+    tl.to(TIDAL.pMat.uniforms.uOpacity, { value: 0.08, duration: 2.2, ease: "sine.inOut" }, D + 1.8);
+    toU(warpPass.uniforms.uAmount, 0.55, 2.5, D + 1.8, "sine.inOut");
+    toU(chromaPass.uniforms.uStr, 0.032, 2.5, D + 1.8, "sine.inOut");
 
     TIDAL.gwMats.slice(0, 4).forEach((m, i) => {
       tl.to(
@@ -3934,27 +3976,26 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     });
 
-    // ── 4C · QUEDA LIVRE RELATIVÍSTICA (D+4.0 ... C)
-    const dur4C = Math.max(0.8, BEAT.CHAOS_START - (D + 4.0));
+    // ── 4C · FECHANDO A ÓRBITA E ALINHANDO O MERGULHO (D+7.85 ... C)
+    const dur4C = Math.max(0.8, BEAT.CHAOS_START - (D + 7.85));
     camTo({
-      at: D + 4.0,
+      at: D + 7.85,
       duration: dur4C,
-      pos: { x: 7.4, y: 0.55, z: 7.6 },
+      pos: { x: 4.8, y: 0.42, z: 8.4 },
       target: { x: 0.0, y: 0.0, z: 0 },
-      fov: 68,
-      roll: -Math.PI * 0.058,
+      fov: 66,
+      roll: -Math.PI * 0.024,
       ease: "power2.in",
     });
+    tl.to(HOST.starMat.uniforms.uFrameDrag, { value: 0.28, duration: dur4C, ease: "power2.inOut" }, D + 4.0);
+    tl.to(HOST.starMat.uniforms.uSuck, { value: 0.12, duration: dur4C, ease: "power2.inOut" }, D + 4.0);
+    tl.to(HOST.starMat.uniforms.uSpeed, { value: 108, duration: dur4C, ease: "power2.in" }, D + 4.0);
+    tl.to(TIDAL.sMat.uniforms.uOpacity, { value: 0.06, duration: 1.0, ease: "power2.out" }, D + 3.7);
 
-    tl.to(HOST.starMat.uniforms.uFrameDrag, { value: 1.0, duration: dur4C, ease: "power3.in" }, D + 4.0);
-    tl.to(HOST.starMat.uniforms.uSuck, { value: 0.88, duration: dur4C, ease: "power2.inOut" }, D + 4.0);
-    tl.to(HOST.starMat.uniforms.uSpeed, { value: 220, duration: dur4C, ease: "power3.in" }, D + 4.0);
-    tl.to(TIDAL.sMat.uniforms.uOpacity, { value: 1.0, duration: 1.2, ease: "power2.out" }, D + 3.7);
-
-    toU(lensPass.uniforms.uStrength, 0.022, dur4C, D + 4.0, "power2.in");
-    toU(warpPass.uniforms.uAmount, 1.45, dur4C, D + 4.0, "power2.in");
-    toU(chromaPass.uniforms.uStr, 0.10, dur4C, D + 4.0, "power2.in");
-    toU(barrelPass.uniforms.uStr, -0.05, dur4C, D + 4.0, "power2.in");
+    toU(lensPass.uniforms.uStrength, 0.016, dur4C, D + 4.0, "power2.in");
+    toU(warpPass.uniforms.uAmount, 0.78, dur4C, D + 4.0, "power2.in");
+    toU(chromaPass.uniforms.uStr, 0.045, dur4C, D + 4.0, "power2.in");
+    toU(barrelPass.uniforms.uStr, -0.022, dur4C, D + 4.0, "power2.in");
 
     // Bloom mais controlado para preservar a leitura do disco, da lente e do horizonte.
     tl.to(bloomPass, { strength: 1.02, radius: 0.72, threshold: 0.038, duration: dur4C, ease: "power2.in" }, D + 4.0);
@@ -3969,7 +4010,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(BH.hotspotMat.uniforms.uOpacity, { value: 1.18, duration: dur4C, ease: "power2.in" }, D + 4.0);
     tl.to(BH.jetMatA.uniforms.uOpacity, { value: 0.50, duration: dur4C, ease: "power2.in" }, D + 4.0);
     tl.to(BH.jetMatB.uniforms.uOpacity, { value: 0.34, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(shakeCtrl, { lf: 0.055, mf: 0.045, hf: 0.008, duration: dur4C, ease: "power2.in" }, D + 4.0);
+    tl.to(shakeCtrl, { lf: 0.03, mf: 0.026, hf: 0.003, duration: dur4C, ease: "power2.in" }, D + 4.0);
 
     // ═══════════════════════════════════════════════════════════════
     // ATO 5 — MERGULHO NO HORIZONTE
@@ -4042,29 +4083,52 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(BH.grp.scale, { x: 1.13, y: 1.13, z: 1.13, duration: 2.4, ease: "power3.in" }, C + 1.0);
     tl.to(
       shakeCtrl,
-      { lf: 0.05, mf: 0.08, hf: 0.0, duration: 1.6, ease: "power1.inOut" },
+      { lf: 0.032, mf: 0.05, hf: 0.0, duration: 1.6, ease: "power1.inOut" },
       C,
     );
     tl.to(
       shakeCtrl,
-      { mf: 0.12, hf: 0.015, duration: 1.8, ease: "power2.in" },
+      { mf: 0.07, hf: 0.006, duration: 1.8, ease: "power2.in" },
       C + 1.8,
     );
     tl.to(BH.grp.rotation, { x: -0.03, y: 1.18, z: 0.035, duration: 2.4, ease: "power2.inOut" }, C + 0.35);
+    // Mergulho limpo: as estrelas alongam e passam pela câmera, sem explosão da galáxia.
     tl.to(
       HOST.starMat.uniforms.uSuck,
-      { value: 1.0, duration: 3.2, ease: "power3.in" },
+      { value: 0.16, duration: 3.0, ease: "power2.inOut" },
       C + 0.2,
     );
     tl.to(
+      HOST.starMat.uniforms.uTravel,
+      { value: 0.95, duration: 3.0, ease: "power2.inOut" },
+      C + 0.15,
+    );
+    tl.to(
+      HOST.dustMat.uniforms.uTravel,
+      { value: 0.70, duration: 2.8, ease: "power2.inOut" },
+      C + 0.2,
+    );
+
+    // Remove o comportamento de caos/desintegração: fica só a passagem gravitacional.
+    tl.to(
       TIDAL.pMat.uniforms.uChaos,
-      { value: 1.0, duration: 3.0, ease: "power2.in" },
+      { value: 0.0, duration: 1.0, ease: "power2.out" },
       C + 0.1,
     );
     tl.to(
       TIDAL.sMat.uniforms.uChaos,
-      { value: 1.0, duration: 2.8, ease: "power2.in" },
-      C + 0.3,
+      { value: 0.0, duration: 1.0, ease: "power2.out" },
+      C + 0.1,
+    );
+    tl.to(
+      TIDAL.pMat.uniforms.uOpacity,
+      { value: 0.0, duration: 0.8, ease: "power2.out" },
+      C + 0.1,
+    );
+    tl.to(
+      TIDAL.sMat.uniforms.uOpacity,
+      { value: 0.0, duration: 0.8, ease: "power2.out" },
+      C + 0.1,
     );
     camTo({
       at: C + 3.0,
@@ -4123,29 +4187,29 @@ document.addEventListener("DOMContentLoaded", () => {
     camTo({
       at: T - 1.4,
       duration: 1.4,
-      pos: { x: 0.015, y: 0.003, z: -3.0 },
+      pos: { x: 0.012, y: 0.002, z: -3.2 },
       target: { x: 0, y: 0, z: -24 },
-      fov: 88,
+      fov: 84,
       roll: 0,
       ease: "power2.inOut",
     });
     tl.to(
       camera,
       {
-        fov: 96,
+        fov: 90,
         duration: 1.0,
         ease: "power2.in",
         onUpdate: () => camera.updateProjectionMatrix(),
       },
       T - 0.85,
     );
-    toU(warpPass.uniforms.uAmount, 3.25, 0.85, T - 0.88, "power3.in");
-    toU(chromaPass.uniforms.uStr, 0.13, 0.72, T - 0.75, "power3.in");
+    toU(warpPass.uniforms.uAmount, 2.7, 0.85, T - 0.88, "power3.in");
+    toU(chromaPass.uniforms.uStr, 0.09, 0.72, T - 0.75, "power3.in");
     toU(barrelPass.uniforms.uStr, -0.08, 0.72, T - 0.75, "power3.in");
-    toU(anamPass.uniforms.uStrength, 0.018, 0.78, T - 0.82, "power3.in");
+    toU(anamPass.uniforms.uStrength, 0.022, 0.78, T - 0.82, "power3.in");
     tl.to(
       shakeCtrl,
-      { mf: 0.16, hf: 0.045, duration: 0.65, ease: "power2.out" },
+      { mf: 0.10, hf: 0.016, duration: 0.65, ease: "power2.out" },
       T - 0.72,
     );
     tl.to(
@@ -4161,28 +4225,46 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(OV.flash, { opacity: 0, duration: 0.1, ease: "none" }, T + 0.03);
     tl.to(OV.hawking, { opacity: 0, duration: 0.16, ease: "none" }, T + 0.06);
 
+    tl.to(
+      HOST.starMat.uniforms.uOpacity,
+      { value: 0.0, duration: 0.95, ease: "power2.in" },
+      T - 0.95,
+    );
+    tl.to(
+      HOST.dustMat.uniforms.uOpacity,
+      { value: 0.0, duration: 0.85, ease: "power2.in" },
+      T - 0.85,
+    );
+    HOST.nebMats.forEach((m, i) => {
+      tl.to(
+        m.uniforms.uOpacity,
+        { value: 0.0, duration: 0.75, ease: "power2.in" },
+        T - 0.8 + i * 0.03,
+      );
+    });
+
     tl.add(() => {
       ST.tunneling = true;
-      shakeCtrl.hf = 0.006;
-      shakeCtrl.mf = 0.045;
-      shakeCtrl.lf = 0.022;
+      shakeCtrl.hf = 0.002;
+      shakeCtrl.mf = 0.016;
+      shakeCtrl.lf = 0.010;
       breathCtrl.amp = 0;
       BH.grp.visible = false;
       HOST.grp.visible = false;
       TUNNEL.pts.visible = true;
-      cinemaCtrl.drift = 0.015;
-      cinemaCtrl.parallax = 0.01;
-      cinemaCtrl.dutch = 0.18;
+      cinemaCtrl.drift = 0.009;
+      cinemaCtrl.parallax = 0.006;
+      cinemaCtrl.dutch = 0.05;
       cosmicGrp.visible = true;
       camRoll.z = 0;
       camera.rotation.z = 0;
       camera.position.set(0, 0, -86);
       lookTarget.set(0, 0, -1600);
-      camera.fov = 96;
+      camera.fov = 90;
       camera.updateProjectionMatrix();
       barrelPass.uniforms.uStr.value = 0;
-      warpPass.uniforms.uAmount.value = 2.0;
-      chromaPass.uniforms.uStr.value = 0.055;
+      warpPass.uniforms.uAmount.value = 1.6;
+      chromaPass.uniforms.uStr.value = 0.04;
       anamPass.uniforms.uStrength.value = 0.012;
       PASS_GALAXIES.forEach((g) => {
         g.visible = false;
@@ -4194,17 +4276,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }, T);
 
     toU(TUNNEL.mat.uniforms.uOpacity, 1.0, 0.85, T, "power2.out");
-    toU(TUNNEL.mat.uniforms.uSpeed, 260, 1.25, T, "power2.out");
-    toU(TUNNEL.mat.uniforms.uTwist, 1.45, travelDur * 0.45, T, "sine.inOut");
-    toU(TUNNEL.mat.uniforms.uTwist, 2.05, travelDur * 0.32, T + travelDur * 0.35, "sine.inOut");
-    toU(TUNNEL.mat.uniforms.uTwist, 1.25, travelDur * 0.25, T + travelDur * 0.72, "sine.out");
+    toU(TUNNEL.mat.uniforms.uSpeed, 235, 1.25, T, "power2.out");
+    toU(TUNNEL.mat.uniforms.uTwist, 1.75, travelDur * 0.45, T, "sine.inOut");
+    toU(TUNNEL.mat.uniforms.uTwist, 2.45, travelDur * 0.32, T + travelDur * 0.35, "sine.inOut");
+    toU(TUNNEL.mat.uniforms.uTwist, 1.55, travelDur * 0.25, T + travelDur * 0.72, "sine.out");
 
     tl.to(
       camera.position,
       {
-        x: 0.8,
-        y: 0.28,
-        z: -1750,
+        x: 0.34,
+        y: 0.12,
+        z: -1680,
         duration: travelDur * 0.34,
         ease: "sine.inOut",
       },
@@ -4213,9 +4295,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       camera.position,
       {
-        x: -0.9,
-        y: -0.32,
-        z: -3980,
+        x: -0.38,
+        y: -0.14,
+        z: -3860,
         duration: travelDur * 0.33,
         ease: "sine.inOut",
       },
@@ -4224,9 +4306,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       camera.position,
       {
-        x: 0.18,
-        y: 0.06,
-        z: -5850,
+        x: 0.06,
+        y: 0.02,
+        z: -5680,
         duration: travelDur * 0.33,
         ease: "sine.inOut",
       },
@@ -4235,9 +4317,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       lookTarget,
       {
-        x: 0.25,
-        y: 0.08,
-        z: -2850,
+        x: 0.10,
+        y: 0.04,
+        z: -2760,
         duration: travelDur * 0.34,
         ease: "sine.inOut",
       },
@@ -4246,9 +4328,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       lookTarget,
       {
-        x: -0.18,
-        y: -0.06,
-        z: -5050,
+        x: -0.08,
+        y: -0.03,
+        z: -4920,
         duration: travelDur * 0.33,
         ease: "sine.inOut",
       },
@@ -4259,7 +4341,7 @@ document.addEventListener("DOMContentLoaded", () => {
       {
         x: 0.0,
         y: 0.0,
-        z: -6900,
+        z: -6720,
         duration: travelDur * 0.33,
         ease: "sine.inOut",
       },
@@ -4267,12 +4349,12 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     tl.to(
       camRoll,
-      { z: Math.PI * 0.012, duration: travelDur * 0.45, ease: "sine.inOut" },
+      { z: Math.PI * 0.005, duration: travelDur * 0.45, ease: "sine.inOut" },
       T + 0.35,
     );
     tl.to(
       camRoll,
-      { z: -Math.PI * 0.009, duration: travelDur * 0.4, ease: "sine.inOut" },
+      { z: -Math.PI * 0.004, duration: travelDur * 0.4, ease: "sine.inOut" },
       T + travelDur * 0.48,
     );
     tl.to(
@@ -4283,7 +4365,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       camera,
       {
-        fov: 94,
+        fov: 88,
         duration: 2.0,
         ease: "sine.inOut",
         onUpdate: () => camera.updateProjectionMatrix(),
@@ -4293,7 +4375,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       camera,
       {
-        fov: 102,
+        fov: 94,
         duration: 2.8,
         ease: "sine.inOut",
         onUpdate: () => camera.updateProjectionMatrix(),
@@ -4303,38 +4385,52 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       camera,
       {
-        fov: 96,
+        fov: 90,
         duration: 2.4,
         ease: "sine.out",
         onUpdate: () => camera.updateProjectionMatrix(),
       },
       T + 5.2,
     );
-    toU(TUNNEL.mat.uniforms.uSpeed, 315, 1.35, T + 1.3, "sine.inOut");
-    toU(TUNNEL.mat.uniforms.uSpeed, 385, 1.55, T + 3.0, "sine.inOut");
-    toU(TUNNEL.mat.uniforms.uSpeed, 305, 1.45, T + 4.65, "sine.out");
-    toU(warpPass.uniforms.uAmount, 1.85, 1.35, T + 1.1, "sine.inOut");
-    toU(warpPass.uniforms.uAmount, 2.55, 1.45, T + 3.0, "sine.inOut");
-    toU(warpPass.uniforms.uAmount, 1.65, 1.3, T + 4.7, "sine.out");
-    toU(chromaPass.uniforms.uStr, 0.075, 1.2, T + 1.2, "sine.inOut");
-    toU(chromaPass.uniforms.uStr, 0.105, 1.35, T + 3.0, "sine.inOut");
-    toU(chromaPass.uniforms.uStr, 0.055, 1.25, T + 4.7, "sine.out");
+    toU(TUNNEL.mat.uniforms.uSpeed, 285, 1.35, T + 1.3, "sine.inOut");
+    toU(TUNNEL.mat.uniforms.uSpeed, 340, 1.55, T + 3.0, "sine.inOut");
+    toU(TUNNEL.mat.uniforms.uSpeed, 275, 1.45, T + 4.65, "sine.out");
+    toU(warpPass.uniforms.uAmount, 1.55, 1.35, T + 1.1, "sine.inOut");
+    toU(warpPass.uniforms.uAmount, 2.10, 1.45, T + 3.0, "sine.inOut");
+    toU(warpPass.uniforms.uAmount, 1.35, 1.3, T + 4.7, "sine.out");
+    toU(chromaPass.uniforms.uStr, 0.055, 1.2, T + 1.2, "sine.inOut");
+    toU(chromaPass.uniforms.uStr, 0.075, 1.35, T + 3.0, "sine.inOut");
+    toU(chromaPass.uniforms.uStr, 0.04, 1.25, T + 4.7, "sine.out");
     tl.to(
       bloomPass,
       {
-        strength: 0.82,
-        radius: 0.58,
-        threshold: 0.046,
+        strength: 0.88,
+        radius: 0.64,
+        threshold: 0.042,
         duration: 1.6,
         ease: "sine.inOut",
       },
       T + 0.25,
     );
     tl.to(
+      bloomPass,
+      {
+        strength: 1.02,
+        radius: 0.72,
+        threshold: 0.036,
+        duration: 1.1,
+        ease: "sine.inOut",
+      },
+      T + 2.85,
+    );
+    tl.to(
       shakeCtrl,
-      { mf: 0.028, hf: 0.0, lf: 0.018, duration: 2.6, ease: "sine.inOut" },
+      { mf: 0.012, hf: 0.0, lf: 0.010, duration: 2.6, ease: "sine.inOut" },
       T + 0.95,
     );
+    toU(anamPass.uniforms.uStrength, 0.018, 1.2, T + 1.0, "sine.inOut");
+    toU(anamPass.uniforms.uStrength, 0.026, 1.4, T + 2.9, "sine.inOut");
+    toU(anamPass.uniforms.uStrength, 0.015, 1.2, T + 4.8, "sine.out");
 
     COSMIC_OBJECTS.forEach((obj) => {
       const zDist = Math.abs(obj.zPos),
@@ -4345,7 +4441,7 @@ document.addEventListener("DOMContentLoaded", () => {
         isP = obj.type === "pulsar";
       const inD = isNeb ? 1.05 : isP ? 0.52 : 0.62,
         outD = isNeb ? 1.25 : 0.8,
-        peak = isNeb ? 0.82 : isQ ? 1.05 : 0.88;
+        peak = isNeb ? 0.96 : isQ ? 1.18 : 1.02;
       obj.mats.forEach((m) => {
         if (!m.uniforms?.uOpacity) return;
         tl.to(
@@ -4363,12 +4459,12 @@ document.addEventListener("DOMContentLoaded", () => {
     schedulePassGalaxies(tl, T, travelDur, -86, -6200);
 
     // ATO 7 — BLACKOUT / SILÊNCIO
-    toU(TUNNEL.mat.uniforms.uSpeed, 600, 0.38, S - 0.42, "power4.in");
-    toU(chromaPass.uniforms.uStr, 0.32, 0.34, S - 0.34, "power4.in");
-    toU(warpPass.uniforms.uAmount, 5.4, 0.34, S - 0.34, "power4.in");
+    toU(TUNNEL.mat.uniforms.uSpeed, 520, 0.38, S - 0.42, "power4.in");
+    toU(chromaPass.uniforms.uStr, 0.20, 0.34, S - 0.34, "power4.in");
+    toU(warpPass.uniforms.uAmount, 4.1, 0.34, S - 0.34, "power4.in");
     tl.to(
       bloomPass,
-      { strength: 4.8, radius: 1.35, duration: 0.42, ease: "power4.in" },
+      { strength: 3.9, radius: 1.12, duration: 0.42, ease: "power4.in" },
       S - 0.46,
     );
     tl.to(OV.flash, { opacity: 1, duration: 0.035, ease: "none" }, S - 0.09);
