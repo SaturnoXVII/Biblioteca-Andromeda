@@ -220,7 +220,7 @@ function criarReserva($mysqli, $id_livro, $id_usuario) {
 function jaReservado($mysqli, $id_livro, $id_usuario) {
     $stmt = $mysqli->prepare(
         "SELECT id_reserva FROM reservas 
-         WHERE id_livro = ? AND id_usuario = ? AND status = 'Ativa'"
+         WHERE id_livro = ? AND id_usuario = ? AND status IN ('Ativa', 'Avisado')"
     );
     
     if (!$stmt) {
@@ -241,7 +241,7 @@ function listarReservasUsuario($mysqli, $id_usuario) {
             JOIN Livros L ON R.id_livro = L.id_livro
             LEFT JOIN autores A ON L.id_autor = A.id_autor
             LEFT JOIN Categorias C ON L.id_categoria = C.id_categoria
-            WHERE R.id_usuario = ? AND R.status = 'Ativa'
+            WHERE R.id_usuario = ? AND R.status IN ('Ativa', 'Avisado')
             ORDER BY R.data_reserva DESC";
     
     $stmt = $mysqli->prepare($sql);
@@ -252,8 +252,86 @@ function listarReservasUsuario($mysqli, $id_usuario) {
 
     $stmt->bind_param("i", $id_usuario);
     $stmt->execute();
-    
-    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC) ?? [];
+    $reservas = $stmt->get_result()->fetch_all(MYSQLI_ASSOC) ?? [];
+    foreach ($reservas as &$res) {
+        $res['posicao'] = contarReservasAtivasAntes($mysqli, $res['id_livro'], $res['data_reserva']);
+        $res['fila_total'] = contarReservasAtivas($mysqli, $res['id_livro']);
+    }
+    unset($res);
+    return $reservas;
+}
+
+function contarReservasAtivasAntes($mysqli, $id_livro, $data_reserva) {
+    $stmt = $mysqli->prepare(
+        "SELECT COUNT(*) AS total FROM reservas
+         WHERE id_livro = ? AND status IN ('Ativa', 'Avisado')
+           AND data_reserva <= ?"
+    );
+    if (!$stmt) {
+        return 0;
+    }
+    $stmt->bind_param("is", $id_livro, $data_reserva);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    return (int) ($row['total'] ?? 0);
+}
+
+function contarReservasAtivas($mysqli, $id_livro) {
+    $stmt = $mysqli->prepare(
+        "SELECT COUNT(*) AS total FROM reservas
+         WHERE id_livro = ? AND status IN ('Ativa', 'Avisado')"
+    );
+    if (!$stmt) {
+        return 0;
+    }
+    $stmt->bind_param("i", $id_livro);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    return (int) ($row['total'] ?? 0);
+}
+
+function listarFilaReservasAtivas($mysqli) {
+    $sql = "SELECT R.id_reserva, R.id_livro, R.id_usuario, R.data_reserva, R.status,
+            L.titulo, U.nome AS usuario, L.status AS status_livro
+            FROM reservas R
+            JOIN Livros L ON R.id_livro = L.id_livro
+            JOIN usuarios U ON R.id_usuario = U.id_usuario
+            WHERE R.status IN ('Ativa', 'Avisado')
+            ORDER BY R.id_livro, R.data_reserva ASC";
+    return $mysqli->query($sql)->fetch_all(MYSQLI_ASSOC) ?? [];
+}
+
+function notificarProximoDaFila($mysqli, $id_livro) {
+    $stmt = $mysqli->prepare(
+        "SELECT id_reserva FROM reservas
+         WHERE id_livro = ? AND status = 'Ativa'
+         ORDER BY data_reserva ASC
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param("i", $id_livro);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (empty($row['id_reserva'])) {
+        return false;
+    }
+
+    $update = $mysqli->prepare(
+        "UPDATE reservas SET status = 'Avisado' WHERE id_reserva = ?"
+    );
+    if (!$update) {
+        return false;
+    }
+    $update->bind_param("i", $row['id_reserva']);
+    $ok = $update->execute();
+    $update->close();
+    return $ok;
 }
 
 function cancelarReserva($mysqli, $id_reserva) {

@@ -34,6 +34,16 @@ $totalCats   = count($categorias);
 
 <body>
 
+    <?php if (isset($_GET['reserva'])): ?>
+        <div class="alert alert-<?= $_GET['reserva'] === 'sucesso' ? 'success' : 'danger' ?> alert-dismissible fade show" role="alert" style="position:fixed; top:16px; right:16px; z-index:1050; min-width:240px;">
+            <i class="fa-solid <?= $_GET['reserva'] === 'sucesso' ? 'fa-circle-check' : 'fa-triangle-exclamation' ?> me-2"></i>
+            <?= $_GET['reserva'] === 'sucesso'
+                ? 'Reserva registrada com sucesso! Você já está na fila.'
+                : 'Não foi possível registrar a reserva. Verifique se já existe uma reserva ou se o livro está disponível.' ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+    <?php endif; ?>
+
     <div id="intro-cinematic">
         <div class="intro-mask">
             <h1 class="intro-brand" id="i-brand">ANDRÔMEDA</h1>
@@ -241,6 +251,8 @@ $totalCats   = count($categorias);
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         const LIVROS = <?php echo $livrosJson; ?>;
