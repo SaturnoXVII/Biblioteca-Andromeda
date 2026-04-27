@@ -53,7 +53,7 @@ if (isset($_POST['email'])) {
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <link rel="stylesheet" href="../assets/css/cadleitores.css">
+    <link rel="stylesheet" href="../assets/css/pgcadleitores.css">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 
@@ -134,21 +134,7 @@ if (isset($_POST['email'])) {
 <input type="hidden" name="foto"      id="foto_field">
 
                 <!-- Botão oficial do Google (renderizado automaticamente) -->
-                <div id="g_id_onload"
-                    data-client_id="1080679226381-9jbho9u4m814nm8g3lavhf7qsofd70d3.apps.googleusercontent.com"
-                    data-callback="handleCredentialResponse"
-                    data-auto_prompt="false">
-                </div>
-
-                <div class="g_id_signin"
-                    data-type="standard"
-                    data-size="large"
-                    data-theme="outline"
-                    data-text="sign_in_with"
-                    data-shape="rectangular"
-                    data-logo_alignment="left">
-                </div>
-
+              
 
                 <button type="submit" class="btn-prim interactable">Iniciar Jornada</button>
 
@@ -157,6 +143,24 @@ if (isset($_POST['email'])) {
                         <i class="fa-solid fa-triangle-exclamation"></i> <?= $erro ?>
                     </div>
                 <?php endif; ?>
+                
+                 <div id="g_id_onload"
+                    data-client_id="1080679226381-9jbho9u4m814nm8g3lavhf7qsofd70d3.apps.googleusercontent.com"
+                    data-callback="handleCredentialResponse"
+                    data-auto_prompt="false">
+                </div>
+
+                <div class="google-button-frame">
+                    <div class="g_id_signin"
+                        data-type="standard"
+                        data-theme="outline"
+                        data-size="large"
+                        data-text="continue_with"
+                        data-shape="pill"
+                        data-logo_alignment="left"
+                        data-width="320">
+                    </div>
+                </div>
 
                 <div class="auth-links">
                     <a href="login.php" class="interactable">Já possui uma conta? Acessar</a>

@@ -77,7 +77,7 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/css/login.css">
+    <link rel="stylesheet" href="../assets/css/pglogin.css">
       <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 </head>
@@ -143,21 +143,27 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
                     data-auto_prompt="false">
                 </div>
 
-                <div class="g_id_signin"
-                    data-type="standard"
-                    data-size="large"
-                    data-theme="outline"
-                    data-text="sign_in_with"
-                    data-shape="rectangular"
-                    data-logo_alignment="left">
+                <div class="google-button-frame">
+                    <div class="g_id_signin"
+                        data-type="standard"
+                        data-theme="outline"
+                        data-size="large"
+                        data-text="continue_with"
+                        data-shape="pill"
+                        data-logo_alignment="left"
+                        data-width="320">
+                    </div>
                 </div>
-
                 <div class="auth-links" id="adicionais">
                     <a href="cadastroleitores.php" class="interactable">Não tem uma conta?</a>
                 </div>
             </form>
         </div>
     </main>
+
+    </div>
+
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
@@ -212,10 +218,6 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
 
         }
     </script>
-
-
-
-
 </body>
 
 </html>
