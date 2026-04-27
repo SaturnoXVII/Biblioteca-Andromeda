@@ -1,6 +1,6 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗
- * ║  INTRO CINEMATOGRÁFICO — v6.2.1 HYPERREAL · MERGULHO SEM EXPLOSÃO            ║
+ * ║  INTRO CINEMATOGRÁFICO — v6.2.9 PATCH FINAL · POLIMENTO TOTAL + CAMERA/BLOOM MASTER            ║
  * ║  GALÁXIA JWST + BURACO NEGRO 3D REFEITO + RENASCIMENTO ÉPICO     ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  */
@@ -62,18 +62,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ─── BEAT MAP ───────────────────────────────────────────────────
   const BEAT = {
-    // Gravity_s_Maw.mp3 foi gerada para acompanhar a intro inteira desde o clique.
-    // Mapa musical: vazio 0-6s, aproximação 6-12s, revelação 12-18s,
-    // queda/gravidade 18-27s, túnel 27-36s, blackout 36-39s,
-    // renascimento 39-45s e clímax/final 45-54.6s.
+    // Gravity_s_Maw(3).mp3: corte final guiado pela música.
+    // 0-6s despertar/letterbox, 6-12s aproximação, 12-18.8s revelação,
+    // 18.85-25.55s majestade + arco orbital lento, contemplativo e preparado para o mergulho,
+    // 25.55-27.10s mergulho no horizonte + abertura IMAX progressiva do letterbox,
+    // 27.10-28.48s ponte gravitacional: o túnel nasce dentro do buraco negro,
+    // 28.48-34.04s travessia principal, com fechamento antes do corte seco da faixa,
+    // 34.04-39.20s blackout/silêncio, 39.20-44.92s renascimento,
+    // 44.92-54.55s clímax/final acompanhando o grande crescendo.
     MUSIC_OFFSET: 0,
-    TDE_INTERLUDE: 18.65,
-    CHAOS_START: 27.85,
-    IMAX_OPEN: 29.75,
-    TRAVEL_START: 33.10,
-    SILENCE_START: 36.8,
-    REBIRTH_START: 39.25,
-    FINAL_PULL: 45.45,
+    TDE_INTERLUDE: 18.85,
+    CHAOS_START: 25.55,
+    IMAX_OPEN: 26.30,
+    TRAVEL_START: 28.48,
+    SILENCE_START: 34.04,
+    REBIRTH_START: 39.20,
+    FINAL_PULL: 44.92,
     END: 54.55,
   };
 
@@ -419,7 +423,12 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   renderer.setSize(VIEW.w, VIEW.h);
   renderer.setPixelRatio(Math.min(_dpr, TIER === "LOW" ? 0.92 : TIER === "MID" ? 1.35 : 1.58));
-  renderer.outputEncoding = THREE.sRGBEncoding;
+  // Compatibilidade entre builds recentes e antigas do Three.js.
+  if ("outputColorSpace" in renderer && THREE.SRGBColorSpace) {
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+  } else {
+    renderer.outputEncoding = THREE.sRGBEncoding;
+  }
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = exposureCtrl.value;
   mount.appendChild(renderer.domElement);
@@ -2189,11 +2198,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // TÚNEL DE SINGULARIDADE — DISTORÇÃO DE ESPAÇO TEMPO APLICADA
   // ═══════════════════════════════════════════════════════════════
   function buildTunnel() {
-    const N = Math.round(36000 * TIER_FACTOR),
+    const N = Math.round((TIER === "LOW" ? 24000 : 32000) * TIER_FACTOR),
       geo = new THREE.BufferGeometry();
+
     const pos = new Float32Array(N * 3),
       col = new Float32Array(N * 3),
-      rn = new Float32Array(N);
+      rn = new Float32Array(N),
+      laneAttr = new Float32Array(N);
+
     const PALETTES = [
       [0x2a, 0xa2, 0xf6],
       [0x74, 0xd2, 0xff],
@@ -2204,25 +2216,39 @@ document.addEventListener("DOMContentLoaded", () => {
       [0x9b, 0xf4, 0xff],
       [0xff, 0xff, 0xff],
     ];
+
+    const LANES = 14;
+    const TUNNEL_LEN = 9600;
+
     for (let i = 0; i < N; i++) {
-      const a = Math.random() * Math.PI * 2,
-        lane = Math.floor(Math.random() * 8),
-        lO = lane * 0.785398,
-        sp = a + lO * 0.18;
+      const lane = Math.floor(Math.random() * LANES);
+      const lanePhase = (lane / LANES) * Math.PI * 2;
+      const a = lanePhase + gaussianRandom() * 0.17 + Math.random() * 0.13;
+      const layer = Math.random();
       const r =
-        10 + Math.pow(Math.random(), 0.38) * 360 + Math.sin(lO * 3.0) * 6;
-      pos[i * 3] = Math.cos(sp) * r;
-      pos[i * 3 + 1] = Math.sin(sp) * r;
-      pos[i * 3 + 2] = -Math.random() * 8600;
+        18 +
+        Math.pow(layer, 0.40) * 380 +
+        Math.sin(lanePhase * 3.0) * 10 +
+        gaussianRandom() * 6.2;
+
+      pos[i * 3] = Math.cos(a) * r;
+      pos[i * 3 + 1] = Math.sin(a) * r;
+      pos[i * 3 + 2] = -Math.random() * TUNNEL_LEN;
+
       const p = PALETTES[Math.floor(Math.random() * PALETTES.length)];
-      col[i * 3] = p[0] / 255;
-      col[i * 3 + 1] = p[1] / 255;
-      col[i * 3 + 2] = p[2] / 255;
+      const coolCore = layer < 0.28 ? 1.18 : 1.0;
+      col[i * 3] = (p[0] / 255) * coolCore;
+      col[i * 3 + 1] = (p[1] / 255) * coolCore;
+      col[i * 3 + 2] = (p[2] / 255) * coolCore;
       rn[i] = Math.random();
+      laneAttr[i] = lane / Math.max(1, LANES - 1);
     }
+
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
     geo.setAttribute("aRnd", new THREE.BufferAttribute(rn, 1));
+    geo.setAttribute("aLane", new THREE.BufferAttribute(laneAttr, 1));
+
     const mat = regMat(
       new THREE.ShaderMaterial({
         transparent: true,
@@ -2234,59 +2260,138 @@ document.addEventListener("DOMContentLoaded", () => {
           uSpeed: { value: 0 },
           uOpacity: { value: 0 },
           uTwist: { value: 0 },
+          uPulse: { value: 0 },
+          uCollapse: { value: 0 },
+          uMouth: { value: 0 },
         },
         vertexShader: `
-        attribute float aRnd; uniform float uT,uSpeed,uTwist;
-        varying vec3 vC; varying float vA,vRad,vAngle,vGate,vSpeed,vLens,vDepth;
+        attribute float aRnd;
+        attribute float aLane;
+        uniform float uT,uSpeed,uTwist,uPulse,uCollapse,uMouth;
+        varying vec3 vC;
+        varying float vA,vRad,vAngle,vGate,vSpeed,vLens,vDepth,vPulse,vLaneGlow,vMouth;
         void main(){
-          vec3 p=position; float speedNorm=clamp(uSpeed/520.0,0.0,1.0);
-          float zFlow=mod(abs(p.z)-uSpeed*(1.18+aRnd*0.62),8600.0); p.z=-zFlow;
-          float z01=clamp(abs(p.z)/8600.0,0.0,1.0);
-          float gravWell=1.0-smoothstep(0.0,1.0,z01);
-          float r=length(p.xy); float a=atan(p.y,p.x);
-          float helix=uT*mix(0.035,0.18,speedNorm)+uTwist*p.z*0.000055+sin(p.z*0.0022+uT*0.72+aRnd*6.28318)*0.16*speedNorm;
-          a+=helix+sin(r*0.035-uT*1.8+p.z*0.0015)*0.04*speedNorm;
-          float radialPulse=sin(p.z*0.007-uT*2.6+aRnd*18.0)*0.06;
-          float pinch=(0.08+0.42*speedNorm)*(0.28+gravWell*0.72);
-          float lensing=1.0-pinch/(1.0+r*0.032);
-          float tidal=1.0+radialPulse+sin(a*6.0-uT*2.1)*0.028*speedNorm;
-          r*=max(0.12,lensing)*tidal;
-          p.x=cos(a)*r + sin(p.z*0.004+a*2.0)*0.18*(0.6+gravWell*1.4)*speedNorm;
-          p.y=sin(a)*r + cos(p.z*0.004-a*2.0)*0.18*(0.6+gravWell*1.4)*speedNorm;
-          float timeWarp=sin(p.z*0.0045-uT*5.8)*0.34*speedNorm;
-          p.xy*=1.0+timeWarp/(r*0.026+1.0);
-          p.xy*=mix(1.0,0.72,gravWell*speedNorm);
-          vec4 mv=modelViewMatrix*vec4(p,1.0); gl_Position=projectionMatrix*mv;
-          float gate=smoothstep(340.0,-340.0,p.z);
-          float cathedral=0.62+0.38*pow(abs(sin(r*0.055-uT*2.4)),3.0);
-          gl_PointSize=(118.0/-mv.z)*(0.72+aRnd*1.48)*mix(0.88,2.55,speedNorm)*cathedral*mix(0.84,1.16,gravWell);
-          vC=color; vA=gate; vRad=clamp(r/330.0,0.0,1.0); vAngle=a; vGate=cathedral; vSpeed=speedNorm; vLens=gravWell; vDepth=z01;
+          vec3 p=position;
+          float speedNorm=clamp(uSpeed/650.0,0.0,1.0);
+          float tunnelLen=9600.0;
+
+          // Fluxo real contínuo: a velocidade agora depende do tempo e não só da tween de uSpeed.
+          float zFlow=mod(abs(p.z)-uT*uSpeed*(1.72+aRnd*1.18),tunnelLen);
+          p.z=-zFlow;
+
+          float z01=clamp(abs(p.z)/tunnelLen,0.0,1.0);
+          float mouthGate=exp(-pow(z01*6.4,2.0))*uMouth;
+          float gravWell=1.0-smoothstep(0.08,0.92,z01);
+          float r=length(p.xy);
+          float a=atan(p.y,p.x);
+
+          float lanePhase=aLane*6.2831853;
+          float cathedral=pow(abs(sin(a*5.0-lanePhase*2.0+uT*0.52)),3.0);
+          float braided=pow(abs(sin(a*7.0+p.z*0.0042-uT*(1.15+speedNorm*1.9)+lanePhase)),6.0);
+          float helix=
+            uT*mix(0.10,0.42,speedNorm)+
+            uTwist*p.z*0.000095+
+            sin(p.z*0.0028+uT*1.15+aRnd*6.28318)*0.22*speedNorm;
+
+          a+=helix;
+          a+=sin(r*0.032-uT*2.4+p.z*0.0018)*0.06*speedNorm;
+
+          float pulseWave=sin(p.z*0.0058-uT*6.4+aRnd*14.0);
+          float radialPulse=pulseWave*(0.035+0.055*uPulse);
+          float pinch=(0.06+0.50*speedNorm+0.18*uCollapse)*(0.32+gravWell*0.68);
+          float lensing=1.0-pinch/(1.0+r*0.030);
+          float tidal=1.0+radialPulse+sin(a*8.0-uT*2.7)*0.035*speedNorm;
+
+          r*=max(0.10,lensing)*tidal;
+          // Boca do túnel: usada no handoff para o buraco negro virar o corredor.
+          r*=mix(1.0,0.58 + 0.08*sin(uT*10.0+a*4.0),mouthGate);
+          r*=mix(1.0,0.54,uCollapse*gravWell);
+          float rib=pow(abs(sin(p.z*0.0095-uT*3.2+lanePhase*1.7)),10.0);
+          r+=cathedral*(8.0+22.0*uPulse)*(0.16+speedNorm);
+          r+=rib*(4.0+18.0*uPulse)*(0.20+speedNorm*0.60);
+          r+=braided*(3.0+14.0*uPulse)*(0.14+speedNorm*0.55);
+
+          p.x=cos(a)*r;
+          p.y=sin(a)*r;
+
+          vec2 shear=vec2(
+            sin(p.z*0.0044+a*2.0+uT*1.4),
+            cos(p.z*0.0044-a*2.0-uT*1.2)
+          );
+          p.xy+=shear*(0.30+gravWell*1.35)*speedNorm;
+
+          float timeWarp=sin(p.z*0.0052-uT*7.8)*0.48*speedNorm*(0.55+uPulse);
+          p.xy*=1.0+timeWarp/(r*0.030+1.0);
+
+          vec4 mv=modelViewMatrix*vec4(p,1.0);
+          gl_Position=projectionMatrix*mv;
+
+          float gate=smoothstep(260.0,-520.0,p.z);
+          float shock=exp(-pow((z01-0.20)*4.7,2.0))*uPulse;
+          float mouthBloom=mouthGate*(0.68+0.32*sin(uT*8.0+a*5.0+p.z*0.004));
+          float laneGlow=0.50+0.36*cathedral+0.20*rib+0.18*braided+mouthBloom*0.72;
+          float sizeBoost=mix(0.86,3.35,speedNorm)*(1.0+shock*0.82+mouthBloom*0.55);
+
+          gl_PointSize=clamp((132.0/-mv.z)*(0.62+aRnd*1.72)*sizeBoost*laneGlow*mix(0.9,1.30,gravWell),0.35,88.0);
+
+          vC=color;
+          vA=gate;
+          vRad=clamp(r/330.0,0.0,1.0);
+          vAngle=a;
+          vGate=laneGlow;
+          vSpeed=speedNorm;
+          vLens=gravWell;
+          vDepth=z01;
+          vPulse=shock;
+          vLaneGlow=laneGlow;
+          vMouth=mouthGate;
         }
       `,
         fragmentShader: `
-        uniform float uOpacity; varying vec3 vC; varying float vA,vRad,vAngle,vGate,vSpeed,vLens,vDepth;
+        uniform float uOpacity;
+        varying vec3 vC;
+        varying float vA,vRad,vAngle,vGate,vSpeed,vLens,vDepth,vPulse,vLaneGlow,vMouth;
         void main(){
-          vec2 p=gl_PointCoord-0.5; float ca=cos(vAngle),sa=sin(vAngle);
+          vec2 p=gl_PointCoord-0.5;
+          float ca=cos(vAngle),sa=sin(vAngle);
           vec2 q=mat2(ca,-sa,sa,ca)*p;
-          float core=exp(-dot(p,p)*22.0);
-          float streak=exp(-abs(q.y)*mix(34.0,12.0,vSpeed))*exp(-abs(q.x)*mix(11.0,2.8,vSpeed));
-          float halo=exp(-dot(p,p)*4.2)*mix(0.16,0.32,vLens);
-          float ring=exp(-pow(length(p)-0.36,2.0)*42.0)*0.18*vLens;
-          float lensBloom=exp(-abs(q.y)*10.5)*exp(-abs(q.x)*3.0)*0.16*vLens*vSpeed;
-          float a=(core*0.78+streak*1.05+halo+ring*1.18+lensBloom*1.08)*vA*uOpacity*vGate;
-          vec3 blueShift=vec3(0.45,0.78,1.0),violetShift=vec3(0.72,0.35,1.0),redShift=vec3(1.0,0.26,0.08),goldShift=vec3(1.0,0.72,0.22);
-          vec3 gravTint=mix(vec3(0.55,0.86,1.0),vec3(1.0,0.72,0.22),vLens*0.65);
-          vec3 edgeColor=mix(violetShift,redShift,smoothstep(0.45,1.0,vRad));
-          vec3 centerColor=mix(blueShift,goldShift,pow(1.0-vRad,2.5));
-          vec3 c=mix(vC,mix(centerColor,edgeColor,vRad),0.72);
-          c=mix(c,gravTint,0.28+vLens*0.25);
-          c+=vec3(0.78,0.92,1.0)*core*(0.42+vLens*0.36);
-          c+=vec3(0.52,0.82,1.0)*ring*0.85;
-          gl_FragColor=vec4(c*a*2.95,a*0.9);
+
+          float core=exp(-dot(p,p)*24.0);
+          float streak=exp(-abs(q.y)*mix(38.0,8.0,vSpeed))*exp(-abs(q.x)*mix(12.0,2.2,vSpeed));
+          float halo=exp(-dot(p,p)*3.7)*mix(0.14,0.38,vLens);
+          float ring=exp(-pow(length(p)-0.36,2.0)*40.0)*(0.12+0.24*vLens);
+          float lensBloom=exp(-abs(q.y)*9.0)*exp(-abs(q.x)*2.55)*(0.12+0.26*vPulse)*vLens*vSpeed;
+          float shock=exp(-dot(p,p)*1.6)*vPulse*0.42;
+          float mouthRing=exp(-pow(length(p)-0.30,2.0)*52.0)*vMouth;
+          float mouthCore=exp(-dot(p,p)*5.5)*vMouth;
+
+          float a=(core*0.72+streak*1.14+halo+ring*1.28+lensBloom+shock+mouthRing*1.45+mouthCore*0.62)*vA*uOpacity*vGate;
+          a*=mix(0.78,1.20,vLaneGlow);
+
+          vec3 blueShift=vec3(0.45,0.78,1.0);
+          vec3 violetShift=vec3(0.72,0.35,1.0);
+          vec3 redShift=vec3(1.0,0.26,0.08);
+          vec3 goldShift=vec3(1.0,0.72,0.22);
+          vec3 whiteHot=vec3(0.86,0.96,1.0);
+
+          vec3 gravTint=mix(vec3(0.50,0.84,1.0),vec3(1.0,0.66,0.20),vLens*0.72);
+          vec3 edgeColor=mix(violetShift,redShift,smoothstep(0.42,1.0,vRad));
+          vec3 centerColor=mix(blueShift,goldShift,pow(1.0-vRad,2.35));
+          vec3 c=mix(vC,mix(centerColor,edgeColor,vRad),0.74);
+          c=mix(c,gravTint,0.32+vLens*0.28);
+          c=mix(c,whiteHot,core*(0.08+vPulse*0.25));
+          c+=vec3(0.78,0.92,1.0)*core*(0.40+vLens*0.42);
+          c+=vec3(0.52,0.82,1.0)*ring*0.92;
+          c+=vec3(1.0,0.68,0.22)*shock*0.55;
+          c+=mix(vec3(0.42,0.76,1.0),vec3(1.0,0.80,0.42),vRad)*mouthRing*1.25;
+          c+=vec3(0.80,0.94,1.0)*mouthCore*0.72;
+
+          gl_FragColor=vec4(c*a*2.92,a*0.90);
         }
       `,
       }),
     );
+
     const pts = new THREE.Points(geo, mat);
     pts.visible = false;
     scene.add(pts);
@@ -2538,6 +2643,10 @@ document.addEventListener("DOMContentLoaded", () => {
   makeNebula(-2900, 0.12, 78, -0.2);
   makeNebula(-3800, 0.72, 92, 0.08);
   makeNebula(-4600, 0.35, 62, -0.25);
+  makeNebula(-6500, 0.58, 82, 0.18);
+  makeNebula(-7350, 0.92, 74, -0.16);
+  makeNebula(-8500, 0.26, 86, 0.11);
+  makeNebula(-9250, 0.78, 70, -0.20);
   makePulsar(-620);
   makePulsar(-1580);
   makePulsar(-2680);
@@ -2545,13 +2654,17 @@ document.addEventListener("DOMContentLoaded", () => {
   makeQuasar(-1100);
   makeQuasar(-2480);
   makeQuasar(-5200);
-  [-480, -1200, -2300, -3500, -5800].forEach((z) => makeCluster(z));
+  makeQuasar(-7050);
+  makeQuasar(-8900);
+  [-480, -1200, -2300, -3500, -5800, -7600, -9050].forEach((z) => makeCluster(z));
   makeGasCloud(-700, 1.0, 0.28, 0.55, 52);
   makeGasCloud(-1420, 0.35, 0.62, 1.0, 68);
   makeGasCloud(-2050, 0.8, 0.4, 1.0, 58);
   makeGasCloud(-3100, 1.0, 0.72, 0.28, 72);
   makeGasCloud(-4000, 0.28, 0.82, 0.92, 82);
   makeGasCloud(-5500, 0.9, 0.22, 0.5, 62);
+  makeGasCloud(-7200, 0.42, 0.72, 1.0, 70);
+  makeGasCloud(-8750, 0.95, 0.34, 0.72, 78);
 
   // ═══════════════════════════════════════════════════════════════
   // GALÁXIAS DE PASSAGEM
@@ -3589,6 +3702,13 @@ document.addEventListener("DOMContentLoaded", () => {
     lensPass.uniforms.uSpin.value = 0;
     lensPass.uniforms.uPlunge.value = 0;
     bgStars.mat.uniforms.uOpacity.value = 1.0;
+    TUNNEL.pts.visible = false;
+    TUNNEL.mat.uniforms.uOpacity.value = 0;
+    TUNNEL.mat.uniforms.uSpeed.value = 0;
+    TUNNEL.mat.uniforms.uTwist.value = 0;
+    if (TUNNEL.mat.uniforms.uPulse) TUNNEL.mat.uniforms.uPulse.value = 0;
+    if (TUNNEL.mat.uniforms.uCollapse) TUNNEL.mat.uniforms.uCollapse.value = 0;
+    if (TUNNEL.mat.uniforms.uMouth) TUNNEL.mat.uniforms.uMouth.value = 0;
 
     // UI OUT
     tl.to(
@@ -3912,117 +4032,153 @@ document.addEventListener("DOMContentLoaded", () => {
 
     tl.to(shakeCtrl, { lf: 0.008, mf: 0.018, hf: 0.002, duration: 2.0, ease: "sine.inOut" }, D);
 
-    // ── 4B · ÓRBITA COMPLETA NO LENSE-THIRRING (D+1.5 ... D+6.8)
+    // ── 4B · ARCO ORBITAL LENTO NO LENSE-THIRRING (D+0.78 ... C-0.92)
+    // Refeito para não parecer um 360 apressado: a câmera faz um arco amplo,
+    // mais contemplativo, com menos troca lateral e mais leitura do disco/horizonte.
+    // O último trecho já alinha a câmera no eixo do mergulho, sem “chute” final.
+    const orbitStartAt = D + 0.78;
+    const orbitApexAt = D + 2.10;
+    const orbitBackAt = D + 3.48;
+    const orbitExitAt = D + 4.62;
+    const gravityHoldAt = BEAT.CHAOS_START - 0.92;
+    const orbitExitDur = Math.max(0.92, gravityHoldAt - orbitExitAt);
+    const gravityHoldDur = Math.max(0.76, BEAT.CHAOS_START - gravityHoldAt);
+
     camTo({
-      at: D + 1.55,
-      duration: 1.60,
-      pos: { x: 1.4, y: 3.1, z: -18.8 },
-      target: { x: 0.0, y: 0.06, z: 0 },
-      fov: 58,
+      at: orbitStartAt,
+      duration: 1.48,
+      pos: { x: 11.8, y: 3.15, z: -15.6 },
+      target: { x: -0.32, y: 0.06, z: 0 },
+      fov: 57,
       roll: -Math.PI * 0.010,
-      ease: "power2.inOut",
+      ease: "sine.inOut",
     });
     camTo({
-      at: D + 3.15,
-      duration: 1.60,
-      pos: { x: -13.2, y: 2.1, z: -14.6 },
-      target: { x: 0.8, y: 0.03, z: 0 },
+      at: orbitApexAt,
+      duration: 1.62,
+      pos: { x: 2.85, y: 1.95, z: -18.9 },
+      target: { x: 0.0, y: 0.045, z: 0 },
       fov: 59,
-      roll: Math.PI * 0.008,
-      ease: "power2.inOut",
+      roll: -Math.PI * 0.004,
+      ease: "sine.inOut",
     });
     camTo({
-      at: D + 4.75,
-      duration: 1.55,
-      pos: { x: -18.4, y: 1.2, z: -1.8 },
-      target: { x: 1.0, y: 0.0, z: 0 },
-      fov: 60,
-      roll: Math.PI * 0.012,
-      ease: "power2.inOut",
-    });
-    camTo({
-      at: D + 6.30,
-      duration: 1.55,
-      pos: { x: -12.0, y: 0.8, z: 13.6 },
-      target: { x: 0.0, y: 0.0, z: 0 },
+      at: orbitBackAt,
+      duration: 1.42,
+      pos: { x: -7.25, y: 0.92, z: -7.8 },
+      target: { x: 0.18, y: 0.015, z: -0.02 },
       fov: 61,
-      roll: Math.PI * 0.014,
-      ease: "power2.inOut",
+      roll: Math.PI * 0.004,
+      ease: "sine.inOut",
     });
 
-    tl.to(BH.ctrl, { spin: 1.26, diskLift: 0.92, majesty: 1.0, duration: 3.0, ease: "power2.inOut" }, D + 1.5);
-    tl.to(cinemaCtrl, { drift: 0.03, parallax: 0.02, dutch: 0.12, duration: 3.2, ease: "sine.inOut" }, D + 1.2);
-    tl.to(BH.causticMat.uniforms.uOpacity, { value: 0.92, duration: 2.4, ease: "power2.inOut" }, D + 1.55);
-    tl.to(BH.magicMat.uniforms.uOpacity, { value: 0.58, duration: 2.4, ease: "power2.inOut" }, D + 1.70);
-    tl.to(BH.grp.rotation, { x: -0.06, y: 0.94, z: 0.05, duration: 3.0, ease: "sine.inOut" }, D + 1.55);
-    tl.to(HOST.starMat.uniforms.uFrameDrag, { value: 0.18, duration: 3.0, ease: "power2.inOut" }, D + 1.5);
-    tl.to(HOST.starMat.uniforms.uSpeed, { value: 74, duration: 3.0, ease: "power2.inOut" }, D + 1.5);
+    // A saída da órbita não completa um giro rápido: ela “escorrega” para o eixo
+    // do horizonte e desacelera antes de deixar a gravidade puxar a câmera.
+    camTo({
+      at: orbitExitAt,
+      duration: orbitExitDur,
+      pos: { x: -2.85, y: 0.46, z: 6.95 },
+      target: { x: 0.06, y: 0.0, z: -0.18 },
+      fov: 64,
+      roll: Math.PI * 0.002,
+      ease: "power2.out",
+    });
+
+    camTo({
+      at: gravityHoldAt,
+      duration: gravityHoldDur,
+      pos: { x: 2.18, y: 0.22, z: 5.12 },
+      target: { x: 0.0, y: 0.0, z: -0.58 },
+      fov: 67,
+      roll: 0,
+      ease: "sine.inOut",
+    });
+
+    tl.to(BH.ctrl, { spin: 1.14, diskLift: 0.88, majesty: 1.0, duration: 3.65, ease: "sine.inOut" }, orbitStartAt);
+    tl.to(cinemaCtrl, { drift: 0.016, parallax: 0.012, dutch: 0.045, duration: 3.7, ease: "sine.inOut" }, orbitStartAt);
+    tl.to(BH.causticMat.uniforms.uOpacity, { value: 0.88, duration: 2.2, ease: "sine.inOut" }, orbitStartAt + 0.12);
+    tl.to(BH.magicMat.uniforms.uOpacity, { value: 0.52, duration: 2.2, ease: "sine.inOut" }, orbitStartAt + 0.18);
+    tl.to(BH.grp.rotation, { x: -0.070, y: 0.66, z: 0.044, duration: 3.45, ease: "sine.inOut" }, orbitStartAt + 0.08);
+    tl.to(HOST.starMat.uniforms.uFrameDrag, { value: 0.12, duration: 3.3, ease: "sine.inOut" }, orbitStartAt);
+    tl.to(HOST.starMat.uniforms.uSpeed, { value: 56, duration: 3.3, ease: "sine.inOut" }, orbitStartAt);
 
     // Plasma tidal quase invisível: atmosfera gravitacional sem sensação de explosão.
-    tl.to(TIDAL.pMat.uniforms.uOpacity, { value: 0.08, duration: 2.2, ease: "sine.inOut" }, D + 1.8);
-    toU(warpPass.uniforms.uAmount, 0.55, 2.5, D + 1.8, "sine.inOut");
-    toU(chromaPass.uniforms.uStr, 0.032, 2.5, D + 1.8, "sine.inOut");
+    tl.to(TIDAL.pMat.uniforms.uOpacity, { value: 0.055, duration: 1.35, ease: "sine.inOut" }, orbitApexAt - 0.20);
+    toU(warpPass.uniforms.uAmount, 0.40, 2.25, orbitStartAt + 0.35, "sine.inOut");
+    toU(chromaPass.uniforms.uStr, 0.024, 2.25, orbitStartAt + 0.35, "sine.inOut");
 
     TIDAL.gwMats.slice(0, 4).forEach((m, i) => {
       tl.to(
         m.uniforms.uOpacity,
-        { value: 0.35, duration: 1.2, ease: "power2.out" },
-        D + 2.0 + i * 0.25,
+        { value: 0.22, duration: 0.72, ease: "sine.out" },
+        orbitApexAt + i * 0.16,
       );
       tl.to(
         m.uniforms.uOpacity,
-        { value: 0.0, duration: 2.0, ease: "power2.in" },
-        D + 3.2 + i * 0.25,
+        { value: 0.0, duration: 1.05, ease: "sine.in" },
+        orbitBackAt + i * 0.13,
       );
     });
 
-    // ── 4C · FECHANDO A ÓRBITA E ALINHANDO O MERGULHO (D+7.85 ... C)
-    const dur4C = Math.max(0.8, BEAT.CHAOS_START - (D + 7.85));
-    camTo({
-      at: D + 7.85,
-      duration: dur4C,
-      pos: { x: 4.8, y: 0.42, z: 8.4 },
-      target: { x: 0.0, y: 0.0, z: 0 },
-      fov: 66,
-      roll: -Math.PI * 0.024,
-      ease: "power2.in",
-    });
-    tl.to(HOST.starMat.uniforms.uFrameDrag, { value: 0.28, duration: dur4C, ease: "power2.inOut" }, D + 4.0);
-    tl.to(HOST.starMat.uniforms.uSuck, { value: 0.12, duration: dur4C, ease: "power2.inOut" }, D + 4.0);
-    tl.to(HOST.starMat.uniforms.uSpeed, { value: 108, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(TIDAL.sMat.uniforms.uOpacity, { value: 0.06, duration: 1.0, ease: "power2.out" }, D + 3.7);
+    // ── 4C · RESPIRO GRAVITACIONAL + ALINHAMENTO DO MERGULHO
+    // O fim da órbita agora é uma desaceleração perceptível: a câmera para de girar,
+    // o campo de lente cresce como pressão e o mergulho herda exatamente o mesmo eixo.
+    tl.to(HOST.starMat.uniforms.uFrameDrag, { value: 0.17, duration: orbitExitDur, ease: "power2.out" }, orbitExitAt);
+    tl.to(HOST.starMat.uniforms.uSuck, { value: 0.07, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(HOST.starMat.uniforms.uSpeed, { value: 64, duration: orbitExitDur, ease: "power2.out" }, orbitExitAt);
+    tl.to(TIDAL.sMat.uniforms.uOpacity, { value: 0.035, duration: 0.90, ease: "sine.inOut" }, orbitExitAt + 0.10);
 
-    toU(lensPass.uniforms.uStrength, 0.016, dur4C, D + 4.0, "power2.in");
-    toU(warpPass.uniforms.uAmount, 0.78, dur4C, D + 4.0, "power2.in");
-    toU(chromaPass.uniforms.uStr, 0.045, dur4C, D + 4.0, "power2.in");
-    toU(barrelPass.uniforms.uStr, -0.022, dur4C, D + 4.0, "power2.in");
+    toU(lensPass.uniforms.uStrength, 0.011, orbitExitDur, orbitExitAt, "sine.inOut");
+    toU(warpPass.uniforms.uAmount, 0.52, orbitExitDur, orbitExitAt, "sine.inOut");
+    toU(chromaPass.uniforms.uStr, 0.032, orbitExitDur, orbitExitAt, "sine.inOut");
+    toU(barrelPass.uniforms.uStr, -0.012, orbitExitDur, orbitExitAt, "sine.inOut");
 
-    // Bloom mais controlado para preservar a leitura do disco, da lente e do horizonte.
-    tl.to(bloomPass, { strength: 1.02, radius: 0.72, threshold: 0.038, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(BH.ctrl, { plunge: 0.68, spin: 1.48, diskLift: 1.14, majesty: 1.0, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(BH.causticMat.uniforms.uOpacity, { value: 1.10, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(BH.dustMat.uniforms.uOpacity, { value: 0.44, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(BH.magicMat.uniforms.uOpacity, { value: 0.70, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(BH.shadowMat.uniforms.uOpacity, { value: 0.92, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(BH.diskMat.uniforms.uOpacity, { value: 0.78, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(BH.lensedDiskMat.uniforms.uOpacity, { value: 1.52, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(BH.photonMat.uniforms.uOpacity, { value: 2.35, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(BH.hotspotMat.uniforms.uOpacity, { value: 1.18, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(BH.jetMatA.uniforms.uOpacity, { value: 0.50, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(BH.jetMatB.uniforms.uOpacity, { value: 0.34, duration: dur4C, ease: "power2.in" }, D + 4.0);
-    tl.to(shakeCtrl, { lf: 0.03, mf: 0.026, hf: 0.003, duration: dur4C, ease: "power2.in" }, D + 4.0);
+    tl.to(bloomPass, { strength: 0.90, radius: 0.64, threshold: 0.040, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(BH.ctrl, { plunge: 0.38, spin: 1.28, diskLift: 1.0, majesty: 1.0, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(BH.causticMat.uniforms.uOpacity, { value: 0.96, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(BH.dustMat.uniforms.uOpacity, { value: 0.46, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(BH.magicMat.uniforms.uOpacity, { value: 0.58, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(BH.shadowMat.uniforms.uOpacity, { value: 0.86, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(BH.diskMat.uniforms.uOpacity, { value: 0.90, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(BH.lensedDiskMat.uniforms.uOpacity, { value: 1.24, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(BH.photonMat.uniforms.uOpacity, { value: 2.02, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(BH.hotspotMat.uniforms.uOpacity, { value: 0.96, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(BH.jetMatA.uniforms.uOpacity, { value: 0.36, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(BH.jetMatB.uniforms.uOpacity, { value: 0.24, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(BH.grp.rotation, { x: -0.044, y: 0.84, z: 0.030, duration: orbitExitDur, ease: "sine.inOut" }, orbitExitAt);
+    tl.to(shakeCtrl, { lf: 0.010, mf: 0.010, hf: 0.0, duration: orbitExitDur, ease: "power2.out" }, orbitExitAt);
+
+    // Respiro final antes da queda: micro-pausa visual, sem congelar a cena.
+    tl.to(HOST.starMat.uniforms.uFrameDrag, { value: 0.21, duration: gravityHoldDur, ease: "sine.inOut" }, gravityHoldAt);
+    tl.to(HOST.starMat.uniforms.uSpeed, { value: 74, duration: gravityHoldDur, ease: "sine.inOut" }, gravityHoldAt);
+    toU(warpPass.uniforms.uAmount, 0.66, gravityHoldDur, gravityHoldAt, "sine.inOut");
+    toU(chromaPass.uniforms.uStr, 0.038, gravityHoldDur, gravityHoldAt, "sine.inOut");
+    tl.to(BH.ctrl, { plunge: 0.52, spin: 1.42, diskLift: 1.08, majesty: 1.0, duration: gravityHoldDur, ease: "sine.inOut" }, gravityHoldAt);
+    tl.to(BH.grp.rotation, { x: -0.034, y: 0.94, z: 0.022, duration: gravityHoldDur, ease: "sine.inOut" }, gravityHoldAt);
+    tl.to(shakeCtrl, { lf: 0.006, mf: 0.006, hf: 0.0, duration: gravityHoldDur, ease: "power2.out" }, gravityHoldAt);
 
     // ═══════════════════════════════════════════════════════════════
     // ATO 5 — MERGULHO NO HORIZONTE
     // ═══════════════════════════════════════════════════════════════
     const C = BEAT.CHAOS_START;
+    const imaxOpenAt = BEAT.IMAX_OPEN;
+    const imaxOpenDur = Math.max(1.45, BEAT.TRAVEL_START - BEAT.IMAX_OPEN + 0.28);
+
+    // LETTERBOX → IMAX: as barras se abrem durante o mergulho, não só no final.
+    // A abertura começa quando a câmera já está sendo puxada pelo horizonte e termina
+    // junto da boca do túnel, criando uma transição cinematográfica contínua.
+    tl.to(LB.top, { height: "0px", duration: imaxOpenDur, ease: "sine.inOut" }, imaxOpenAt);
+    tl.to(LB.bot, { height: "0px", duration: imaxOpenDur, ease: "sine.inOut" }, imaxOpenAt);
+    tl.to(OV.imax, { opacity: 0.035, duration: imaxOpenDur, ease: "sine.inOut" }, imaxOpenAt);
+    toU(vigPass.uniforms.uOpen, 1.0, imaxOpenDur, imaxOpenAt, "sine.inOut");
+
     tl.to(
       bloomPass,
       {
-        strength: 1.08,
-        radius: 0.62,
-        threshold: 0.042,
-        duration: 1.4,
+        strength: 1.12,
+        radius: 0.66,
+        threshold: 0.040,
+        duration: 1.05,
         ease: "power1.inOut",
       },
       C,
@@ -4030,47 +4186,47 @@ document.addEventListener("DOMContentLoaded", () => {
     tl.to(
       bloomPass,
       {
-        strength: 1.55,
-        radius: 0.84,
-        threshold: 0.036,
-        duration: 1.6,
+        strength: 1.72,
+        radius: 0.90,
+        threshold: 0.034,
+        duration: 1.15,
         ease: "power2.in",
       },
-      C + 1.5,
+      C + 1.15,
     );
     camTo({
       at: C,
-      duration: 1.8,
-      pos: { x: 10.4, y: 2.8, z: 12.8 },
-      target: { x: -1.0, y: 0, z: 0 },
-      fov: 58,
-      roll: Math.PI * 0.022,
-      ease: "power1.inOut",
+      duration: 0.98,
+      pos: { x: 1.28, y: 0.075, z: 3.74 },
+      target: { x: 0.0, y: 0, z: -1.04 },
+      fov: 72,
+      roll: Math.PI * 0.001,
+      ease: "sine.inOut",
     });
     camTo({
-      at: C + 1.55,
-      duration: 2.05,
-      pos: { x: -7.4, y: 0.25, z: 9.2 },
-      target: { x: 0.0, y: 0, z: 0 },
-      fov: 66,
-      roll: -Math.PI * 0.016,
+      at: C + 0.88,
+      duration: 0.94,
+      pos: { x: 0.38, y: 0.020, z: 2.08 },
+      target: { x: 0.0, y: 0, z: -2.18 },
+      fov: 82,
+      roll: 0,
       ease: "power2.inOut",
     });
-    toU(lensPass.uniforms.uStrength, 0.014, 1.6, C, "power1.inOut");
-    toU(lensPass.uniforms.uStrength, 0.026, 2.2, C + 1.8, "power2.in");
-    toU(lensPass.uniforms.uRadius, 0.02, 3.0, C, "power2.in");
-    toU(lensPass.uniforms.uRingBoost, 0.20, 1.4, C + 0.5, "power1.inOut");
-    toU(lensPass.uniforms.uRingBoost, 0.28, 1.8, C + 2.0, "power2.in");
-    toU(warpPass.uniforms.uAmount, 0.95, 1.5, C, "power1.inOut");
-    tl.to(exposureCtrl, { value: 0.88, duration: 2.6, ease: "power2.inOut" }, C + 0.1);
-    toU(warpPass.uniforms.uAmount, 2.35, 1.8, C + 1.8, "power3.in");
-    toU(chromaPass.uniforms.uStr, 0.08, 1.4, C + 0.6, "power1.inOut");
-    toU(chromaPass.uniforms.uStr, 0.18, 1.8, C + 2.0, "power3.in");
-    toU(barrelPass.uniforms.uStr, -0.05, 1.6, C + 0.4, "power1.inOut");
-    toU(barrelPass.uniforms.uStr, -0.055, 1.8, C + 2.0, "power3.in");
-    toU(anamPass.uniforms.uStrength, 0.012, 1.2, C + 0.6, "sine.inOut");
+    toU(lensPass.uniforms.uStrength, 0.016, 1.15, C, "power1.inOut");
+    toU(lensPass.uniforms.uStrength, 0.030, 1.35, C + 1.30, "power2.in");
+    toU(lensPass.uniforms.uRadius, 0.021, 2.10, C, "power2.in");
+    toU(lensPass.uniforms.uRingBoost, 0.22, 1.0, C + 0.35, "power1.inOut");
+    toU(lensPass.uniforms.uRingBoost, 0.34, 1.20, C + 1.55, "power2.in");
+    toU(warpPass.uniforms.uAmount, 0.86, 1.12, C, "sine.inOut");
+    tl.to(exposureCtrl, { value: 0.86, duration: 1.95, ease: "power2.inOut" }, C + 0.05);
+    toU(warpPass.uniforms.uAmount, 2.20, 1.10, C + 1.38, "power3.inOut");
+    toU(chromaPass.uniforms.uStr, 0.072, 1.0, C + 0.38, "sine.inOut");
+    toU(chromaPass.uniforms.uStr, 0.17, 1.05, C + 1.48, "power3.inOut");
+    toU(barrelPass.uniforms.uStr, -0.046, 1.05, C + 0.28, "sine.inOut");
+    toU(barrelPass.uniforms.uStr, -0.064, 1.05, C + 1.48, "power3.inOut");
+    toU(anamPass.uniforms.uStrength, 0.014, 0.95, C + 0.45, "sine.inOut");
 
-    tl.to(BH.ctrl, { plunge: 1.0, spin: 1.95, diskLift: 1.34, majesty: 1.0, iris: 1.0, duration: 3.2, ease: "power3.in" }, C + 0.1);
+    tl.to(BH.ctrl, { plunge: 1.0, spin: 1.92, diskLift: 1.34, majesty: 1.0, iris: 1.0, duration: 2.10, ease: "power2.inOut" }, C + 0.10);
     tl.to(BH.causticMat.uniforms.uOpacity, { value: 1.05, duration: 1.8, ease: "power2.in" }, C + 0.28);
     tl.to(BH.magicMat.uniforms.uOpacity, { value: 0.68, duration: 1.8, ease: "power2.in" }, C + 0.36);
     tl.to(BH.shadowMat.uniforms.uOpacity, { value: 1.08, duration: 1.8, ease: "power2.in" }, C + 0.40);
@@ -4091,22 +4247,22 @@ document.addEventListener("DOMContentLoaded", () => {
       { mf: 0.07, hf: 0.006, duration: 1.8, ease: "power2.in" },
       C + 1.8,
     );
-    tl.to(BH.grp.rotation, { x: -0.03, y: 1.18, z: 0.035, duration: 2.4, ease: "power2.inOut" }, C + 0.35);
+    tl.to(BH.grp.rotation, { x: -0.026, y: 1.08, z: 0.020, duration: 2.18, ease: "sine.inOut" }, C + 0.24);
     // Mergulho limpo: as estrelas alongam e passam pela câmera, sem explosão da galáxia.
     tl.to(
       HOST.starMat.uniforms.uSuck,
-      { value: 0.16, duration: 3.0, ease: "power2.inOut" },
-      C + 0.2,
+      { value: 0.14, duration: 1.82, ease: "power2.inOut" },
+      C + 0.12,
     );
     tl.to(
       HOST.starMat.uniforms.uTravel,
-      { value: 0.95, duration: 3.0, ease: "power2.inOut" },
-      C + 0.15,
+      { value: 1.0, duration: 1.86, ease: "power2.inOut" },
+      C + 0.10,
     );
     tl.to(
       HOST.dustMat.uniforms.uTravel,
-      { value: 0.70, duration: 2.8, ease: "power2.inOut" },
-      C + 0.2,
+      { value: 0.66, duration: 1.78, ease: "power2.inOut" },
+      C + 0.12,
     );
 
     // Remove o comportamento de caos/desintegração: fica só a passagem gravitacional.
@@ -4130,142 +4286,133 @@ document.addEventListener("DOMContentLoaded", () => {
       { value: 0.0, duration: 0.8, ease: "power2.out" },
       C + 0.1,
     );
-    camTo({
-      at: C + 3.0,
-      duration: 2.2,
-      pos: { x: 0.42, y: 0.03, z: 3.85 },
-      target: { x: 0, y: 0, z: 0 },
-      fov: 80,
-      roll: 0,
-      ease: "power4.in",
-    });
-    camTo({
-      at: C + 4.15,
-      duration: 0.95,
-      pos: { x: 0.035, y: 0.010, z: 2.65 },
-      target: { x: 0, y: 0, z: -0.20 },
-      fov: 86,
-      roll: 0,
-      ease: "power4.in",
-    });
-    tl.to(
-      camera.position,
-      { x: "+=0.32", y: "+=0.14", duration: 0.05, ease: roughEase },
-      C + 3.42,
-    );
-    tl.to(
-      camera.position,
-      { x: 0.42, y: 0.03, duration: 0.18, ease: "power3.out" },
-      C + 3.47,
-    );
-    tl.to(
-      shakeCtrl,
-      { mf: 0.06, hf: 0.0, duration: 1.8, ease: "power2.out" },
-      C + 3.55,
-    );
-    tl.to(
-      LB.top,
-      { height: "0px", duration: 5.8, ease: "power1.inOut" },
-      BEAT.IMAX_OPEN,
-    );
-    tl.to(
-      LB.bot,
-      { height: "0px", duration: 5.8, ease: "power1.inOut" },
-      BEAT.IMAX_OPEN,
-    );
-    toU(vigPass.uniforms.uOpen, 1.0, 5.6, BEAT.IMAX_OPEN, "power1.inOut");
-    tl.to(
-      OV.imax,
-      { opacity: 0.0, duration: 5.0, ease: "power1.inOut" },
-      BEAT.IMAX_OPEN + 0.2,
-    );
-
-    // ATO 5→6 ENTRADA NO TÚNEL
     const T = BEAT.TRAVEL_START,
       S = BEAT.SILENCE_START,
-      travelDur = S - T;
+      travelDur = Math.max(0.1, S - T),
+      bridgeStart = T - 1.38;
+
+    // Mergulho → túnel: agora o corredor nasce dentro do horizonte antes do corte de cena.
     camTo({
-      at: T - 1.4,
-      duration: 1.4,
-      pos: { x: 0.012, y: 0.002, z: -3.2 },
-      target: { x: 0, y: 0, z: -24 },
-      fov: 84,
+      at: C + 1.14,
+      duration: Math.max(0.68, bridgeStart - (C + 1.14)),
+      pos: { x: 0.16, y: 0.014, z: 1.64 },
+      target: { x: 0.0, y: 0.0, z: -3.2 },
+      fov: 87,
       roll: 0,
       ease: "power2.inOut",
     });
+    camTo({
+      at: bridgeStart,
+      duration: 0.82,
+      pos: { x: 0.052, y: 0.008, z: 1.36 },
+      target: { x: 0, y: 0, z: -3.8 },
+      fov: 89,
+      roll: 0,
+      ease: "power3.inOut",
+    });
+    camTo({
+      at: T - 0.62,
+      duration: 0.58,
+      pos: { x: 0.010, y: 0.002, z: -2.65 },
+      target: { x: 0, y: 0, z: -48 },
+      fov: 94,
+      roll: 0,
+      ease: "power4.in",
+    });
+
+    tl.add(() => {
+      // Pré-portal visível ainda dentro do buraco negro: evita corte seco entre atos.
+      TUNNEL.pts.visible = true;
+      TUNNEL.mat.uniforms.uOpacity.value = 0.18;
+      TUNNEL.mat.uniforms.uSpeed.value = 74;
+      TUNNEL.mat.uniforms.uTwist.value = 0.58;
+      if (TUNNEL.mat.uniforms.uPulse) TUNNEL.mat.uniforms.uPulse.value = 0.22;
+      if (TUNNEL.mat.uniforms.uCollapse) TUNNEL.mat.uniforms.uCollapse.value = 0.0;
+      if (TUNNEL.mat.uniforms.uMouth) TUNNEL.mat.uniforms.uMouth.value = 1.0;
+    }, bridgeStart);
+
+    toU(TUNNEL.mat.uniforms.uOpacity, 0.42, 0.46, bridgeStart, "power2.out");
+    toU(TUNNEL.mat.uniforms.uSpeed, 135, 0.62, bridgeStart, "power2.inOut");
+    toU(TUNNEL.mat.uniforms.uTwist, 1.10, 0.82, bridgeStart, "sine.inOut");
+    if (TUNNEL.mat.uniforms.uPulse) toU(TUNNEL.mat.uniforms.uPulse, 0.72, 0.76, bridgeStart + 0.10, "sine.inOut");
+    if (TUNNEL.mat.uniforms.uMouth) {
+      toU(TUNNEL.mat.uniforms.uMouth, 1.45, 0.72, bridgeStart + 0.08, "power2.out");
+      toU(TUNNEL.mat.uniforms.uMouth, 0.46, 0.66, T + 0.18, "power2.inOut");
+      toU(TUNNEL.mat.uniforms.uMouth, 0.0, 0.88, T + travelDur * 0.32, "sine.out");
+    }
+
+    // A lente, o disco e o túnel passam a crescer juntos no mesmo compasso.
+    tl.to(BH.ctrl, { plunge: 1.0, spin: 2.18, diskLift: 1.55, majesty: 1.0, iris: 1.0, duration: Math.max(1.15, T - C - 0.45), ease: "power4.in" }, C + 0.35);
+    tl.to(BH.grp.scale, { x: 1.18, y: 1.18, z: 1.18, duration: Math.max(1.15, T - C - 0.28), ease: "power4.in" }, C + 0.50);
+    tl.to(BH.grp.rotation, { x: -0.018, y: 1.34, z: 0.020, duration: Math.max(1.05, T - C - 0.40), ease: "power3.inOut" }, C + 0.48);
+    toU(lensPass.uniforms.uStrength, 0.040, Math.max(1.0, T - C - 0.30), C + 0.55, "power3.in");
+    toU(lensPass.uniforms.uRadius, 0.026, Math.max(1.0, T - C - 0.34), C + 0.48, "power3.in");
+    toU(lensPass.uniforms.uRingBoost, 0.42, 0.70, bridgeStart, "power2.inOut");
+    toU(warpPass.uniforms.uAmount, 2.15, 0.86, bridgeStart - 0.10, "power3.in");
+    toU(warpPass.uniforms.uAmount, 3.35, 0.60, T - 0.50, "power4.in");
+    toU(chromaPass.uniforms.uStr, 0.125, 0.70, bridgeStart, "power3.in");
+    toU(barrelPass.uniforms.uStr, -0.090, 0.70, bridgeStart, "power3.in");
+    toU(anamPass.uniforms.uStrength, 0.034, 0.65, bridgeStart, "power3.in");
+
     tl.to(
       camera,
       {
-        fov: 90,
-        duration: 1.0,
-        ease: "power2.in",
+        fov: 96,
+        duration: 0.62,
+        ease: "power3.in",
         onUpdate: () => camera.updateProjectionMatrix(),
       },
-      T - 0.85,
+      T - 0.56,
     );
-    toU(warpPass.uniforms.uAmount, 2.7, 0.85, T - 0.88, "power3.in");
-    toU(chromaPass.uniforms.uStr, 0.09, 0.72, T - 0.75, "power3.in");
-    toU(barrelPass.uniforms.uStr, -0.08, 0.72, T - 0.75, "power3.in");
-    toU(anamPass.uniforms.uStrength, 0.022, 0.78, T - 0.82, "power3.in");
     tl.to(
       shakeCtrl,
-      { mf: 0.10, hf: 0.016, duration: 0.65, ease: "power2.out" },
-      T - 0.72,
+      { mf: 0.070, hf: 0.006, lf: 0.020, duration: 0.82, ease: "power2.inOut" },
+      bridgeStart,
     );
     tl.to(
-      OV.hawking,
-      { opacity: 0.82, duration: 0.065, ease: "none" },
-      T - 0.05,
+      shakeCtrl,
+      { mf: 0.095, hf: 0.014, lf: 0.010, duration: 0.38, ease: "power2.out" },
+      T - 0.42,
     );
-    tl.to(
-      OV.flash,
-      { opacity: 0.58, duration: 0.055, ease: "none" },
-      T - 0.035,
-    );
-    tl.to(OV.flash, { opacity: 0, duration: 0.1, ease: "none" }, T + 0.03);
-    tl.to(OV.hawking, { opacity: 0, duration: 0.16, ease: "none" }, T + 0.06);
 
-    tl.to(
-      HOST.starMat.uniforms.uOpacity,
-      { value: 0.0, duration: 0.95, ease: "power2.in" },
-      T - 0.95,
-    );
-    tl.to(
-      HOST.dustMat.uniforms.uOpacity,
-      { value: 0.0, duration: 0.85, ease: "power2.in" },
-      T - 0.85,
-    );
+    // Flash reduzido: funciona como passagem pela lente, não como corte escondendo a troca de cena.
+    tl.to(OV.hawking, { opacity: 0.36, duration: 0.060, ease: "none" }, T - 0.050);
+    tl.to(OV.flash, { opacity: 0.26, duration: 0.050, ease: "none" }, T - 0.035);
+    tl.to(OV.flash, { opacity: 0, duration: 0.10, ease: "none" }, T + 0.035);
+    tl.to(OV.hawking, { opacity: 0, duration: 0.14, ease: "none" }, T + 0.060);
+
+    tl.to(HOST.starMat.uniforms.uOpacity, { value: 0.0, duration: 0.70, ease: "power2.in" }, bridgeStart - 0.10);
+    tl.to(HOST.dustMat.uniforms.uOpacity, { value: 0.0, duration: 0.64, ease: "power2.in" }, bridgeStart - 0.08);
     HOST.nebMats.forEach((m, i) => {
-      tl.to(
-        m.uniforms.uOpacity,
-        { value: 0.0, duration: 0.75, ease: "power2.in" },
-        T - 0.8 + i * 0.03,
-      );
+      tl.to(m.uniforms.uOpacity, { value: 0.0, duration: 0.56, ease: "power2.in" }, bridgeStart - 0.04 + i * 0.018);
     });
 
     tl.add(() => {
       ST.tunneling = true;
       shakeCtrl.hf = 0.002;
-      shakeCtrl.mf = 0.016;
-      shakeCtrl.lf = 0.010;
+      shakeCtrl.mf = 0.012;
+      shakeCtrl.lf = 0.005;
       breathCtrl.amp = 0;
       BH.grp.visible = false;
       HOST.grp.visible = false;
       TUNNEL.pts.visible = true;
-      cinemaCtrl.drift = 0.009;
-      cinemaCtrl.parallax = 0.006;
-      cinemaCtrl.dutch = 0.05;
+      cinemaCtrl.drift = 0.006;
+      cinemaCtrl.parallax = 0.004;
+      cinemaCtrl.dutch = 0.020;
       cosmicGrp.visible = true;
       camRoll.z = 0;
       camera.rotation.z = 0;
-      camera.position.set(0, 0, -86);
-      lookTarget.set(0, 0, -1600);
-      camera.fov = 90;
+      camera.position.set(0, 0, -124);
+      lookTarget.set(0, 0, -1850);
+      camera.fov = 94;
       camera.updateProjectionMatrix();
-      barrelPass.uniforms.uStr.value = 0;
-      warpPass.uniforms.uAmount.value = 1.6;
-      chromaPass.uniforms.uStr.value = 0.04;
-      anamPass.uniforms.uStrength.value = 0.012;
+      barrelPass.uniforms.uStr.value = -0.022;
+      warpPass.uniforms.uAmount.value = 2.05;
+      chromaPass.uniforms.uStr.value = 0.060;
+      anamPass.uniforms.uStrength.value = 0.020;
+      if (TUNNEL.mat.uniforms.uPulse) TUNNEL.mat.uniforms.uPulse.value = 0.72;
+      if (TUNNEL.mat.uniforms.uCollapse) TUNNEL.mat.uniforms.uCollapse.value = 0.04;
+      if (TUNNEL.mat.uniforms.uMouth) TUNNEL.mat.uniforms.uMouth.value = 0.48;
       PASS_GALAXIES.forEach((g) => {
         g.visible = false;
         if (g._mats)
@@ -4275,210 +4422,108 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }, T);
 
-    toU(TUNNEL.mat.uniforms.uOpacity, 1.0, 0.85, T, "power2.out");
-    toU(TUNNEL.mat.uniforms.uSpeed, 235, 1.25, T, "power2.out");
-    toU(TUNNEL.mat.uniforms.uTwist, 1.75, travelDur * 0.45, T, "sine.inOut");
-    toU(TUNNEL.mat.uniforms.uTwist, 2.45, travelDur * 0.32, T + travelDur * 0.35, "sine.inOut");
-    toU(TUNNEL.mat.uniforms.uTwist, 1.55, travelDur * 0.25, T + travelDur * 0.72, "sine.out");
+    // Travessia: mais longa, com começo orgânico e fechamento cravado antes do silêncio.
+    toU(TUNNEL.mat.uniforms.uOpacity, 1.08, 0.58, T, "power2.out");
+    toU(TUNNEL.mat.uniforms.uSpeed, 255, 0.52, T, "power3.out");
+    toU(TUNNEL.mat.uniforms.uSpeed, 365, 0.78, T + travelDur * 0.18, "sine.inOut");
+    toU(TUNNEL.mat.uniforms.uSpeed, 520, 0.86, T + travelDur * 0.43, "sine.inOut");
+    toU(TUNNEL.mat.uniforms.uSpeed, 710, 0.72, T + travelDur * 0.68, "power2.inOut");
+    toU(TUNNEL.mat.uniforms.uSpeed, 930, 0.32, S - 0.36, "power4.in");
 
-    tl.to(
-      camera.position,
-      {
-        x: 0.34,
-        y: 0.12,
-        z: -1680,
-        duration: travelDur * 0.34,
-        ease: "sine.inOut",
-      },
-      T,
-    );
-    tl.to(
-      camera.position,
-      {
-        x: -0.38,
-        y: -0.14,
-        z: -3860,
-        duration: travelDur * 0.33,
-        ease: "sine.inOut",
-      },
-      T + travelDur * 0.34,
-    );
-    tl.to(
-      camera.position,
-      {
-        x: 0.06,
-        y: 0.02,
-        z: -5680,
-        duration: travelDur * 0.33,
-        ease: "sine.inOut",
-      },
-      T + travelDur * 0.67,
-    );
-    tl.to(
-      lookTarget,
-      {
-        x: 0.10,
-        y: 0.04,
-        z: -2760,
-        duration: travelDur * 0.34,
-        ease: "sine.inOut",
-      },
-      T,
-    );
-    tl.to(
-      lookTarget,
-      {
-        x: -0.08,
-        y: -0.03,
-        z: -4920,
-        duration: travelDur * 0.33,
-        ease: "sine.inOut",
-      },
-      T + travelDur * 0.34,
-    );
-    tl.to(
-      lookTarget,
-      {
-        x: 0.0,
-        y: 0.0,
-        z: -6720,
-        duration: travelDur * 0.33,
-        ease: "sine.inOut",
-      },
-      T + travelDur * 0.67,
-    );
-    tl.to(
-      camRoll,
-      { z: Math.PI * 0.005, duration: travelDur * 0.45, ease: "sine.inOut" },
-      T + 0.35,
-    );
-    tl.to(
-      camRoll,
-      { z: -Math.PI * 0.004, duration: travelDur * 0.4, ease: "sine.inOut" },
-      T + travelDur * 0.48,
-    );
-    tl.to(
-      camRoll,
-      { z: 0.0, duration: travelDur * 0.18, ease: "sine.out" },
-      T + travelDur * 0.82,
-    );
-    tl.to(
-      camera,
-      {
-        fov: 88,
-        duration: 2.0,
-        ease: "sine.inOut",
-        onUpdate: () => camera.updateProjectionMatrix(),
-      },
-      T + 0.3,
-    );
-    tl.to(
-      camera,
-      {
-        fov: 94,
-        duration: 2.8,
-        ease: "sine.inOut",
-        onUpdate: () => camera.updateProjectionMatrix(),
-      },
-      T + 2.5,
-    );
-    tl.to(
-      camera,
-      {
-        fov: 90,
-        duration: 2.4,
-        ease: "sine.out",
-        onUpdate: () => camera.updateProjectionMatrix(),
-      },
-      T + 5.2,
-    );
-    toU(TUNNEL.mat.uniforms.uSpeed, 285, 1.35, T + 1.3, "sine.inOut");
-    toU(TUNNEL.mat.uniforms.uSpeed, 340, 1.55, T + 3.0, "sine.inOut");
-    toU(TUNNEL.mat.uniforms.uSpeed, 275, 1.45, T + 4.65, "sine.out");
-    toU(warpPass.uniforms.uAmount, 1.55, 1.35, T + 1.1, "sine.inOut");
-    toU(warpPass.uniforms.uAmount, 2.10, 1.45, T + 3.0, "sine.inOut");
-    toU(warpPass.uniforms.uAmount, 1.35, 1.3, T + 4.7, "sine.out");
-    toU(chromaPass.uniforms.uStr, 0.055, 1.2, T + 1.2, "sine.inOut");
-    toU(chromaPass.uniforms.uStr, 0.075, 1.35, T + 3.0, "sine.inOut");
-    toU(chromaPass.uniforms.uStr, 0.04, 1.25, T + 4.7, "sine.out");
-    tl.to(
-      bloomPass,
-      {
-        strength: 0.88,
-        radius: 0.64,
-        threshold: 0.042,
-        duration: 1.6,
-        ease: "sine.inOut",
-      },
-      T + 0.25,
-    );
-    tl.to(
-      bloomPass,
-      {
-        strength: 1.02,
-        radius: 0.72,
-        threshold: 0.036,
-        duration: 1.1,
-        ease: "sine.inOut",
-      },
-      T + 2.85,
-    );
-    tl.to(
-      shakeCtrl,
-      { mf: 0.012, hf: 0.0, lf: 0.010, duration: 2.6, ease: "sine.inOut" },
-      T + 0.95,
-    );
-    toU(anamPass.uniforms.uStrength, 0.018, 1.2, T + 1.0, "sine.inOut");
-    toU(anamPass.uniforms.uStrength, 0.026, 1.4, T + 2.9, "sine.inOut");
-    toU(anamPass.uniforms.uStrength, 0.015, 1.2, T + 4.8, "sine.out");
+    toU(TUNNEL.mat.uniforms.uTwist, 1.55, travelDur * 0.22, T, "sine.inOut");
+    toU(TUNNEL.mat.uniforms.uTwist, 2.85, travelDur * 0.30, T + travelDur * 0.20, "sine.inOut");
+    toU(TUNNEL.mat.uniforms.uTwist, 4.45, travelDur * 0.26, T + travelDur * 0.50, "sine.inOut");
+    toU(TUNNEL.mat.uniforms.uTwist, 2.10, travelDur * 0.16, S - 0.78, "power2.in");
+    if (TUNNEL.mat.uniforms.uPulse) {
+      toU(TUNNEL.mat.uniforms.uPulse, 0.92, 0.52, T + 0.04, "power2.out");
+      toU(TUNNEL.mat.uniforms.uPulse, 1.35, 0.76, T + travelDur * 0.28, "sine.inOut");
+      toU(TUNNEL.mat.uniforms.uPulse, 2.05, 0.62, T + travelDur * 0.56, "sine.inOut");
+      toU(TUNNEL.mat.uniforms.uPulse, 3.20, 0.36, S - 0.58, "power4.in");
+      toU(TUNNEL.mat.uniforms.uPulse, 0.0, 0.11, S - 0.045, "power2.in");
+    }
+    if (TUNNEL.mat.uniforms.uCollapse) {
+      toU(TUNNEL.mat.uniforms.uCollapse, 0.14, 0.72, T + travelDur * 0.18, "sine.inOut");
+      toU(TUNNEL.mat.uniforms.uCollapse, 0.46, 0.82, T + travelDur * 0.52, "sine.inOut");
+      toU(TUNNEL.mat.uniforms.uCollapse, 1.0, 0.46, S - 0.52, "power4.in");
+    }
+
+    tl.to(camera.position, { x: 0.10, y: 0.034, z: -1520, duration: travelDur * 0.24, ease: "power2.inOut" }, T);
+    tl.to(camera.position, { x: -0.13, y: -0.042, z: -4100, duration: travelDur * 0.30, ease: "sine.inOut" }, T + travelDur * 0.24);
+    tl.to(camera.position, { x: 0.055, y: 0.016, z: -7050, duration: travelDur * 0.25, ease: "sine.inOut" }, T + travelDur * 0.54);
+    tl.to(camera.position, { x: 0.0, y: 0.0, z: -9460, duration: travelDur * 0.21, ease: "power4.in" }, T + travelDur * 0.79);
+
+    tl.to(lookTarget, { x: 0.025, y: 0.010, z: -2860, duration: travelDur * 0.24, ease: "power2.inOut" }, T);
+    tl.to(lookTarget, { x: -0.030, y: -0.010, z: -5750, duration: travelDur * 0.30, ease: "sine.inOut" }, T + travelDur * 0.24);
+    tl.to(lookTarget, { x: 0.012, y: 0.004, z: -8250, duration: travelDur * 0.25, ease: "sine.inOut" }, T + travelDur * 0.54);
+    tl.to(lookTarget, { x: 0.0, y: 0.0, z: -10550, duration: travelDur * 0.21, ease: "power4.in" }, T + travelDur * 0.79);
+
+    tl.to(camRoll, { z: Math.PI * 0.004, duration: travelDur * 0.26, ease: "sine.inOut" }, T + 0.10);
+    tl.to(camRoll, { z: -Math.PI * 0.006, duration: travelDur * 0.28, ease: "sine.inOut" }, T + travelDur * 0.34);
+    tl.to(camRoll, { z: Math.PI * 0.003, duration: travelDur * 0.18, ease: "sine.inOut" }, T + travelDur * 0.64);
+    tl.to(camRoll, { z: 0.0, duration: 0.22, ease: "power2.in" }, S - 0.34);
+
+    tl.to(camera, { fov: 99, duration: travelDur * 0.26, ease: "sine.inOut", onUpdate: () => camera.updateProjectionMatrix() }, T + 0.04);
+    tl.to(camera, { fov: 108, duration: travelDur * 0.34, ease: "sine.inOut", onUpdate: () => camera.updateProjectionMatrix() }, T + travelDur * 0.34);
+    tl.to(camera, { fov: 101, duration: travelDur * 0.18, ease: "sine.inOut", onUpdate: () => camera.updateProjectionMatrix() }, T + travelDur * 0.66);
+    tl.to(camera, { fov: 84, duration: 0.32, ease: "power4.in", onUpdate: () => camera.updateProjectionMatrix() }, S - 0.34);
+
+    toU(warpPass.uniforms.uAmount, 2.28, 0.56, T + travelDur * 0.12, "sine.inOut");
+    toU(warpPass.uniforms.uAmount, 3.15, 0.68, T + travelDur * 0.42, "sine.inOut");
+    toU(warpPass.uniforms.uAmount, 4.75, 0.42, S - 0.46, "power4.in");
+    toU(chromaPass.uniforms.uStr, 0.070, 0.50, T + travelDur * 0.12, "sine.inOut");
+    toU(chromaPass.uniforms.uStr, 0.120, 0.58, T + travelDur * 0.46, "sine.inOut");
+    toU(chromaPass.uniforms.uStr, 0.245, 0.32, S - 0.36, "power4.in");
+    toU(anamPass.uniforms.uStrength, 0.026, 0.50, T + travelDur * 0.16, "sine.inOut");
+    toU(anamPass.uniforms.uStrength, 0.044, 0.48, T + travelDur * 0.52, "sine.inOut");
+    toU(anamPass.uniforms.uStrength, 0.010, 0.26, S - 0.28, "power3.in");
+
+    tl.to(bloomPass, { strength: 1.08, radius: 0.72, threshold: 0.038, duration: 0.46, ease: "sine.inOut" }, T + 0.08);
+    tl.to(bloomPass, { strength: 1.34, radius: 0.88, threshold: 0.032, duration: 0.58, ease: "sine.inOut" }, T + travelDur * 0.52);
+    tl.to(bloomPass, { strength: 1.78, radius: 0.96, threshold: 0.028, duration: 0.30, ease: "power3.in" }, S - 0.46);
+    tl.to(shakeCtrl, { mf: 0.008, hf: 0.002, lf: 0.003, duration: travelDur * 0.76, ease: "sine.inOut" }, T + 0.22);
 
     COSMIC_OBJECTS.forEach((obj) => {
       const zDist = Math.abs(obj.zPos),
-        ratio = clamp(zDist / 7000, 0, 1),
-        ta = T + ratio * (travelDur - 0.8);
+        ratio = clamp(zDist / 9600, 0, 1),
+        ta = T + ratio * Math.max(0.46, travelDur - 0.42);
       const isNeb = obj.type === "nebula",
         isQ = obj.type === "quasar",
         isP = obj.type === "pulsar";
-      const inD = isNeb ? 1.05 : isP ? 0.52 : 0.62,
-        outD = isNeb ? 1.25 : 0.8,
-        peak = isNeb ? 0.96 : isQ ? 1.18 : 1.02;
+      const inD = isNeb ? 0.68 : isP ? 0.36 : 0.42,
+        outD = isNeb ? 0.72 : 0.42,
+        peak = isNeb ? 1.04 : isQ ? 1.20 : 1.05;
       obj.mats.forEach((m) => {
         if (!m.uniforms?.uOpacity) return;
-        tl.to(
-          m.uniforms.uOpacity,
-          { value: peak, duration: inD, ease: "sine.out" },
-          ta - 0.58,
-        );
-        tl.to(
-          m.uniforms.uOpacity,
-          { value: 0, duration: outD, ease: "sine.in" },
-          ta + 0.82,
-        );
+        tl.to(m.uniforms.uOpacity, { value: peak, duration: inD, ease: "sine.out" }, ta - 0.26);
+        tl.to(m.uniforms.uOpacity, { value: 0, duration: outD, ease: "sine.in" }, ta + 0.46);
       });
     });
-    schedulePassGalaxies(tl, T, travelDur, -86, -6200);
+    schedulePassGalaxies(tl, T, travelDur, -124, -9460);
 
     // ATO 7 — BLACKOUT / SILÊNCIO
-    toU(TUNNEL.mat.uniforms.uSpeed, 520, 0.38, S - 0.42, "power4.in");
-    toU(chromaPass.uniforms.uStr, 0.20, 0.34, S - 0.34, "power4.in");
-    toU(warpPass.uniforms.uAmount, 4.1, 0.34, S - 0.34, "power4.in");
+    // O fechamento agora bate antes do silêncio: túnel colapsa, flash respira e a tela cai no preto no corte.
+    toU(TUNNEL.mat.uniforms.uSpeed, 965, 0.28, S - 0.38, "power4.in");
+    if (TUNNEL.mat.uniforms.uCollapse) toU(TUNNEL.mat.uniforms.uCollapse, 1.0, 0.24, S - 0.36, "power4.in");
+    if (TUNNEL.mat.uniforms.uMouth) toU(TUNNEL.mat.uniforms.uMouth, 0.0, 0.18, S - 0.24, "power3.in");
+    toU(chromaPass.uniforms.uStr, 0.25, 0.26, S - 0.31, "power4.in");
+    toU(warpPass.uniforms.uAmount, 4.85, 0.26, S - 0.31, "power4.in");
     tl.to(
       bloomPass,
-      { strength: 3.9, radius: 1.12, duration: 0.42, ease: "power4.in" },
-      S - 0.46,
+      { strength: 4.15, radius: 1.16, duration: 0.34, ease: "power4.in" },
+      S - 0.40,
     );
-    tl.to(OV.flash, { opacity: 1, duration: 0.035, ease: "none" }, S - 0.09);
+    tl.to(OV.flash, { opacity: 1, duration: 0.030, ease: "none" }, S - 0.145);
     tl.to(
       OV.hawking,
-      { opacity: 0.62, duration: 0.05, ease: "none" },
-      S - 0.08,
+      { opacity: 0.74, duration: 0.045, ease: "none" },
+      S - 0.135,
     );
-    tl.to(OV.flash, { opacity: 0, duration: 0.08, ease: "none" }, S - 0.015);
-    tl.to(OV.hawking, { opacity: 0, duration: 0.12, ease: "none" }, S + 0.01);
+    tl.to(OV.flash, { opacity: 0, duration: 0.065, ease: "none" }, S - 0.070);
+    tl.to(OV.hawking, { opacity: 0, duration: 0.095, ease: "none" }, S - 0.055);
     tl.to(
       OV.fade,
-      { opacity: 1, duration: 0.42, ease: "power2.out" },
-      S - 0.16,
+      { opacity: 1, duration: 0.34, ease: "power2.out" },
+      S - 0.22,
     );
     tl.to(
       OV.godray,

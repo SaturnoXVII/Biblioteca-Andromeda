@@ -151,6 +151,10 @@ if ($action === 'delete' && isset($_GET['id'])) {
             <span class="nav-logo-text">Andrômeda</span>
         </div>
         <div class="nav-sec">
+            <a href="cadastroadmin.php" class="nav-item">
+                <i>👤</i>
+                <span>Cadastro</span>
+            </a>
             <a href="adm.php" class="nav-item <?= ($action === 'listar' || $action === 'edit') ? 'active' : '' ?>">
                 <i>📚</i>
                 <span>Acervo</span>
@@ -164,8 +168,12 @@ if ($action === 'delete' && isset($_GET['id'])) {
                 <span>Novo Registro</span>
             </a>
             <a href="adm.php?action=add" class="nav-item <?= $action === 'add' ? 'active' : '' ?>">
-                <i>✨</i>
-                <span>Novo Tomo</span>
+                <i>➕</i>
+                <span>Novo Livro</span>
+            </a>
+            <a href="login.php" class="nav-item">
+                <i>🚪</i>
+                <span>Sair</span>
             </a>
         </div>
     </nav>

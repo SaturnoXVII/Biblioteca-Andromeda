@@ -74,8 +74,8 @@ $totalCats   = count($categorias);
             <a href="reservas.php" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i><span>Reservas</span></a>
         </div>
         <div class="nav-foot">
-            <a href="index.php" class="nav-item"><i class="fa-solid fa-rocket"></i><span>Início</span></a>
-            <a href="logout.php" class="nav-item"><i class="fa-solid fa-right-from-bracket"></i><span>Sair</span></a>
+            <a href="intro.php" class="nav-item"><i class="fa-solid fa-rocket"></i><span>Início</span></a>
+            <a href="login.php" class="nav-item"><i class="fa-solid fa-right-from-bracket"></i><span>Sair</span></a>
         </div>
     </nav>
 

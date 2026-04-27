@@ -40,7 +40,7 @@ if (isset($_POST['email'])) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/cadadm.css">
+    <link rel="stylesheet" href="../assets/css/admcad.css">
 </head>
 
 <body>
@@ -151,15 +151,15 @@ if (isset($_POST['email'])) {
 
         </div>
 
-        <div class="login-link">
-            Já tem uma conta? <a href="../pages/login.php">Entrar no universo</a>
+        <div class="painel-link mt-3">
+            <a href="adm.php" class="btn-link">Voltar para o painel</a>
         </div>
 
     </section>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="../assets/js/cadadm.js"></script>
+    <script src="../assets/js/animecadadm.js"></script>
       
     
 </body>
