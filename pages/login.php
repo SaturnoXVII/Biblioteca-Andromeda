@@ -67,17 +67,19 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
 
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Andrômeda · Acesso</title>
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    
     <link rel="stylesheet" href="../assets/css/login.css">
+      <script src="https://accounts.google.com/gsi/client" async defer></script>
+
 </head>
 
 <body>
@@ -131,9 +133,25 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
                         <i class="fa-solid fa-eye"></i>
                     </button>
                 </div>
-                
+
                 <button value="Entrar" type="submit" class="btn-prim interactable">Explorar o Universo</button>
-                
+
+                <!-- Botão oficial do Google (renderizado automaticamente) -->
+                <div id="g_id_onload"
+                    data-client_id="1080679226381-9jbho9u4m814nm8g3lavhf7qsofd70d3.apps.googleusercontent.com"
+                    data-callback="handleCredentialResponse"
+                    data-auto_prompt="false">
+                </div>
+
+                <div class="g_id_signin"
+                    data-type="standard"
+                    data-size="large"
+                    data-theme="outline"
+                    data-text="sign_in_with"
+                    data-shape="rectangular"
+                    data-logo_alignment="left">
+                </div>
+
                 <div class="auth-links" id="adicionais">
                     <a href="cadastroleitores.php" class="interactable">Não tem uma conta?</a>
                 </div>
@@ -150,5 +168,54 @@ if (isset($_POST['email']) && isset($_POST['senha'])) {
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
     <script src="../assets/js/animelogin.js"></script>
+
+    <script>
+        function handleCredentialResponse(response) {
+
+
+
+            fetch("callback.php", {
+
+                    method: "POST",
+
+                    headers: {
+
+                        "Content-Type": "application/json"
+
+                    },
+
+                    body: JSON.stringify({
+
+                        token: response.credential
+
+                    })
+
+                })
+
+                .then(res => res.json())
+
+                .then(data => {
+
+                    if (data.status === "success") {
+
+                        window.location.href = "dashboard.php";
+
+                    } else {
+
+                        alert("Erro no login");
+
+                    }
+
+                });
+
+
+
+        }
+    </script>
+
+
+
+
 </body>
+
 </html>

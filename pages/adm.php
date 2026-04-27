@@ -72,21 +72,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $status         = $quantidade > 0 ? 'Disponível' : 'Indisponível';
 
 
-    
-$capa = $_POST['capa_atual'] ?? 'uploads/capas/default.jpg';
 
-if (!empty($_FILES['capa']['name'])) {
-    $ext              = pathinfo($_FILES['capa']['name'], PATHINFO_EXTENSION);
-    $nome_arquivo     = uniqid('capa_') . '.' . $ext;
-    $destino          = '../uploads/capas/' . $nome_arquivo; // caminho físico no servidor
-    $tipos_permitidos = ['image/jpeg', 'image/png', 'image/webp'];
+    $capa = $_POST['capa_atual'] ?? 'uploads/capas/default.jpg';
 
-    if (in_array($_FILES['capa']['type'], $tipos_permitidos) && $_FILES['capa']['size'] <= 2097152) {
-        if (move_uploaded_file($_FILES['capa']['tmp_name'], $destino)) {
-            $capa = 'uploads/capas/' . $nome_arquivo; // caminho salvo no banco
+    if (!empty($_FILES['capa']['name'])) {
+        $ext              = pathinfo($_FILES['capa']['name'], PATHINFO_EXTENSION);
+        $nome_arquivo     = uniqid('capa_') . '.' . $ext;
+        $destino          = '../uploads/capas/' . $nome_arquivo; // caminho físico no servidor
+        $tipos_permitidos = ['image/jpeg', 'image/png', 'image/webp'];
+
+        if (in_array($_FILES['capa']['type'], $tipos_permitidos) && $_FILES['capa']['size'] <= 2097152) {
+            if (move_uploaded_file($_FILES['capa']['tmp_name'], $destino)) {
+                $capa = 'uploads/capas/' . $nome_arquivo; // caminho salvo no banco
+            }
         }
     }
-}
 
     if ($action === 'add') {
         adicionarLivro($mysqli, $titulo, $id_autor, $ano_publicacao, $id_categoria, $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade, $capa);
@@ -174,6 +174,10 @@ if ($action === 'delete' && isset($_GET['id'])) {
             <a href="login.php" class="nav-item">
                 <i>🚪</i>
                 <span>Sair</span>
+            </a>
+            <a href="adm.php?action=reservas" class="nav-item <?= $action === 'reservas' ? 'active' : '' ?>">
+                <i>⏳</i>
+                <span>Fila de Espera</span>
             </a>
         </div>
     </nav>
@@ -639,7 +643,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
         function toggleNovaEditora() {
             const div = document.getElementById('div_nova_editora');
             div.style.display = div.style.display === 'none' ? 'block' : 'none';
-        }
+        } 
     </script>
 </body>
 
