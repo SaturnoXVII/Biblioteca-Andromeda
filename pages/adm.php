@@ -122,7 +122,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>O Cofre Cósmico | Acervo</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/catalogo.css">
+    <link rel="stylesheet" href="../assets/css/andromeda.css">
     <link rel="stylesheet" href="../assets/css/adm.css">
 </head>
 
@@ -157,10 +157,12 @@ if ($action === 'delete' && isset($_GET['id'])) {
         <div class="nav-logo">
             <span class="nav-logo-text">Andrômeda</span>
         </div>
+        
+        
         <div class="nav-sec">
-            <a href="cadastroadmin.php" class="nav-item">
-                <i>👤</i>
-                <span>Cadastro</span>
+            <a href="catalogo.php" class="nav-item">
+                <i>🌌</i>
+                <span>Catalogo</span>
             </a>
             <a href="adm.php" class="nav-item <?= ($action === 'listar' || $action === 'edit') ? 'active' : '' ?>">
                 <i>📚</i>
@@ -178,13 +180,14 @@ if ($action === 'delete' && isset($_GET['id'])) {
                 <i>➕</i>
                 <span>Novo Livro</span>
             </a>
-            <a href="login.php" class="nav-item">
-                <i>🚪</i>
-                <span>Sair</span>
-            </a>
             <a href="adm.php?action=reservas" class="nav-item <?= $action === 'reservas' ? 'active' : '' ?>">
                 <i>⏳</i>
                 <span>Fila de Espera</span>
+            </a>
+            <a href="login.php" class="nav-item">
+                <i>🚪</i>
+                <span>Sair</span>
+                </a>
             </a>
         </div>
     </nav>
@@ -216,7 +219,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
                 <div class="ed-section-header animate-rise" style="animation-delay: 0.1s;">
                     <h2 class="ed-section-title">Livros Cadastrados</h2>
                 </div>
-
+            
                 <div class="table-wrapper animate-rise" style="animation-delay: 0.2s;">
                     <div class="table-responsive">
                         <table class="cosmic-table">

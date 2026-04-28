@@ -2,7 +2,7 @@
 #não enviar a pasta vendor 
 /vendor/
 /note_modules/
-
+/uploads/
 /json/
 =======
 >>>>>>> Stashed changes

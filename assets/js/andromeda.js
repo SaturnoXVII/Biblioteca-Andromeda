@@ -61,16 +61,88 @@ function statusClass(s) {
   return "s-unk";
 }
 
-const PALETTE = [
-  0x2aa2f6, 0xa960ee, 0x00f0ff, 0x14599d, 0x4d9fff, 0x7b2cbf, 0x0b4f6c,
-  0x00b4d8,
+function hashString(str) {
+  let h = 0;
+  for (const c of str || "") h = ((h << 5) - h + c.charCodeAt(0)) | 0;
+  return Math.abs(h);
+}
+
+function lerpNum(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function lerpTriplet(a, b, t) {
+  return [
+    lerpNum(a[0], b[0], t),
+    lerpNum(a[1], b[1], t),
+    lerpNum(a[2], b[2], t),
+  ];
+}
+
+function arrayToHex(arr) {
+  return (
+    (Math.max(0, Math.min(255, Math.round(arr[0] * 255))) << 16) |
+    (Math.max(0, Math.min(255, Math.round(arr[1] * 255))) << 8) |
+    Math.max(0, Math.min(255, Math.round(arr[2] * 255)))
+  );
+}
+
+function mixHexColors(a, b, t) {
+  const ca = hexToRgb(a), cb = hexToRgb(b);
+  return (
+    (Math.round(lerpNum(ca.r, cb.r, t)) << 16) |
+    (Math.round(lerpNum(ca.g, cb.g, t)) << 8) |
+    Math.round(lerpNum(ca.b, cb.b, t))
+  );
+}
+
+const STELLAR_CLASSES = {
+  O: [0.61, 0.72, 1.0],
+  B: [0.70, 0.80, 1.0],
+  A: [0.92, 0.95, 1.0],
+  F: [1.0, 0.98, 0.92],
+  G: [1.0, 0.93, 0.68],
+  K: [1.0, 0.77, 0.47],
+  M: [1.0, 0.56, 0.38],
+};
+
+const SCIENTIFIC_SYSTEM_PALETTE = [
+  arrayToHex(STELLAR_CLASSES.O),
+  arrayToHex(STELLAR_CLASSES.B),
+  arrayToHex(STELLAR_CLASSES.A),
+  arrayToHex(STELLAR_CLASSES.F),
+  arrayToHex(STELLAR_CLASSES.G),
+  arrayToHex(STELLAR_CLASSES.K),
+  arrayToHex(STELLAR_CLASSES.M),
+  0x63c5ff,
+  0x8bd9ff,
+  0xffd37a,
+  0xffb06b,
+  0xff8f73,
+  0xc59cff,
+  0x7fe6d5,
 ];
+
+const PALETTE = SCIENTIFIC_SYSTEM_PALETTE;
+
+const STATUS_ACCENTS = {
+  disponivel: 0x61d8ff,
+  emprestado: 0xff5e7d,
+  reservado: 0xb787ff,
+  neutro: 0x8ea6ff,
+};
 
 function catColor(n) {
   if (!n) return PALETTE[0];
-  let h = 0;
-  for (const c of n) h = ((h << 5) - h + c.charCodeAt(0)) | 0;
-  return PALETTE[Math.abs(h) % PALETTE.length];
+  return PALETTE[hashString(n) % PALETTE.length];
+}
+
+function getSystemPalette(name) {
+  const seed = hashString(name);
+  const core = SCIENTIFIC_SYSTEM_PALETTE[seed % SCIENTIFIC_SYSTEM_PALETTE.length];
+  const halo = SCIENTIFIC_SYSTEM_PALETTE[(seed + 3) % SCIENTIFIC_SYSTEM_PALETTE.length];
+  const nebula = mixHexColors(core, halo, 0.45);
+  return { core, halo, nebula };
 }
 
 function catHexStr(n) {
@@ -263,6 +335,7 @@ const cam = {
   ty: 18,
   tz: 96,
 };
+const baseCamPos = new THREE.Vector3(0, 18, 96);
 let camTzTarget = 96;
 const camLook = {
   x: 0,
@@ -331,13 +404,13 @@ let bgMat, galMat, galDustMat, diskMat;
   const starVS = `attribute float aR,aFlicker;uniform float uT;varying float vR;varying vec3 vC;void main(){vC=color;float tw=0.5+0.5*sin(uT*0.8+aR*88.0+aFlicker*7.0)*sin(uT*1.3+aFlicker*3.0);vec4 vp=viewMatrix*modelMatrix*vec4(position,1.0);gl_Position=projectionMatrix*vp;gl_PointSize=(9.0/-vp.z)*(0.25+aR*0.95)*tw;}`;
   const starFS = `varying vec3 vC;void main(){float s=pow(1.0-distance(gl_PointCoord,vec2(0.5)),2.5);gl_FragColor=vec4(vC,s*.88);}`;
   const OBAFGKM = [
-    [0.6, 0.7, 1.0],
-    [0.7, 0.8, 1.0],
-    [1.0, 1.0, 1.0],
-    [1.0, 1.0, 0.8],
-    [1.0, 0.9, 0.6],
-    [1.0, 0.7, 0.4],
-    [1.0, 0.4, 0.2],
+    STELLAR_CLASSES.O,
+    STELLAR_CLASSES.B,
+    STELLAR_CLASSES.A,
+    STELLAR_CLASSES.F,
+    STELLAR_CLASSES.G,
+    STELLAR_CLASSES.K,
+    STELLAR_CLASSES.M,
   ];
 
   function mkLayer(N, spread, minS, maxS, colA, colB) {
@@ -410,23 +483,20 @@ let bgMat, galMat, galDustMat, diskMat;
       spread = Math.pow(Math.random(), 1.8) * Math.max(0, (72 - r) * 0.18);
     pos[i3] = Math.cos(spiral) * r + (Math.random() - 0.5) * spread;
     pos[i3 + 1] = (Math.random() - 0.5) * (r < 10 ? 3 : r < 25 ? 1 : 0.5);
-    pos[i3 + 2] = Math.sin(spiral) * r + (Math.random() - 0.5) * spread;
+    pos[i3 + 2] = Math.sin(spiral) * r + (Math.random() - 0.5) * spread;    let starColor;
     if (r < 8) {
-      col[i3] = 1.0;
-      col[i3 + 1] = 0.95;
-      col[i3 + 2] = 0.85;
-    } else if (r < 25) {
-      const t = (r - 8) / 17;
-      col[i3] = 1.0 - t * 0.6;
-      col[i3 + 1] = 0.95 - t * 0.25;
-      col[i3 + 2] = 0.85 + t * 0.15;
+      starColor = lerpTriplet(STELLAR_CLASSES.K, STELLAR_CLASSES.G, Math.random() * 0.55);
+    } else if (r < 18) {
+      starColor = lerpTriplet(STELLAR_CLASSES.G, STELLAR_CLASSES.F, Math.random());
+    } else if (r < 38) {
+      starColor = lerpTriplet(STELLAR_CLASSES.F, STELLAR_CLASSES.A, Math.random() * 0.82);
     } else {
-      const t = (r - 25) / 47;
-      col[i3] = 0.4 - t * 0.3;
-      col[i3 + 1] = 0.7 - t * 0.3;
-      col[i3 + 2] = 1.0;
+      starColor = lerpTriplet(STELLAR_CLASSES.B, STELLAR_CLASSES.O, Math.random() * 0.7);
     }
-    aR[i3] = Math.random();
+    col[i3] = starColor[0];
+    col[i3 + 1] = starColor[1];
+    col[i3 + 2] = starColor[2];
+    aR[i] = Math.random();
   }
   geom.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   geom.setAttribute("color", new THREE.BufferAttribute(col, 3));
@@ -605,107 +675,139 @@ const PLANET_TYPES = [
   "desert",
   "crystal",
   "nebular",
+  "forest",
+  "methane",
+  "metallic",
+  "sulfuric",
 ];
 function getPlanetType(n) {
-  let h = 0;
-  for (const c of n || "") h = (h << 5) - h + c.charCodeAt(0);
-  return PLANET_TYPES[Math.abs(h) % PLANET_TYPES.length];
+  return PLANET_TYPES[hashString(n) % PLANET_TYPES.length];
+}
+
+const PLANET_SWATCHES = {
+  gaseous: [0xf4d8a2, 0xd8ab72, 0xbd784b, 0xe9efe6],
+  rocky: [0x8c7662, 0xb19379, 0x6b5d52, 0xcab59d],
+  icy: [0xd6f4ff, 0x97ddff, 0x6cc9e8, 0xf4fbff],
+  volcanic: [0x2b1820, 0x7b2e1f, 0xe95d24, 0xffbb55],
+  oceanic: [0x082c52, 0x1268a8, 0x3aa4dd, 0xaee8ff],
+  desert: [0x8f6641, 0xc9934a, 0xe1b36c, 0xf9e1ab],
+  crystal: [0x92b5ff, 0xd7c8ff, 0x78f1ff, 0xffffff],
+  nebular: [0x3b2157, 0x6d40a0, 0x49a2ff, 0xff8ef6],
+  forest: [0x14311a, 0x2e6a38, 0x67a25e, 0xc3d6a2],
+  methane: [0x65d5e8, 0x2f88aa, 0x0d5670, 0xb5fcff],
+  metallic: [0x545d6a, 0x909cad, 0xcfd6de, 0xeff2f5],
+  sulfuric: [0x745611, 0xcaa31d, 0xf2de66, 0xfff7b7],
+};
+
+function pickPlanetSwatches(catName) {
+  const type = getPlanetType(catName);
+  return { type, swatches: PLANET_SWATCHES[type] || PLANET_SWATCHES.rocky };
 }
 
 function makePlanetTexture(pcol, catName, sz) {
   const cv = document.createElement("canvas");
   cv.width = cv.height = sz;
-  const ctx = cv.getContext("2d"),
-    { r, g, b } = hexToRgb(pcol),
-    type = getPlanetType(catName);
-  let seed = 0;
-  for (const c of catName || "") seed = (seed << 5) - seed + c.charCodeAt(0);
+  const ctx = cv.getContext("2d");
+  const { type, swatches } = pickPlanetSwatches(catName);
+  let seed = hashString(catName);
   const rnd = (() => {
-    let s = Math.abs(seed);
+    let s = Math.abs(seed) || 1;
     return () => {
       s = (s * 1664525 + 1013904223) & 0xffffffff;
       return (s >>> 0) / 0xffffffff;
     };
   })();
-  if (type === "gaseous" || type === "nebular") {
-    const bg = ctx.createLinearGradient(0, 0, 0, sz);
-    bg.addColorStop(
-      0,
-      `rgb(${r},${Math.round(g * 0.7)},${Math.round(b * 0.4)})`,
-    );
-    bg.addColorStop(
-      0.3,
-      `rgb(${Math.round(r * 0.8)},${g},${Math.round(b * 0.6)})`,
-    );
-    bg.addColorStop(
-      0.5,
-      `rgb(${Math.round(r * 0.6)},${Math.round(g * 0.8)},${b})`,
-    );
-    bg.addColorStop(
-      1,
-      `rgb(${Math.round(r * 0.7)},${Math.round(g * 0.6)},${Math.round(b * 0.4)})`,
-    );
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, sz, sz);
-    for (let i = 0; i < 8; i++) {
-      ctx.fillStyle = `rgba(255,255,255,${0.08 + rnd() * 0.12})`;
-      ctx.fillRect(0, rnd() * sz, sz, 2 + rnd() * sz * 0.08);
+  const accent = hexToRgb(pcol);
+  const cols = swatches.map(hexToRgb);
+
+  const paintSphere = (g) => {
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(sz * 0.5, sz * 0.5, sz * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  };
+
+  const base = ctx.createRadialGradient(sz * 0.35, sz * 0.3, 0, sz * 0.5, sz * 0.5, sz * 0.65);
+  base.addColorStop(0, `rgb(${cols[3].r},${cols[3].g},${cols[3].b})`);
+  base.addColorStop(0.38, `rgb(${cols[1].r},${cols[1].g},${cols[1].b})`);
+  base.addColorStop(1, `rgb(${cols[0].r},${cols[0].g},${cols[0].b})`);
+  paintSphere(base);
+
+  if (["gaseous", "methane", "sulfuric", "nebular"].includes(type)) {
+    for (let i = 0; i < 9; i++) {
+      const y = rnd() * sz;
+      const h = 2 + rnd() * sz * 0.1;
+      const band = ctx.createLinearGradient(0, y, sz, y + h);
+      const c1 = cols[i % cols.length], c2 = cols[(i + 1) % cols.length];
+      band.addColorStop(0, `rgba(${c1.r},${c1.g},${c1.b},${0.18 + rnd() * 0.28})`);
+      band.addColorStop(1, `rgba(${c2.r},${c2.g},${c2.b},${0.08 + rnd() * 0.18})`);
+      ctx.fillStyle = band;
+      ctx.fillRect(0, y, sz, h);
     }
-  } else if (type === "rocky" || type === "desert") {
-    const bg = ctx.createRadialGradient(
-      sz * 0.4,
-      sz * 0.4,
-      0,
-      sz * 0.5,
-      sz * 0.5,
-      sz * 0.7,
-    );
-    bg.addColorStop(
-      0,
-      `rgb(${Math.min(r + 30, 255)},${Math.min(g + 20, 255)},${Math.min(b + 10, 255)})`,
-    );
-    bg.addColorStop(0.6, `rgb(${r},${g},${b})`);
-    bg.addColorStop(
-      1,
-      `rgb(${Math.round(r * 0.6)},${Math.round(g * 0.5)},${Math.round(b * 0.4)})`,
-    );
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, sz, sz);
-    for (let i = 0; i < 12; i++) {
-      const cx = rnd() * sz,
-        cy = rnd() * sz,
-        cr = 2 + rnd() * sz * 0.08;
+  }
+
+  if (["rocky", "desert", "metallic", "volcanic", "forest"].includes(type)) {
+    for (let i = 0; i < 18; i++) {
+      const cx = rnd() * sz;
+      const cy = rnd() * sz;
+      const cr = sz * (0.03 + rnd() * 0.12);
       ctx.beginPath();
       ctx.arc(cx, cy, cr, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(0,0,0,.3)";
-      ctx.lineWidth = 1;
+      const crater = cols[(1 + i) % cols.length];
+      ctx.strokeStyle = `rgba(${crater.r},${crater.g},${crater.b},${type === "volcanic" ? 0.5 : 0.22})`;
+      ctx.lineWidth = 1 + rnd() * 1.2;
       ctx.stroke();
+      if (type === "volcanic" && rnd() > 0.45) {
+        ctx.fillStyle = `rgba(${accent.r},${accent.g},${accent.b},0.18)`;
+        ctx.fill();
+      }
     }
-  } else {
-    ctx.fillStyle = `rgb(${r},${g},${b})`;
-    ctx.fillRect(0, 0, sz, sz);
-    for (let i = 0; i < 10; i++) {
-      ctx.fillStyle = "rgba(255,255,255,0.1)";
+  }
+
+  if (["oceanic", "icy", "forest"].includes(type)) {
+    for (let i = 0; i < 8; i++) {
       ctx.beginPath();
-      ctx.arc(rnd() * sz, rnd() * sz, rnd() * sz * 0.2, 0, Math.PI * 2);
+      ctx.arc(rnd() * sz, rnd() * sz, sz * (0.06 + rnd() * 0.18), 0, Math.PI * 2);
+      const patch = cols[(2 + i) % cols.length];
+      ctx.fillStyle = `rgba(${patch.r},${patch.g},${patch.b},${0.08 + rnd() * 0.16})`;
       ctx.fill();
     }
   }
-  const atm = ctx.createRadialGradient(
-    sz * 0.5,
-    sz * 0.5,
-    sz * 0.3,
-    sz * 0.5,
-    sz * 0.5,
-    sz * 0.5,
-  );
-  atm.addColorStop(0, "rgba(0,0,0,0)");
-  atm.addColorStop(
-    1,
-    `rgba(${Math.min(r + 40, 255)},${Math.min(g + 30, 255)},${Math.min(b + 20, 255)},.15)`,
-  );
-  ctx.fillStyle = atm;
+
+  if (type === "crystal") {
+    for (let i = 0; i < 10; i++) {
+      ctx.beginPath();
+      const x = rnd() * sz, y = rnd() * sz;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + sz * (0.04 + rnd() * 0.12), y + sz * (0.02 + rnd() * 0.08));
+      ctx.lineTo(x + sz * (0.01 + rnd() * 0.06), y + sz * (0.11 + rnd() * 0.16));
+      ctx.closePath();
+      const crystal = cols[(i + 1) % cols.length];
+      ctx.fillStyle = `rgba(${crystal.r},${crystal.g},${crystal.b},0.16)`;
+      ctx.fill();
+    }
+  }
+
+  const shine = ctx.createRadialGradient(sz * 0.34, sz * 0.28, 0, sz * 0.36, sz * 0.3, sz * 0.28);
+  shine.addColorStop(0, "rgba(255,255,255,0.42)");
+  shine.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = shine;
+  ctx.beginPath();
+  ctx.arc(sz * 0.35, sz * 0.3, sz * 0.28, 0, Math.PI * 2);
+  ctx.fill();
+
+  const aura = ctx.createRadialGradient(sz * 0.5, sz * 0.5, sz * 0.18, sz * 0.5, sz * 0.5, sz * 0.5);
+  aura.addColorStop(0, "rgba(0,0,0,0)");
+  aura.addColorStop(1, `rgba(${accent.r},${accent.g},${accent.b},0.14)`);
+  ctx.fillStyle = aura;
   ctx.fillRect(0, 0, sz, sz);
+
+  const vignette = ctx.createRadialGradient(sz * 0.5, sz * 0.5, sz * 0.28, sz * 0.5, sz * 0.5, sz * 0.56);
+  vignette.addColorStop(0, "rgba(0,0,0,0)");
+  vignette.addColorStop(1, "rgba(0,0,0,0.42)");
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, sz, sz);
+
   return cv;
 }
 
@@ -730,7 +832,8 @@ uniqCats.forEach((name, idx) => {
   const x = Math.cos(ang) * rad + (Math.random() - 0.5) * 3,
     y = (Math.random() - 0.5) * 5,
     z = Math.sin(ang) * rad + (Math.random() - 0.5) * 3;
-  const col = catColor(name);
+  const sysPalette = getSystemPalette(name);
+  const col = sysPalette.core;
   const star = new THREE.Mesh(
     new THREE.SphereGeometry(0.7, 24, 24),
     new THREE.MeshBasicMaterial({ color: col }),
@@ -739,9 +842,9 @@ uniqCats.forEach((name, idx) => {
   star.userData = { isCategory: true, name };
   scene.add(star);
   catStars.push(star);
-  const glow = mkGlow(col, 16),
-    glow2 = mkGlow(col, 36),
-    neb = mkGlow(col, 72);
+  const glow = mkGlow(sysPalette.core, 16),
+    glow2 = mkGlow(sysPalette.halo, 36),
+    neb = mkGlow(sysPalette.nebula, 72);
   glow.position.set(x, y, z);
   glow.material.opacity = 0.9;
   glow2.position.set(x, y, z);
@@ -758,6 +861,7 @@ uniqCats.forEach((name, idx) => {
     glow,
     glow2,
     neb,
+    palette: sysPalette,
     pos: new THREE.Vector3(x, y, z),
     books: [],
   });
@@ -821,15 +925,17 @@ LIVROS.forEach((livro, idx) => {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-  let pcol = st.includes("disp")
-    ? 0x00f0ff
+  const baseSystemColor = cd.palette?.core || catColor(livro.categoria_nome);
+  const statusAccent = st.includes("disp")
+    ? STATUS_ACCENTS.disponivel
     : st.includes("empr")
-      ? 0xff3366
+      ? STATUS_ACCENTS.emprestado
       : st.includes("res")
-        ? 0xa960ee
-        : 0x5555aa;
+        ? STATUS_ACCENTS.reservado
+        : STATUS_ACCENTS.neutro;
+  const pcol = mixHexColors(baseSystemColor, statusAccent, 0.28);
   const tex = new THREE.CanvasTexture(
-    makePlanetTexture(pcol, livro.categoria_nome, 64),
+    makePlanetTexture(pcol, `${livro.categoria_nome || ""}|${livro.titulo || ""}`, 64),
   );
   const mesh = new THREE.Mesh(
     new THREE.SphereGeometry(1, 20, 20),
@@ -918,6 +1024,76 @@ let retX = window.innerWidth / 2,
   selBook = null,
   HOVER_CAT = null;
 
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+const normalizeAngle = (v) => {
+  const tau = Math.PI * 2;
+  v = ((v + Math.PI) % tau + tau) % tau - Math.PI;
+  return v;
+};
+const ZOOM_MIN = 5;
+const ZOOM_MAX = 125;
+const ZOOM_HOME = 96;
+
+const galaxyOrbit = {
+  yaw: 0,
+  pitch: 0,
+  targetYaw: 0,
+  targetPitch: 0,
+  dragging: false,
+  lastX: 0,
+  lastY: 0,
+};
+
+function isGalaxyControlBlocked(target) {
+  return !!target.closest(
+    "#nav, #hud, #systems-menu, #book-panel, #modal-overlay, #editorial-view, #depth, button, a, input, textarea, select",
+  );
+}
+
+function updateDepthUI(value = camTzTarget) {
+  const track = document.getElementById("depth-track");
+  const dot = document.getElementById("ddot");
+  const fill = document.getElementById("depth-fill");
+  const readout = document.getElementById("depth-readout");
+  if (!track || !dot || !fill || !readout) return;
+
+  const topPct = clamp(((value - ZOOM_MIN) / (ZOOM_MAX - ZOOM_MIN)) * 100, 0, 100);
+  const zoomPct = clamp(Math.round(100 - topPct), 0, 100);
+
+  dot.style.top = `${topPct}%`;
+  fill.style.height = `${topPct}%`;
+  readout.textContent = `${zoomPct}%`;
+  track.setAttribute("aria-valuenow", String(zoomPct));
+}
+
+function setGalaxyZoom(value, shouldAnimate = false) {
+  const next = clamp(value, ZOOM_MIN, ZOOM_MAX);
+  if (shouldAnimate) {
+    gsap.to({ v: camTzTarget }, {
+      v: next,
+      duration: 0.55,
+      ease: "power3.out",
+      onUpdate() {
+        camTzTarget = this.targets()[0].v;
+        updateDepthUI(camTzTarget);
+      },
+    });
+  } else {
+    camTzTarget = next;
+    updateDepthUI(camTzTarget);
+  }
+
+  if (camTzTarget > 118 && activeFilter !== "all") flyToCat("all");
+}
+
+function setGalaxyZoomFromPointer(e) {
+  const track = document.getElementById("depth-track");
+  if (!track) return;
+  const rect = track.getBoundingClientRect();
+  const ratio = clamp((e.clientY - rect.top) / rect.height, 0, 1);
+  setGalaxyZoom(ZOOM_MIN + ratio * (ZOOM_MAX - ZOOM_MIN), false);
+}
+
 document.addEventListener("mousemove", (e) => {
   tgtX = e.clientX;
   tgtY = e.clientY;
@@ -931,7 +1107,7 @@ document.addEventListener("mousemove", (e) => {
   }
   if (activeView === "gal") handleRaycast(e);
   const els = document.querySelectorAll(
-    ".nav-item, .sys-item, .hud-btn, .btn-prim, .btn-sec, .view-tog button, .bp-close, .md-close, .ed-hero-btn, .ed-book-card, .bp-synopsis-toggle",
+    ".nav-item, .sys-item, .hud-btn, .btn-prim, .btn-sec, .view-tog button, .bp-close, .md-close, .ed-hero-btn, .ed-book-card, .bp-synopsis-toggle, .ed-carousel-btn, .ed-carousel-dot, .ed-section-nav, .depth-track, .depth-reset",
   );
   let closest = null,
     closestDist = 50;
@@ -963,6 +1139,83 @@ document.addEventListener("mousemove", (e) => {
 
 document.addEventListener("mousedown", () => retEl.classList.add("click"));
 document.addEventListener("mouseup", () => retEl.classList.remove("click"));
+
+window.addEventListener("pointerdown", (e) => {
+  if (activeView !== "gal" || ecoMode || isGalaxyControlBlocked(e.target)) return;
+  galaxyOrbit.dragging = true;
+  galaxyOrbit.lastX = e.clientX;
+  galaxyOrbit.lastY = e.clientY;
+  document.body.classList.add("galaxy-dragging");
+});
+
+window.addEventListener("pointermove", (e) => {
+  if (!galaxyOrbit.dragging) return;
+  const dx = e.clientX - galaxyOrbit.lastX;
+  const dy = e.clientY - galaxyOrbit.lastY;
+  galaxyOrbit.lastX = e.clientX;
+  galaxyOrbit.lastY = e.clientY;
+  galaxyOrbit.targetYaw = normalizeAngle(galaxyOrbit.targetYaw + dx * 0.0042);
+  galaxyOrbit.targetPitch = clamp(galaxyOrbit.targetPitch + dy * 0.0028, -1.08, 1.08);
+});
+
+window.addEventListener("pointerup", () => {
+  galaxyOrbit.dragging = false;
+  document.body.classList.remove("galaxy-dragging");
+});
+
+window.addEventListener("pointercancel", () => {
+  galaxyOrbit.dragging = false;
+  document.body.classList.remove("galaxy-dragging");
+});
+
+const depthTrack = document.getElementById("depth-track");
+const depthReset = document.getElementById("depth-reset");
+if (depthTrack) {
+  depthTrack.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    document.getElementById("depth").classList.add("dragging");
+    depthTrack.setPointerCapture(e.pointerId);
+    setGalaxyZoomFromPointer(e);
+  });
+  depthTrack.addEventListener("pointermove", (e) => {
+    if (!depthTrack.hasPointerCapture(e.pointerId)) return;
+    setGalaxyZoomFromPointer(e);
+  });
+  depthTrack.addEventListener("pointerup", (e) => {
+    document.getElementById("depth").classList.remove("dragging");
+    if (depthTrack.hasPointerCapture(e.pointerId)) depthTrack.releasePointerCapture(e.pointerId);
+  });
+  depthTrack.addEventListener("keydown", (e) => {
+    if (activeView !== "gal") return;
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setGalaxyZoom(camTzTarget - 6, true);
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setGalaxyZoom(camTzTarget + 6, true);
+    }
+    if (e.key === "Home") {
+      e.preventDefault();
+      setGalaxyZoom(ZOOM_MIN, true);
+    }
+    if (e.key === "End") {
+      e.preventDefault();
+      setGalaxyZoom(ZOOM_MAX, true);
+    }
+  });
+}
+if (depthReset) {
+  depthReset.addEventListener("click", () => {
+    galaxyOrbit.targetYaw = 0;
+    galaxyOrbit.targetPitch = 0;
+    galaxyOrbit.yaw = 0;
+    galaxyOrbit.pitch = 0;
+    setGalaxyZoom(ZOOM_HOME, true);
+    if (activeView === "gal" && activeFilter !== "all") flyToCat("all");
+  });
+}
+updateDepthUI(ZOOM_HOME);
 
 const sysBtn = document.getElementById("btn-systems"),
   sysMenu = document.getElementById("systems-menu");
@@ -1176,7 +1429,7 @@ function openModal(d) {
           .join("");
 
   document.getElementById("modal-overlay").classList.add("open");
-  document.querySelector(".md-scroll").scrollTop = 0;
+  document.getElementById("modal-drawer").scrollTop = 0;
 }
 
 document
@@ -1450,6 +1703,273 @@ document
 document.getElementById("btn-eco").addEventListener("click", toggleEcoMode);
 
 /* ═══════════════════════════════════════════════════════════════
+           8.1 CARROSSEL DINÂMICO DO DESTAQUE DA SEMANA
+        ═══════════════════════════════════════════════════════════════ */
+let edCarouselBooks = [];
+let edCarouselIndex = 0;
+let edCarouselTimer = null;
+let edHeroBook = null;
+
+function safeAttr(v) {
+  return String(v || "").replace(/"/g, "&quot;");
+}
+
+function pickCarouselBooks(filtered) {
+  const source = filtered.length ? filtered : LIVROS;
+  const score = (b) => {
+    const status = (b.status || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "");
+    let points = 0;
+    if (status.includes("disp")) points += 4;
+    if (b.capa && b.capa !== "uploads/capas/default.jpg") points += 3;
+    if (b.sinopse && b.sinopse.trim()) points += 2;
+    if (b.ano_publicacao) points += 1;
+    return points;
+  };
+
+  return [...source]
+    .sort((a, b) => score(b) - score(a))
+    .slice(0, Math.min(10, source.length));
+}
+
+function syncCatalogCarousel(instant = false) {
+  const track = document.getElementById("ed-carousel-track");
+  const dots = document.getElementById("ed-carousel-dots");
+  if (!track || !dots || !edCarouselBooks.length) return;
+
+  track.querySelectorAll(".ed-carousel-card").forEach((card, idx) => {
+    card.classList.toggle("active", idx === edCarouselIndex);
+  });
+  dots.querySelectorAll(".ed-carousel-dot").forEach((dot, idx) => {
+    dot.classList.toggle("active", idx === edCarouselIndex);
+  });
+
+  const active = track.querySelector(`.ed-carousel-card[data-i="${edCarouselIndex}"]`);
+  if (active) {
+    const left = active.offsetLeft - (track.clientWidth - active.clientWidth) / 2;
+    track.scrollTo({ left, behavior: instant ? "auto" : "smooth" });
+  }
+}
+
+function setCatalogCarouselIndex(index, instant = false) {
+  if (!edCarouselBooks.length) return;
+  edCarouselIndex = (index + edCarouselBooks.length) % edCarouselBooks.length;
+  syncCatalogCarousel(instant);
+}
+
+function startCatalogCarouselAuto() {
+  clearInterval(edCarouselTimer);
+  if (edCarouselBooks.length <= 1 || activeView !== "ed") return;
+  edCarouselTimer = setInterval(() => {
+    if (activeView === "ed" && !document.getElementById("modal-overlay").classList.contains("open")) {
+      setCatalogCarouselIndex(edCarouselIndex + 1);
+    }
+  }, 6200);
+}
+
+function buildCatalogCarousel(filtered) {
+  const section = document.getElementById("ed-carousel-section");
+  const track = document.getElementById("ed-carousel-track");
+  const dots = document.getElementById("ed-carousel-dots");
+  if (!section || !track || !dots) return;
+
+  edCarouselBooks = pickCarouselBooks(filtered);
+  if (!edCarouselBooks.length) {
+    section.style.display = "none";
+    return;
+  }
+  section.style.display = "";
+  edCarouselIndex = clamp(edCarouselIndex, 0, edCarouselBooks.length - 1);
+
+  track.innerHTML = edCarouselBooks
+    .map((b, i) => {
+      const synopsis =
+        b.sinopse && b.sinopse.trim()
+          ? b.sinopse.trim().substring(0, 210) + (b.sinopse.trim().length > 210 ? "…" : "")
+          : "Uma obra aguardando sinopse no acervo cósmico da Biblioteca Andrômeda.";
+      return `<article class="ed-carousel-card ${i === edCarouselIndex ? "active" : ""}" data-i="${i}" style="--card-glow:${catHexStr(b.categoria_nome)}55">
+        <div class="ed-carousel-art">
+          <canvas class="ed-carousel-canvas"
+            data-i="${i}"
+            data-title="${safeAttr(b.titulo)}"
+            data-cat="${safeAttr(b.categoria_nome)}"
+            width="220" height="320"></canvas>
+          <span class="ed-carousel-badge">${b.categoria_nome || "Constelação"}</span>
+        </div>
+        <div class="ed-carousel-content">
+          <div class="ed-carousel-meta">
+            <span class="ed-carousel-pill">${b.ano_publicacao || "Ano não informado"}</span>
+            <span class="sbadge ${statusClass(b.status)}">${b.status || "—"}</span>
+          </div>
+          <h3 class="ed-carousel-book-title">${b.titulo || "—"}</h3>
+          <p class="ed-carousel-author">${b.autor_nome || "Autor desconhecido"}</p>
+          <p class="ed-carousel-synopsis">${synopsis}</p>
+          <span class="ed-carousel-action">Abrir dossiê <i class="fa-solid fa-arrow-right-long"></i></span>
+        </div>
+      </article>`;
+    })
+    .join("");
+
+  dots.innerHTML = edCarouselBooks
+    .map((_, i) => `<button class="ed-carousel-dot ${i === edCarouselIndex ? "active" : ""}" type="button" data-i="${i}" aria-label="Ir para destaque ${i + 1}"></button>`)
+    .join("");
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll(".ed-carousel-canvas").forEach((c) => {
+      const b = edCarouselBooks[Number(c.dataset.i)];
+      drawBookArtWithCover(c, b?.titulo, b?.categoria_nome, 220, 320, b?.capa);
+    });
+    syncCatalogCarousel(true);
+  });
+
+  startCatalogCarouselAuto();
+  enableHighlightCarouselDrag();
+}
+
+document.getElementById("ed-car-prev")?.addEventListener("click", () => {
+  setCatalogCarouselIndex(edCarouselIndex - 1);
+  startCatalogCarouselAuto();
+});
+
+document.getElementById("ed-car-next")?.addEventListener("click", () => {
+  setCatalogCarouselIndex(edCarouselIndex + 1);
+  startCatalogCarouselAuto();
+});
+
+document.getElementById("ed-carousel-dots")?.addEventListener("click", (e) => {
+  const dot = e.target.closest(".ed-carousel-dot");
+  if (!dot) return;
+  setCatalogCarouselIndex(Number(dot.dataset.i));
+  startCatalogCarouselAuto();
+});
+
+document.getElementById("ed-carousel-track")?.addEventListener("click", (e) => {
+  const track = e.currentTarget;
+  if (track?.dataset.justDragged === "1") return;
+  const card = e.target.closest(".ed-carousel-card");
+  if (!card) return;
+  const idx = Number(card.dataset.i);
+  if (idx !== edCarouselIndex) {
+    setCatalogCarouselIndex(idx);
+    startCatalogCarouselAuto();
+    return;
+  }
+  const book = edCarouselBooks[idx];
+  if (book) openModal(book);
+});
+
+function enableHighlightCarouselDrag() {
+  const track = document.getElementById("ed-carousel-track");
+  if (!track || track.dataset.dragReady === "1") return;
+  track.dataset.dragReady = "1";
+  let dragging = false;
+  let moved = false;
+  let startX = 0;
+  let startLeft = 0;
+
+  track.addEventListener("pointerdown", (e) => {
+    dragging = true;
+    moved = false;
+    startX = e.clientX;
+    startLeft = track.scrollLeft;
+    track.classList.add("dragging");
+    track.setPointerCapture(e.pointerId);
+  });
+
+  track.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    if (Math.abs(dx) > 6) moved = true;
+    track.scrollLeft = startLeft - dx;
+  });
+
+  const endDrag = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    track.classList.remove("dragging");
+    if (track.hasPointerCapture(e.pointerId)) track.releasePointerCapture(e.pointerId);
+    if (moved) {
+      track.dataset.justDragged = "1";
+      const cards = [...track.querySelectorAll(".ed-carousel-card")];
+      let nearest = edCarouselIndex;
+      let best = Infinity;
+      cards.forEach((card, idx) => {
+        const center = card.offsetLeft + card.clientWidth / 2;
+        const dist = Math.abs(center - (track.scrollLeft + track.clientWidth / 2));
+        if (dist < best) {
+          best = dist;
+          nearest = idx;
+        }
+      });
+      setCatalogCarouselIndex(nearest);
+      setTimeout(() => delete track.dataset.justDragged, 140);
+    }
+  };
+
+  track.addEventListener("pointerup", endDrag);
+  track.addEventListener("pointercancel", endDrag);
+}
+
+/* Categoria: carrossel manual por constelação */
+function scrollCategoryCarousel(button) {
+  const section = button.closest(".ed-section");
+  const track = section?.querySelector(".ed-scroll-wrapper");
+  if (!track) return;
+  const dir = Number(button.dataset.dir || 1);
+  const amount = Math.max(260, Math.floor(track.clientWidth * 0.82));
+  track.scrollBy({ left: dir * amount, behavior: "smooth" });
+}
+
+document.addEventListener("click", (e) => {
+  const nav = e.target.closest(".ed-section-nav");
+  if (nav) scrollCategoryCarousel(nav);
+});
+
+function enableCategoryDrag() {
+  document.querySelectorAll(".ed-scroll-wrapper").forEach((track) => {
+    if (track.dataset.dragReady === "1") return;
+    track.dataset.dragReady = "1";
+    let dragging = false;
+    let startX = 0;
+    let startLeft = 0;
+    let moved = false;
+
+    track.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("button, a")) return;
+      dragging = true;
+      moved = false;
+      startX = e.clientX;
+      startLeft = track.scrollLeft;
+      track.classList.add("dragging");
+      track.setPointerCapture(e.pointerId);
+    });
+
+    track.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > 6) moved = true;
+      track.scrollLeft = startLeft - dx;
+    });
+
+    const endDrag = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      track.classList.remove("dragging");
+      if (track.hasPointerCapture(e.pointerId)) track.releasePointerCapture(e.pointerId);
+      if (moved) {
+        track.dataset.justDragged = "1";
+        setTimeout(() => delete track.dataset.justDragged, 120);
+      }
+    };
+
+    track.addEventListener("pointerup", endDrag);
+    track.addEventListener("pointercancel", endDrag);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
            9. EDITORIAL VIEW BUILDER COM SINOPSE
         ═══════════════════════════════════════════════════════════════ */
 function buildEditorial() {
@@ -1471,41 +1991,7 @@ function buildEditorial() {
   ).length;
   document.getElementById("ed-avail").textContent = avail;
 
-  if (filtered.length) {
-    const hero = filtered[0];
-    const hc = document.getElementById("ed-hero-canvas");
-    hc.width = hc.parentElement.clientWidth || 600;
-    hc.height = hc.parentElement.clientHeight || 400;
-    drawBookArtWithCover(
-      hc,
-      hero.titulo,
-      hero.categoria_nome,
-      hc.width,
-      hc.height,
-      hero.capa,
-    );
-    document.getElementById("ed-hero-title").textContent = hero.titulo || "—";
-    document.getElementById("ed-hero-author").textContent =
-      hero.autor_nome || "—";
-    document.getElementById("ed-hero-cat").textContent =
-      hero.categoria_nome || "—";
-    document.getElementById("ed-hero-year").textContent =
-      hero.ano_publicacao || "—";
-    const hs = document.getElementById("ed-hero-status");
-    hs.className = "sbadge " + statusClass(hero.status);
-    hs.textContent = hero.status || "—";
-
-    // Sinopse no hero
-    const heroSyn = document.getElementById("ed-hero-synopsis");
-    if (hero.sinopse && hero.sinopse.trim()) {
-      heroSyn.textContent = hero.sinopse;
-      heroSyn.style.display = "block";
-    } else {
-      heroSyn.style.display = "none";
-    }
-
-    document.getElementById("ed-hero-btn").onclick = () => openModal(hero);
-  }
+  buildCatalogCarousel(filtered);
   buildEdSections(filtered, "all");
 }
 
@@ -1516,12 +2002,19 @@ function buildEdSections(filtered, catFilter) {
     .map((cat) => {
       const books = filtered.filter((l) => l.categoria_nome === cat);
       if (!books.length) return "";
-      return `<div class="ed-section">
+      const safeCat = safeAttr(cat);
+      return `<div class="ed-section" data-cat="${safeCat}">
                   <div class="ed-section-header">
-                    <h2 class="ed-section-title">${cat}</h2>
-                    <span class="ed-section-count">${books.length} obra${books.length !== 1 ? "s" : ""}</span>
+                    <div>
+                      <h2 class="ed-section-title">${cat}</h2>
+                      <span class="ed-section-count">${books.length} obra${books.length !== 1 ? "s" : ""}</span>
+                    </div>
+                    <div class="ed-section-controls" aria-label="Controles da categoria ${safeCat}">
+                      <button class="ed-section-nav" type="button" data-dir="-1" aria-label="Ver obras anteriores de ${safeCat}"><i class="fa-solid fa-arrow-left"></i></button>
+                      <button class="ed-section-nav" type="button" data-dir="1" aria-label="Ver próximas obras de ${safeCat}"><i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
                   </div>
-                  <div class="ed-scroll-wrapper">
+                  <div class="ed-scroll-wrapper" data-cat="${safeCat}">
                     ${books
                       .map((b) => {
                         const hasSyn = b.sinopse && b.sinopse.trim();
@@ -1529,12 +2022,12 @@ function buildEdSections(filtered, catFilter) {
                           ? b.sinopse.substring(0, 120) +
                             (b.sinopse.length > 120 ? "…" : "")
                           : "";
-                        return `<div class="ed-book-card" onclick="openModal(LIVROS[${LIVROS.indexOf(b)}])">
+                        return `<div class="ed-book-card" onclick="if(!this.closest('.ed-scroll-wrapper')?.dataset.justDragged){openModal(LIVROS[${LIVROS.indexOf(b)}])}">
                           <div class="ed-book-art">
                             <canvas class="ed-card-canvas"
-                              data-title="${(b.titulo || "").replace(/"/g, "&quot;")}"
-                              data-cat="${(b.categoria_nome || "").replace(/"/g, "&quot;")}"
-                              data-capa="${b.capa || ""}"
+                              data-title="${safeAttr(b.titulo)}"
+                              data-cat="${safeAttr(b.categoria_nome)}"
+                              data-capa="${safeAttr(b.capa)}"
                               width="220" height="300"></canvas>
                             ${
                               hasSyn
@@ -1561,18 +2054,13 @@ function buildEdSections(filtered, catFilter) {
     .join("");
 
   setTimeout(
-    () =>
+    () => {
       document.querySelectorAll(".ed-card-canvas").forEach((c) => {
         const livro = LIVROS.find((l) => l.titulo === c.dataset.title);
-        drawBookArtWithCover(
-          c,
-          c.dataset.title,
-          c.dataset.cat,
-          220,
-          300,
-          livro?.capa,
-        );
-      }),
+        drawBookArtWithCover(c, c.dataset.title, c.dataset.cat, 220, 300, livro?.capa);
+      });
+      enableCategoryDrag();
+    },
     10,
   );
 }
@@ -1581,10 +2069,7 @@ window.addEventListener(
   "wheel",
   (e) => {
     if (activeView !== "gal") return;
-    camTzTarget = Math.max(5, Math.min(125, camTzTarget + e.deltaY * 0.05));
-    if (camTzTarget > 118 && activeFilter !== "all") flyToCat("all");
-    document.getElementById("ddot").style.top =
-      (1 - (cam.tz - 5) / (125 - 5)) * 100 + "%";
+    setGalaxyZoom(camTzTarget + e.deltaY * 0.05, false);
   },
   { passive: true },
 );
@@ -1614,18 +2099,44 @@ let lastTime = 0;
   if (galDustMat) galDustMat.uniforms.uT.value = t;
   if (diskMat) diskMat.uniforms.uT.value = t;
   cam.tz += (camTzTarget - cam.tz) * 0.08;
-  camera.position.x += (cam.tx - camera.position.x) * 0.016;
-  camera.position.y += (cam.ty - camera.position.y) * 0.016;
-  camera.position.z += (cam.tz - camera.position.z) * 0.02;
+  baseCamPos.x += (cam.tx - baseCamPos.x) * 0.016;
+  baseCamPos.y += (cam.ty - baseCamPos.y) * 0.016;
+  baseCamPos.z += (cam.tz - baseCamPos.z) * 0.02;
   camLook.x += (camLookDst.x - camLook.x) * 0.018;
   camLook.y += (camLookDst.y - camLook.y) * 0.018;
   camLook.z += (camLookDst.z - camLook.z) * 0.018;
-  camera.lookAt(camLook.x, camLook.y, camLook.z);
+
+  galaxyOrbit.yaw += (galaxyOrbit.targetYaw - galaxyOrbit.yaw) * 0.085;
+  galaxyOrbit.pitch += (galaxyOrbit.targetPitch - galaxyOrbit.pitch) * 0.085;
+
+  const lookVec = new THREE.Vector3(camLook.x, camLook.y, camLook.z);
+  const orbitOffset = baseCamPos.clone().sub(lookVec);
+  const yawQ = new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(0, 1, 0),
+    galaxyOrbit.yaw,
+  );
+  const pitchAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(yawQ);
+  const pitchQ = new THREE.Quaternion().setFromAxisAngle(
+    pitchAxis,
+    galaxyOrbit.pitch,
+  );
+  orbitOffset.applyQuaternion(yawQ).applyQuaternion(pitchQ);
+  camera.position.copy(lookVec).add(orbitOffset);
+  camera.lookAt(lookVec);
   bhNDC.set(0, 0, 0).project(camera);
-  lensPass.uniforms.uBHPos.value.set((bhNDC.x + 1) / 2, (bhNDC.y + 1) / 2);
-  const bhDist = camera.position.length();
-  lensPass.uniforms.uBHR.value = Math.min(0.07, 4.5 / bhDist);
-  lensPass.uniforms.uStr.value = Math.min(0.025, 2.2 / bhDist);
+  const bhOnScreen =
+    bhNDC.z > -1 &&
+    bhNDC.z < 1 &&
+    Math.abs(bhNDC.x) < 1.08 &&
+    Math.abs(bhNDC.y) < 1.08;
+  const lockBHCentre = activeView === "gal" && activeFilter === "all";
+  lensPass.uniforms.uBHPos.value.set(
+    lockBHCentre ? 0.5 : (bhNDC.x + 1) / 2,
+    lockBHCentre ? 0.5 : (bhNDC.y + 1) / 2,
+  );
+  const bhDist = Math.max(8, camera.position.distanceTo(new THREE.Vector3(0, 0, 0)));
+  lensPass.uniforms.uBHR.value = bhOnScreen ? Math.min(0.058, Math.max(0.02, 4.2 / bhDist)) : 0.0;
+  lensPass.uniforms.uStr.value = bhOnScreen ? Math.min(0.015, 1.45 / bhDist) : 0.0;
   bookObjs.forEach((b) => {
     b.oAng += b.oSpd * 0.005;
     const px = b.cd.pos.x + Math.cos(b.oAng) * b.oRad * Math.cos(b.tiltX),
@@ -1662,12 +2173,14 @@ let lastTime = 0;
     cd.star.scale.setScalar(0.95 + 0.05 * Math.sin(t * 2 + cd.pos.x * 0.15));
   });
   updateConstellations();
-  bloom.strength = 1.1 + 0.55 * (1 - (cam.tz - 5) / (125 - 5));
+  updateDepthUI(cam.tz);
+  bloom.strength = 1.1 + 0.55 * (1 - (cam.tz - ZOOM_MIN) / (ZOOM_MAX - ZOOM_MIN));
   composer.render();
 })();
 
-camera.position.set(0, 55, 220);
-gsap.to(camera.position, {
+baseCamPos.set(0, 55, 220);
+camera.position.copy(baseCamPos);
+gsap.to(baseCamPos, {
   y: 22,
   z: 96,
   duration: 3.5,

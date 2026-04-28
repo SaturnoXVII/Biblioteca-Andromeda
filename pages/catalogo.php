@@ -29,7 +29,7 @@ $totalCats   = count($categorias);
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/catalogo.css">
+    <link rel="stylesheet" href="../assets/css/andromeda.css">
 </head>
 
 <body>
@@ -117,14 +117,19 @@ $totalCats   = count($categorias);
     <div id="hud-bot">
         <span><i class="fa-solid fa-book" style="color:var(--am)"></i> <strong><?= $totalLivros ?></strong> obras</span>
         <span><i class="fa-solid fa-layer-group" style="color:var(--am)"></i> <strong><?= $totalCats ?></strong> sistemas</span>
-        <span id="scroll-hint"><i class="fa-solid fa-computer-mouse"></i> Scroll &middot; Zoom</span>
+        <span id="scroll-hint"><i class="fa-solid fa-computer-mouse"></i> Scroll &middot; Zoom &middot; Arraste para rotacionar</span>
     </div>
 
-    <div id="depth">
+    <div id="depth" aria-label="Controle de zoom da galáxia">
         <span class="depth-lbl">Orbital</span>
-        <div class="depth-track">
+        <div class="depth-readout" id="depth-readout">24%</div>
+        <div class="depth-track" id="depth-track" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="24" tabindex="0">
+            <div class="depth-fill" id="depth-fill"></div>
             <div class="depth-dot" id="ddot"></div>
         </div>
+        <button class="depth-reset" id="depth-reset" type="button" title="Resetar órbita e zoom">
+            <i class="fa-solid fa-rotate-left"></i>
+        </button>
         <span class="depth-lbl">Galáxia</span>
     </div>
 
@@ -211,26 +216,22 @@ $totalCats   = count($categorias);
                 Navegue pelo acervo completo. Mais de <?= $totalLivros ?> obras divididas em <?= $totalCats ?> constelações de conhecimento. <span id="ed-avail" style="color:var(--am); font-weight:bold;">—</span> disponíveis agora.
             </p>
         </div>
-
-        <div class="ed-hero" id="ed-hero">
-            <div class="ed-hero-art">
-                <canvas id="ed-hero-canvas"></canvas>
-                <span class="ed-hero-art-label">Destaque Editorial</span>
-            </div>
-            <div class="ed-hero-content">
-                <div class="ed-hero-label">Destaque da Semana</div>
-                <h2 class="ed-hero-title" id="ed-hero-title">—</h2>
-                <p class="ed-hero-author" id="ed-hero-author">—</p>
-                <!-- SINOPSE NO HERO -->
-                <p class="ed-hero-synopsis" id="ed-hero-synopsis" style="display:none;">—</p>
-                <div class="ed-hero-meta">
-                    <span class="ed-hero-pill" id="ed-hero-cat">—</span>
-                    <span class="ed-hero-pill" id="ed-hero-year">—</span>
-                    <span class="sbadge s-unk" id="ed-hero-status">—</span>
+        <section class="ed-carousel-section ed-highlight-shell" id="ed-carousel-section" aria-label="Destaque da semana">
+            <div class="ed-carousel-head">
+                <div>
+                    <span class="ed-carousel-kicker">Radar Andrômeda</span>
+                    <h2 class="ed-carousel-title">Destaque da Semana</h2>
                 </div>
-                <button class="btn-prim" style="max-width:200px" id="ed-hero-btn">Ver Detalhes</button>
+                <div class="ed-carousel-controls">
+                    <button class="ed-carousel-btn" id="ed-car-prev" type="button" aria-label="Destaque anterior"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button class="ed-carousel-btn" id="ed-car-next" type="button" aria-label="Próximo destaque"><i class="fa-solid fa-arrow-right"></i></button>
+                </div>
             </div>
-        </div>
+            <div class="ed-carousel-shell">
+                <div class="ed-carousel-track" id="ed-carousel-track"></div>
+            </div>
+            <div class="ed-carousel-dots" id="ed-carousel-dots"></div>
+        </section>
 
         <div class="ed-filter-bar" id="ed-filter-bar">
             <button class="pill on" data-c="all" style="padding: 8px 16px; border-radius: 20px; font-size:.75rem; font-weight:600; background:var(--void-glass); border:1px solid var(--border-hairline); color:var(--text-dim); transition:.3s; cursor:none!important; text-transform:uppercase; letter-spacing:0.05em;">Todas as Constelações</button>
@@ -257,6 +258,6 @@ $totalCats   = count($categorias);
     <script>
         const LIVROS = <?php echo $livrosJson; ?>;
     </script>
-    <script src="../assets/js/catalogo.js"></script>
+    <script src="../assets/js/andromeda.js"></script>
 </body>
 </html>
