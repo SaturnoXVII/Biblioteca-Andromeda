@@ -60,12 +60,7 @@ if ($action === 'devolver' && isset($_GET['id'])) {
     exit;
 }
 
-// ─── NOTIFICAR PRÓXIMO DA FILA ───────────────────────────────────────────────
-if ($action === 'avisar' && isset($_GET['id_livro'])) {
-    notificarProximoDaFila($mysqli, (int) $_GET['id_livro']);
-    header("Location: adm.php?action=reservas");
-    exit;
-}
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $titulo         = $_POST['titulo'];
@@ -562,69 +557,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
                         </table>
                     </div>
                 </div>
-            <?php elseif ($action === 'reservas'): ?>
-                <div class="ed-section-header animate-rise">
-                    <h2 class="ed-section-title">Fila de Espera — Obras Indisponíveis</h2>
-                </div>
-
-                <?php
-                $todas = listarFilaReservasAtivas($mysqli);
-                // Agrupa por livro em fila de espera
-                $por_livro = [];
-                foreach ($todas as $r) {
-                    $por_livro[$r['id_livro']]['titulo'] = $r['titulo'];
-                    $por_livro[$r['id_livro']]['fila'][] = $r;
-                }
-                ?>
-
-                <div class="ed-section-header animate-rise" style="animation-delay: 0.1s;">
-                    <h2 class="ed-section-title">Fila de Espera — Obras Indisponíveis</h2>
-                </div>
-
-                <?php if (empty($por_livro)): ?>
-                    <p class="t-dim" style="margin: 1rem 0;">Nenhuma reserva ativa no momento.</p>
-                <?php else: ?>
-                    <?php foreach ($por_livro as $id_livro => $dados): ?>
-                        <?php $fila = $dados['fila']; ?>
-                        <div class="ed-card animate-rise" style="margin-bottom: 1.5rem; animation-delay: 0.15s; padding: 1.2rem; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); border-radius:12px;">
-                            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; flex-wrap:wrap;">
-                                <div>
-                                    <h3 style="margin:0; font-size:1.25rem;"><?= htmlspecialchars($dados['titulo']) ?></h3>
-                                    <p style="margin:.25rem 0 .5rem; color:var(--text-dim);">Fila com <?= count($fila) ?> reserva(s)</p>
-                                </div>
-                                <a href="adm.php?action=avisar&id_livro=<?= $id_livro ?>" class="btn-prim btn-sm" onclick="return confirm('Avisar o próximo da fila?');">Avisar próximo</a>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle" style="margin-bottom:0;">
-                                    <thead>
-                                        <tr>
-                                            <th>Posição</th>
-                                            <th>Usuário</th>
-                                            <th>Data da Reserva</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($fila as $i => $reserva): ?>
-                                            <tr>
-                                                <td><?= $i + 1 ?></td>
-                                                <td><?= htmlspecialchars($reserva['usuario']) ?></td>
-                                                <td><?= date('d/m/Y H:i', strtotime($reserva['data_reserva'])) ?></td>
-                                                <td>
-                                                    <?php if ($reserva['status'] === 'Avisado'): ?>
-                                                        <span class="sbadge s-prim">Avisado</span>
-                                                    <?php else: ?>
-                                                        <span class="sbadge s-empr">Ativa</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+          
 
                 <!-- NOVO EMPRÉSTIMO                                             -->
 
