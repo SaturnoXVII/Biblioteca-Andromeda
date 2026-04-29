@@ -1359,6 +1359,7 @@ function showPanel(bo) {
   }
 
   document.getElementById("book-panel").classList.add("open");
+  
 }
 
 function hidePanel() {
@@ -1403,12 +1404,7 @@ function openModal(d) {
       '<span class="md-synopsis-empty">Sinopse não cadastrada para esta obra.</span>';
   }
 
-  const mdReserveBtn = document.getElementById("md-reserve");
-  const isReservable = (d.status || "").toLowerCase().includes("indis");
-  mdReserveBtn.disabled = !isReservable;
-  mdReserveBtn.textContent = isReservable
-    ? "Reservar Obra"
-    : "Somente livros indisponíveis podem ser reservados";
+ 
 
   const rel = LIVROS.filter(
     (l) => l.categoria_nome === d.categoria_nome && l.titulo !== d.titulo,
@@ -2214,3 +2210,31 @@ gsap.from("#scroll-hint", {
   onComplete: () =>
     gsap.to("#scroll-hint", { opacity: 0, delay: 4, duration: 1.6 }),
 });
+
+
+function solicitarReserva(idLivro) {
+    if (ID_USUARIO_LOGADO === 0) {
+        alert("🛰️ Identidade não verificada. Por favor, faça login para entrar na fila.");
+        window.location.href = "login.php";
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append('acao', 'reservar');
+    fd.append('id_livro', idLivro);
+
+    fetch('reservas.php', {
+        method: 'POST',
+        body: fd
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert("✨ " + data.mensagem);
+            location.reload(); // Recarrega para atualizar o status
+        } else {
+            alert("⚠️ " + data.mensagem);
+        }
+    })
+    .catch(err => console.error("Erro na transmissão estelar:", err));
+}

@@ -605,6 +605,78 @@ if ($action === 'delete' && isset($_GET['id'])) {
                     </div>
                 </form>
 
+            <?php elseif ($action === 'reservas'): 
+                $livros_indisponiveis = $mysqli->query("SELECT * FROM Livros WHERE quantidade = 0 ORDER BY titulo ASC")->fetch_all(MYSQLI_ASSOC) ?? [];
+            ?>
+                <div class="ed-section-header animate-rise" style="animation-delay: 0.1s;">
+                    <h2 class="ed-section-title">Fila de Espera & Distribuição</h2>
+                    <p style="color: var(--text-dim); font-size: 0.95rem; margin-top: 8px;">Livros indisponíveis: usuários na fila de espera e unidades em empréstimo</p>
+                </div>
+
+                <?php if (empty($livros_indisponiveis)): ?>
+                    <div style="padding: 40px; text-align: center; color: var(--text-dim);">
+                        <p style="font-size: 1.1rem;">✨ Todos os livros estão disponíveis!</p>
+                        <p>Nenhuma fila de espera no momento.</p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($livros_indisponiveis as $livro): 
+                        $reservas = listarReservasPorLivro($mysqli, $livro['id_livro']);
+                        $emprestimos = listarEmprestimosPorLivro($mysqli, $livro['id_livro']);
+                    ?>
+                        <div class="cosmic-card animate-rise" style="margin-bottom: 20px; padding: 20px; border: 1px solid var(--border-hairline); border-radius: 8px;">
+                            <div style="margin-bottom: 16px;">
+                                <h3 style="margin: 0 0 8px 0; color: var(--text);"><?= htmlspecialchars($livro['titulo']) ?></h3>
+                                <p style="margin: 0; color: var(--text-dim); font-size: 0.9rem;">
+                                    <i class="fa-solid fa-book"></i> <?= htmlspecialchars($livro['autor'] ?? '—') ?>
+                                </p>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <!-- RESERVAS -->
+                                <div style="padding: 12px; background: rgba(255,107,107,0.1); border-radius: 6px; border-left: 3px solid #ff6b6b;">
+                                    <div style="color: #ff6b6b; font-weight: 600; margin-bottom: 8px; font-size: 0.9rem;">
+                                        <i class="fa-solid fa-clock-rotate-left"></i> FILA DE ESPERA (<?= count($reservas) ?>)
+                                    </div>
+                                    <?php if (empty($reservas)): ?>
+                                        <p style="color: var(--text-dim); font-size: 0.85rem; margin: 0;">Nenhuma reserva</p>
+                                    <?php else: ?>
+                                        <ul style="list-style: none; padding: 0; margin: 0;">
+                                            <?php foreach ($reservas as $r): ?>
+                                                <li style="padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem;">
+                                                    <strong><?= htmlspecialchars($r['usuario']) ?></strong>
+                                                    <br><span style="color: var(--text-dim); font-size: 0.8rem;">Desde: <?= date('d/m/Y', strtotime($r['data_reserva'])) ?></span>
+                                                </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php endif; ?>
+                                </div>
+
+                                <!-- EMPRÉSTIMOS -->
+                                <div style="padding: 12px; background: rgba(74,144,226,0.1); border-radius: 6px; border-left: 3px solid #4a90e2;">
+                                    <div style="color: #4a90e2; font-weight: 600; margin-bottom: 8px; font-size: 0.9rem;">
+                                        <i class="fa-solid fa-hand-holding-heart"></i> EM EMPRÉSTIMO (<?= count($emprestimos) ?>)
+                                    </div>
+                                    <?php if (empty($emprestimos)): ?>
+                                        <p style="color: var(--text-dim); font-size: 0.85rem; margin: 0;">Nenhuma unidade emprestada</p>
+                                    <?php else: ?>
+                                        <ul style="list-style: none; padding: 0; margin: 0;">
+                                            <?php foreach ($emprestimos as $e): 
+                                                $status_class = $e['status_emprestimo'] === 'Atrasado' ? '#ff6b6b' : '#4a90e2';
+                                            ?>
+                                                <li style="padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem;">
+                                                    <strong><?= htmlspecialchars($e['usuario']) ?></strong>
+                                                    <br><span style="color: var(--text-dim); font-size: 0.8rem;">Desde: <?= date('d/m/Y', strtotime($e['data_emprestimo'])) ?></span>
+                                                    <br><span style="color: <?= $status_class ?>; font-size: 0.8rem; font-weight: 600;">→ Devolução: <?= date('d/m/Y', strtotime($e['data_devolucao'])) ?> (<?= $e['status_emprestimo'] ?>)</span>
+                                                </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+
             <?php endif; ?>
 
         </div>
