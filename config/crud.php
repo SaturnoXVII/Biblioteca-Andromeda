@@ -236,7 +236,7 @@ function jaReservado($mysqli, $id_livro, $id_usuario) {
 
 function listarReservasUsuario($mysqli, $id_usuario) {
     $sql = "SELECT R.id_reserva, R.id_livro, R.data_reserva, R.reserva_status, 
-            L.titulo, L.status AS status_livro, a.nome AS autor, c.nome AS categoria
+            L.titulo, L.status AS status_livro, A.nome AS autor, C.nome AS categoria
             FROM reservas R
             JOIN Livros L ON R.id_livro = L.id_livro
             LEFT JOIN autores A ON L.id_autor = A.id_autor

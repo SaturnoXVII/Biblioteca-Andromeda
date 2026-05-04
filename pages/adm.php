@@ -179,10 +179,9 @@ if ($action === 'delete' && isset($_GET['id'])) {
                 <i>⏳</i>
                 <span>Fila de Espera</span>
             </a>
-            <a href="login.php" class="nav-item">
+            <a href="logout.php" class="nav-item">
                 <i>🚪</i>
                 <span>Sair</span>
-                </a>
             </a>
         </div>
     </nav>

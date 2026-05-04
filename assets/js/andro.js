@@ -370,11 +370,12 @@ const LensShader = {
   uniforms: {
     tDiffuse: { value: null },
     uBHPos: { value: new THREE.Vector2(0.5, 0.5) },
-    uBHR: { value: 0.035 },
-    uStr: { value: 0.012 },
+    uBHR: { value: 0.026 },
+    uStr: { value: 0.0065 },
+    uTime: { value: 0 },
   },
   vertexShader: `varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-  fragmentShader: `uniform sampler2D tDiffuse;uniform vec2 uBHPos;uniform float uBHR,uStr;varying vec2 vUv;void main(){vec2 delta=vUv-uBHPos;float dist=length(delta);float alpha=uStr*(uBHR*uBHR)/(dist*dist+0.0001);alpha=clamp(alpha,0.0,0.08);vec2 dir=normalize(delta+vec2(0.00001));vec2 uv2=vUv-dir*alpha;vec4 col=texture2D(tDiffuse,uv2);float eh=smoothstep(uBHR*.7,0.0,dist);col.rgb*=(1.0-eh*.97);float ring=smoothstep(uBHR*.9,uBHR*1.05,dist)*smoothstep(uBHR*1.45,uBHR*1.12,dist);col.rgb+=vec3(1.0,0.6,0.2)*ring*0.6;gl_FragColor=col;}`,
+  fragmentShader: `uniform sampler2D tDiffuse;uniform vec2 uBHPos;uniform float uBHR,uStr,uTime;varying vec2 vUv;void main(){vec2 delta=vUv-uBHPos;float dist=length(delta);vec2 dir=normalize(delta+vec2(0.00001));vec2 tangent=vec2(-dir.y,dir.x);float ang=atan(delta.y,delta.x);float compact=1.0-smoothstep(uBHR*0.78,uBHR*3.72,dist);float lensCore=(uBHR*uBHR)/(dist*dist+0.00022);float micro=sin(ang*2.0+uTime*0.22+dist*58.0)*0.5+0.5;float bend=clamp(uStr*lensCore*compact*(0.92+0.08*micro),0.0,0.026);float shear=sin(ang*3.0-uTime*0.16)*uBHR*0.020*compact;vec2 uv2=vUv-dir*bend+tangent*shear;vec4 col=texture2D(tDiffuse,uv2);float shadow=1.0-smoothstep(uBHR*0.56,uBHR*0.88,dist);col.rgb*=1.0-shadow*0.985;float photon=smoothstep(uBHR*0.90,uBHR*1.05,dist)*(1.0-smoothstep(uBHR*1.07,uBHR*1.24,dist));float einstein=smoothstep(uBHR*1.30,uBHR*1.52,dist)*(1.0-smoothstep(uBHR*1.54,uBHR*2.08,dist));float diskBand=1.0-smoothstep(uBHR*0.10,uBHR*0.26,abs(delta.y+delta.x*0.13));float diskFade=smoothstep(uBHR*1.04,uBHR*1.32,dist)*(1.0-smoothstep(uBHR*2.20,uBHR*3.12,dist));float disk=diskBand*diskFade*(0.78+0.22*sin(delta.x*220.0+uTime*0.75));vec3 hot=vec3(1.0,0.58,0.20);vec3 jwstBlue=vec3(0.38,0.72,1.0);vec3 violet=vec3(0.72,0.42,1.0);col.rgb+=hot*photon*0.48;col.rgb+=mix(hot,jwstBlue,micro)*einstein*0.20;col.rgb+=hot*disk*0.18;col.rgb+=mix(violet,jwstBlue,0.58)*compact*0.018;float ca=compact*uBHR*0.24;col.r+=texture2D(tDiffuse,uv2-dir*ca).r*0.016*compact;col.b+=texture2D(tDiffuse,uv2+dir*ca).b*0.018*compact;gl_FragColor=col;}`,
 };
 const lensPass = new THREE.ShaderPass(LensShader);
 
@@ -399,6 +400,7 @@ composer.addPass(vigPass);
            4. ASTROFÍSICA REALISTA (Estrelas, Galáxia e Gargantua)
         ═══════════════════════════════════════════════════════════════ */
 let bgMat, galMat, galDustMat, diskMat;
+const bhVisuals = { group: null, rings: [], sprites: [], disk: null, jets: null };
 
 (function () {
   const starVS = `attribute float aR,aFlicker;uniform float uT;varying float vR;varying vec3 vC;void main(){vC=color;float tw=0.5+0.5*sin(uT*0.8+aR*88.0+aFlicker*7.0)*sin(uT*1.3+aFlicker*3.0);vec4 vp=viewMatrix*modelMatrix*vec4(position,1.0);gl_Position=projectionMatrix*vp;gl_PointSize=(9.0/-vp.z)*(0.25+aR*0.95)*tw;}`;
@@ -507,8 +509,8 @@ let bgMat, galMat, galDustMat, diskMat;
     vertexColors: true,
     transparent: true,
     uniforms: { uT: { value: 0 } },
-    vertexShader: `attribute float aR;uniform float uT;varying vec3 vC;void main(){vC=color;float dist=length(position.xz);float omega=0.072/(dist*0.052+0.6);float ang=atan(position.z,position.x)+uT*omega;vec3 p=vec3(cos(ang)*dist,position.y,sin(ang)*dist);vec4 vp=viewMatrix*modelMatrix*vec4(p,1.0);gl_Position=projectionMatrix*vp;float tw=0.62+0.38*sin(uT*0.85+aR*52.0);gl_PointSize=(20.0/-vp.z)*(0.16+aR*0.48)*tw;}`,
-    fragmentShader: `varying vec3 vC;void main(){float s=pow(1.0-distance(gl_PointCoord,vec2(0.5)),3.0);gl_FragColor=vec4(vC*s,s*.65);}`,
+    vertexShader: `attribute float aR;uniform float uT;varying vec3 vC;void main(){vC=color;float dist=length(position.xz);float omega=0.072/(dist*0.052+0.6);float ang=atan(position.z,position.x)+uT*omega;vec3 p=vec3(cos(ang)*dist,position.y,sin(ang)*dist);vec4 vp=viewMatrix*modelMatrix*vec4(p,1.0);gl_Position=projectionMatrix*vp;float tw=0.62+0.38*sin(uT*0.85+aR*52.0);gl_PointSize=(22.0/-vp.z)*(0.13+aR*0.52)*tw*(1.0+0.18*smoothstep(0.0,9.0,9.0-dist));}`,
+    fragmentShader: `varying vec3 vC;void main(){float s=pow(1.0-distance(gl_PointCoord,vec2(0.5)),3.0);gl_FragColor=vec4(vC*(0.82+s*0.55),s*.62);}`,
   });
   const gal = new THREE.Points(geom, galMat);
   gal.rotation.x = 1.12;
@@ -542,8 +544,8 @@ let bgMat, galMat, galDustMat, diskMat;
     vertexColors: true,
     transparent: true,
     uniforms: { uT: { value: 0 } },
-    vertexShader: `uniform float uT;varying vec3 vC;void main(){vC=color;float dist=length(position.xz);float omega=0.058/(dist*0.048+0.6);float ang=atan(position.z,position.x)+uT*omega;vec3 p=vec3(cos(ang)*dist,position.y,sin(ang)*dist);vec4 vp=viewMatrix*modelMatrix*vec4(p,1.0);gl_Position=projectionMatrix*vp;gl_PointSize=(45.0/-vp.z)*(0.55+0.45*fract(sin(dist*17.3)*43758.5));}`,
-    fragmentShader: `varying vec3 vC;void main(){float s=1.0-smoothstep(0.2,.5,distance(gl_PointCoord,vec2(.5)));gl_FragColor=vec4(vC,s*.55);}`,
+    vertexShader: `uniform float uT;varying vec3 vC;void main(){vC=color;float dist=length(position.xz);float omega=0.058/(dist*0.048+0.6);float ang=atan(position.z,position.x)+uT*omega;vec3 p=vec3(cos(ang)*dist,position.y,sin(ang)*dist);vec4 vp=viewMatrix*modelMatrix*vec4(p,1.0);gl_Position=projectionMatrix*vp;gl_PointSize=(52.0/-vp.z)*(0.48+0.52*fract(sin(dist*17.3)*43758.5));}`,
+    fragmentShader: `varying vec3 vC;void main(){float s=1.0-smoothstep(0.2,.5,distance(gl_PointCoord,vec2(.5)));gl_FragColor=vec4(vC*(0.75+s*0.45),s*.46);}`,
   });
   const dust = new THREE.Points(dg, galDustMat);
   dust.rotation.x = 1.12;
@@ -552,93 +554,163 @@ let bgMat, galMat, galDustMat, diskMat;
 })();
 
 (function () {
-  scene.add(
-    new THREE.Mesh(
-      new THREE.SphereGeometry(2.2, 40, 40),
-      new THREE.MeshBasicMaterial({ color: 0x000000 }),
-    ),
-  );
-  [
-    [2.25, 0.06, 0xffffff, 0.9],
-    [2.45, 0.05, 0xffa040, 0.7],
-    [2.7, 0.04, 0x883000, 0.5],
-  ].forEach(([r, t, c, o]) => {
-    const rm = new THREE.Mesh(
-      new THREE.TorusGeometry(r, t, 12, 180),
-      new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o }),
+  const group = new THREE.Group();
+  group.name = "Andromeda_Gargantua_LocalModel";
+  scene.add(group);
+  bhVisuals.group = group;
+
+  function makeRadialSprite(hex, size, opacity = 1, softness = 1) {
+    const { r, g, b } = hexToRgb(hex);
+    const cv = document.createElement("canvas");
+    cv.width = cv.height = 256;
+    const cx = cv.getContext("2d");
+    const gr = cx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    gr.addColorStop(0.00, `rgba(${r},${g},${b},${0.95 * opacity})`);
+    gr.addColorStop(0.12, `rgba(${r},${g},${b},${0.38 * opacity})`);
+    gr.addColorStop(0.42, `rgba(${r},${g},${b},${0.10 * opacity})`);
+    gr.addColorStop(Math.min(0.92, 0.72 + softness * 0.16), `rgba(${r},${g},${b},${0.025 * opacity})`);
+    gr.addColorStop(1.00, `rgba(${r},${g},${b},0)`);
+    cx.fillStyle = gr;
+    cx.fillRect(0, 0, 256, 256);
+    const sp = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(cv),
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        opacity,
+      }),
     );
-    rm.rotation.x = Math.PI / 2;
-    scene.add(rm);
+    sp.scale.set(size, size, 1);
+    group.add(sp);
+    bhVisuals.sprites.push(sp);
+    return sp;
+  }
+
+  const horizon = new THREE.Mesh(
+    new THREE.SphereGeometry(2.18, 72, 72),
+    new THREE.MeshBasicMaterial({ color: 0x000000 }),
+  );
+  horizon.name = "Event_Horizon_Shadow";
+  group.add(horizon);
+
+  const shadowShell = new THREE.Mesh(
+    new THREE.SphereGeometry(2.58, 72, 72),
+    new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.58,
+      depthWrite: false,
+      side: THREE.BackSide,
+    }),
+  );
+  shadowShell.name = "Black_Hole_Shadow_Shell";
+  group.add(shadowShell);
+
+  const ringSpecs = [
+    { r: 2.46, t: 0.026, c: 0xfff3dc, o: 0.92, tilt: 0.00 },
+    { r: 2.64, t: 0.020, c: 0xffa24a, o: 0.60, tilt: 0.025 },
+    { r: 2.94, t: 0.014, c: 0x6cbcff, o: 0.26, tilt: -0.035 },
+    { r: 3.34, t: 0.010, c: 0xa960ee, o: 0.15, tilt: 0.055 },
+  ];
+  ringSpecs.forEach((spec, i) => {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(spec.r, spec.t, 18, 220),
+      new THREE.MeshBasicMaterial({
+        color: spec.c,
+        transparent: true,
+        opacity: spec.o,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    ring.rotation.x = Math.PI / 2 + spec.tilt;
+    ring.rotation.z = i * 0.28;
+    group.add(ring);
+    bhVisuals.rings.push(ring);
   });
-  const NA = 24000,
+
+  makeRadialSprite(0xff8f38, 16.0, 0.24, 0.7);
+  makeRadialSprite(0x52b7ff, 23.0, 0.105, 0.95);
+  makeRadialSprite(0xa960ee, 31.0, 0.040, 1.0);
+
+  const NA = 22000,
     ag = new THREE.BufferGeometry(),
     ap = new Float32Array(NA * 3),
     ac = new Float32Array(NA * 3),
     aAng = new Float32Array(NA),
-    aRad = new Float32Array(NA);
+    aRad = new Float32Array(NA),
+    aSeed = new Float32Array(NA);
   for (let i = 0; i < NA; i++) {
     const i3 = i * 3,
-      r = 2.6 + Math.pow(Math.random(), 0.5) * 11,
-      a = Math.random() * Math.PI * 2;
+      r = 2.85 + Math.pow(Math.random(), 0.58) * 9.6,
+      a = Math.random() * Math.PI * 2,
+      verticalTaper = 1 / (r * 0.22 + 0.86);
     aAng[i] = a;
     aRad[i] = r;
+    aSeed[i] = Math.random();
     ap[i3] = Math.cos(a) * r;
-    ap[i3 + 1] = (Math.random() - 0.5) * 0.1 * (1 / (r * 0.15 + 0.9));
+    ap[i3 + 1] = (Math.random() - 0.5) * 0.12 * verticalTaper;
     ap[i3 + 2] = Math.sin(a) * r;
-    const tt = Math.pow((r - 2.6) / 11, 0.6);
-    ac[i3] = 1.0;
-    ac[i3 + 1] = Math.max(0, 0.85 - tt * 0.8);
-    ac[i3 + 2] = Math.max(0, 0.5 - tt * 1.5);
+    const tt = Math.pow((r - 2.85) / 9.6, 0.74);
+    ac[i3] = Math.min(1.0, 1.0 - tt * 0.05);
+    ac[i3 + 1] = Math.max(0.18, 0.78 - tt * 0.54);
+    ac[i3 + 2] = Math.max(0.05, 0.38 - tt * 0.34);
   }
   ag.setAttribute("position", new THREE.BufferAttribute(ap, 3));
   ag.setAttribute("color", new THREE.BufferAttribute(ac, 3));
   ag.setAttribute("aAng", new THREE.BufferAttribute(aAng, 1));
   ag.setAttribute("aRad", new THREE.BufferAttribute(aRad, 1));
+  ag.setAttribute("aSeed", new THREE.BufferAttribute(aSeed, 1));
   diskMat = new THREE.ShaderMaterial({
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     vertexColors: true,
     transparent: true,
     uniforms: { uT: { value: 0 } },
-    vertexShader: `attribute float aAng,aRad;uniform float uT;varying vec3 vC;varying float vBright;void main(){vC=color;float omega=0.72/sqrt(aRad*aRad*aRad*0.012+aRad);float ang=aAng+uT*omega;vec3 p=vec3(cos(ang)*aRad,position.y,sin(ang)*aRad);vec4 vp=viewMatrix*modelMatrix*vec4(p,1.0);gl_Position=projectionMatrix*vp;float szFac=1.0-(aRad-2.6)/11.0;gl_PointSize=(12.0/-vp.z)*(0.15+szFac*.5);vBright=szFac;}`,
-    fragmentShader: `varying vec3 vC;varying float vBright;void main(){float s=pow(1.0-distance(gl_PointCoord,vec2(.5)),2.2);gl_FragColor=vec4(vC*s,s*(.5+vBright*.45));}`,
+    vertexShader: `attribute float aAng,aRad,aSeed;uniform float uT;varying vec3 vC;varying float vBright;void main(){vC=color;float omega=0.58/sqrt(aRad*aRad*aRad*0.012+aRad);float ang=aAng+uT*omega;float wave=sin(ang*5.0+aRad*1.15+uT*0.9+aSeed*6.2831)*0.035;vec3 p=vec3(cos(ang)*aRad,position.y+wave*(1.0/(aRad*.22+1.0)),sin(ang)*aRad);p.y*=0.82;vec4 vp=viewMatrix*modelMatrix*vec4(p,1.0);gl_Position=projectionMatrix*vp;float szFac=1.0-(aRad-2.85)/9.6;gl_PointSize=(11.0/-vp.z)*(0.13+szFac*.46)*(0.86+0.14*sin(uT+aSeed*31.0));vBright=szFac;}`,
+    fragmentShader: `varying vec3 vC;varying float vBright;void main(){float s=pow(1.0-distance(gl_PointCoord,vec2(.5)),2.4);gl_FragColor=vec4(vC*s,s*(.36+vBright*.48));}`,
   });
-  scene.add(new THREE.Points(ag, diskMat));
+  const disk = new THREE.Points(ag, diskMat);
+  disk.name = "Accretion_Disk_JWST_Infrared";
+  disk.rotation.x = 0.08;
+  group.add(disk);
+  bhVisuals.disk = disk;
 
-  const NJ = 2000,
+  const NJ = 1600,
     jg = new THREE.BufferGeometry(),
     jp = new Float32Array(NJ * 3),
     jc = new Float32Array(NJ * 3);
   for (let i = 0; i < NJ; i++) {
     const i3 = i * 3,
-      h = (Math.random() - 0.5) * 30,
-      r = Math.abs(h) * 0.035 * (Math.random() * 0.8 + 0.2),
+      h = (Math.random() - 0.5) * 28,
+      r = Math.abs(h) * 0.030 * (Math.random() * 0.8 + 0.2),
       a = Math.random() * Math.PI * 2;
     jp[i3] = Math.cos(a) * r;
     jp[i3 + 1] = h;
     jp[i3 + 2] = Math.sin(a) * r;
-    const tl = Math.abs(h) / 15;
-    jc[i3] = 1.0;
-    jc[i3 + 1] = 0.6 - tl * 0.5;
-    jc[i3 + 2] = 0.2 - tl * 0.5;
+    const tl = Math.abs(h) / 14;
+    jc[i3] = 0.82 - tl * 0.30;
+    jc[i3 + 1] = 0.52 - tl * 0.30;
+    jc[i3 + 2] = 1.0 - tl * 0.42;
   }
   jg.setAttribute("position", new THREE.BufferAttribute(jp, 3));
   jg.setAttribute("color", new THREE.BufferAttribute(jc, 3));
-  scene.add(
-    new THREE.Points(
-      jg,
-      new THREE.PointsMaterial({
-        vertexColors: true,
-        size: 0.12,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        transparent: true,
-        opacity: 0.4,
-      }),
-    ),
+  const jets = new THREE.Points(
+    jg,
+    new THREE.PointsMaterial({
+      vertexColors: true,
+      size: 0.095,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.28,
+    }),
   );
+  jets.name = "Relativistic_Polar_Whisper";
+  group.add(jets);
+  bhVisuals.jets = jets;
 })();
-
 /* ═══════════════════════════════════════════════════════════════
            5. SISTEMAS DE CATEGORIAS & PLANETAS
         ═══════════════════════════════════════════════════════════════ */
@@ -825,13 +897,17 @@ uniqCats.forEach((name, idx) => {
   btn.innerHTML = `<div class="sys-dot" style="color:${catHexStr(name)}"></div>${name}`;
   sysList.appendChild(btn);
 
-  const t = (idx + 0.5) / uniqCats.length,
-    br = idx % 4,
-    ang = (br / 4) * Math.PI * 2 + t * Math.PI * 6.2,
-    rad = 14 + t * 46;
-  const x = Math.cos(ang) * rad + (Math.random() - 0.5) * 3,
-    y = (Math.random() - 0.5) * 5,
-    z = Math.sin(ang) * rad + (Math.random() - 0.5) * 3;
+  const t = (idx + 0.5) / Math.max(1, uniqCats.length),
+    golden = Math.PI * (3 - Math.sqrt(5)),
+    ringLayer = idx % 6,
+    orbitShell = Math.floor(idx / Math.max(6, Math.ceil(Math.sqrt(Math.max(uniqCats.length, 1))))),
+    ang = idx * golden + t * Math.PI * 0.82,
+    // Campo equilibrado: menor que a versão anterior, mas ainda preserva um vazio seguro
+    // ao redor do buraco negro para evitar planetas atravessando a zona do horizonte.
+    rad = 36 + t * (50 + Math.sqrt(Math.max(uniqCats.length, 1)) * 2.15) + ringLayer * 2.35 + orbitShell * 1.85;
+  const x = Math.cos(ang) * rad + (Math.random() - 0.5) * 0.95,
+    y = (Math.random() - 0.5) * 3.0,
+    z = Math.sin(ang) * rad + (Math.random() - 0.5) * 0.95;
   const sysPalette = getSystemPalette(name);
   const col = sysPalette.core;
   const star = new THREE.Mesh(
@@ -854,6 +930,29 @@ uniqCats.forEach((name, idx) => {
   scene.add(glow);
   scene.add(glow2);
   scene.add(neb);
+
+  // Guia orbital extremamente sutil: não rouba a cena, mas ajuda o usuário a sentir
+  // que cada constelação pertence a uma órbita real ao redor do buraco negro.
+  const orbitGuidePts = [];
+  const ORBIT_GUIDE_STEPS = 180;
+  for (let j = 0; j <= ORBIT_GUIDE_STEPS; j++) {
+    const a = (j / ORBIT_GUIDE_STEPS) * Math.PI * 2;
+    orbitGuidePts.push(new THREE.Vector3(Math.cos(a) * rad, y, Math.sin(a) * rad));
+  }
+  const orbitGuide = new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints(orbitGuidePts),
+    new THREE.LineBasicMaterial({
+      color: sysPalette.halo,
+      transparent: true,
+      opacity: 0.0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }),
+  );
+  orbitGuide.visible = false;
+  scene.add(orbitGuide);
+
+  const systemSeed = hashString(name);
   catMap.set(name, {
     name,
     col,
@@ -861,8 +960,19 @@ uniqCats.forEach((name, idx) => {
     glow,
     glow2,
     neb,
+    orbitGuide,
     palette: sysPalette,
     pos: new THREE.Vector3(x, y, z),
+    orbitRadius: Math.max(36, Math.hypot(x, z)),
+    orbitAngle: Math.atan2(z, x),
+    orbitHeight: y,
+    orbitPhase: (systemSeed % 1000) * 0.006283,
+    orbitFloatAmp: 0.09 + (systemSeed % 5) * 0.018,
+    orbitFloatSpeed: 0.18 + (systemSeed % 7) * 0.012,
+    orbitGuideOpacity: 0.010 + (idx % 4) * 0.0025,
+    // Órbita lenta e charmosa: quase imperceptível em segundos, clara ao contemplar.
+    // O valor está em rad/s e alterna direção para criar uma coreografia orgânica.
+    systemOrbitSpeed: (0.0026 + (idx % 7) * 0.00022) * (idx % 2 === 0 ? 1 : -1),
     books: [],
   });
 });
@@ -915,12 +1025,15 @@ LIVROS.forEach((livro, idx) => {
   const cd = catMap.get(livro.categoria_nome);
   if (!cd) return;
   const oIdx = cd.books.length,
-    oRad = 3.4 + (oIdx % 8) * 0.88 + Math.random() * 0.5,
-    oSpd = (0.12 + Math.random() * 0.28) * (Math.random() > 0.5 ? 1 : -1),
-    oAng = (idx * 2.399) % (Math.PI * 2);
-  const tiltX = (Math.random() - 0.5) * Math.PI * 0.5,
-    tiltZ = (Math.random() - 0.5) * Math.PI * 0.25,
-    sz = 0.16 + Math.random() * 0.13;
+    orbitSlot = oIdx % 7,
+    orbitBand = Math.floor(oIdx / 7),
+    // Órbitas compactas, mas com separação suficiente para evitar choques visuais.
+    oRad = 5.05 + orbitSlot * 1.42 + orbitBand * 0.96 + Math.random() * 0.22,
+    oSpd = ((0.055 + Math.random() * 0.105) / (1 + orbitBand * 0.11)) * (Math.random() > 0.5 ? 1 : -1),
+    oAng = ((orbitSlot / 7) * Math.PI * 2 + orbitBand * 0.47 + idx * 0.071) % (Math.PI * 2);
+  const tiltX = (Math.random() - 0.5) * Math.PI * 0.62,
+    tiltZ = (Math.random() - 0.5) * Math.PI * 0.34,
+    sz = 0.145 + Math.random() * 0.105;
   const st = (livro.status || "")
     .toLowerCase()
     .normalize("NFD")
@@ -1031,8 +1144,12 @@ const normalizeAngle = (v) => {
   return v;
 };
 const ZOOM_MIN = 5;
-const ZOOM_MAX = 125;
-const ZOOM_HOME = 96;
+// Zoom-out adaptativo: abre campo para sistemas atuais e futuros sem cortar as bordas da galáxia.
+const ZOOM_MAX = Math.max(168, 132 + Math.sqrt(Math.max(uniqCats.length, 1)) * 9.5);
+const ZOOM_HOME = Math.min(122, Math.max(104, 94 + Math.sqrt(Math.max(uniqCats.length, 1)) * 3.4));
+cam.tz = ZOOM_HOME;
+camTzTarget = ZOOM_HOME;
+baseCamPos.set(0, 18, ZOOM_HOME);
 
 const galaxyOrbit = {
   yaw: 0,
@@ -1083,7 +1200,7 @@ function setGalaxyZoom(value, shouldAnimate = false) {
     updateDepthUI(camTzTarget);
   }
 
-  if (camTzTarget > 118 && activeFilter !== "all") flyToCat("all");
+  if (camTzTarget > Math.min(ZOOM_MAX - 10, ZOOM_HOME + 32) && activeFilter !== "all") flyToCat("all");
 }
 
 function setGalaxyZoomFromPointer(e) {
@@ -1234,7 +1351,7 @@ document.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     if (document.getElementById("modal-overlay").classList.contains("open")) {
-      document.getElementById("modal-overlay").classList.remove("open");
+      closeModal();
     } else if (
       document.getElementById("book-panel").classList.contains("open")
     ) {
@@ -1377,68 +1494,250 @@ document.getElementById("bp-expand").addEventListener("click", () => {
 /* ─── openModal() COM SINOPSE ─── */
 let modalBook = null;
 
+function closeModal() {
+  const overlay = document.getElementById("modal-overlay");
+  if (!overlay) return;
+  overlay.classList.remove("open");
+  overlay.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+}
+
 function openModal(d) {
+  if (!d) return;
   modalBook = d;
+
+  const overlay = document.getElementById("modal-overlay");
+  const drawer = document.getElementById("modal-drawer");
   const mc = document.getElementById("md-art-canvas");
-  mc.width = mc.parentElement.clientWidth || 720;
+
+  if (!overlay || !drawer || !mc) {
+    console.warn("[Andrômeda] Modal incompleto no DOM. Verifique #modal-overlay, #modal-drawer e #md-art-canvas.");
+    return;
+  }
+
+  mc.width = mc.parentElement?.clientWidth || 720;
   mc.height = 240;
   drawBookArtWithCover(mc, d.titulo, d.categoria_nome, mc.width, 240, d.capa);
 
-  document.getElementById("md-cat-badge").textContent = d.categoria_nome || "—";
-  document.getElementById("md-title").textContent = d.titulo || "—";
-  document.getElementById("md-author").textContent = d.autor_nome || "—";
-  document.getElementById("md-year").textContent = d.ano_publicacao || "—";
-  document.getElementById("md-pub").textContent = d.editora_nome || "—";
-  document.getElementById("md-catv").textContent = d.categoria_nome || "—";
-  document.getElementById("md-sv").textContent = d.status || "—";
-  const ms = document.getElementById("md-status");
-  ms.className = "sbadge " + statusClass(d.status);
-  ms.textContent = d.status || "—";
+  const setText = (id, value = "—") => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "—";
+  };
 
-  const mdSyn = document.getElementById("md-synopsis-text");
-  if (d.sinopse && d.sinopse.trim()) {
-    mdSyn.textContent = d.sinopse;
-    mdSyn.classList.remove("md-synopsis-empty");
-  } else {
-    mdSyn.innerHTML =
-      '<span class="md-synopsis-empty">Sinopse não cadastrada para esta obra.</span>';
+  setText("md-cat-badge", d.categoria_nome);
+  setText("md-title", d.titulo);
+  setText("md-author", d.autor_nome);
+  setText("md-year", d.ano_publicacao);
+  setText("md-pub", d.editora_nome);
+  setText("md-catv", d.categoria_nome);
+  setText("md-sv", d.status);
+
+  const ms = document.getElementById("md-status");
+  if (ms) {
+    ms.className = "sbadge " + statusClass(d.status);
+    ms.textContent = d.status || "—";
   }
 
- 
+  const mdSyn = document.getElementById("md-synopsis-text");
+  if (mdSyn) {
+    if (d.sinopse && d.sinopse.trim()) {
+      mdSyn.textContent = d.sinopse;
+      mdSyn.classList.remove("md-synopsis-empty");
+    } else {
+      mdSyn.innerHTML =
+        '<span class="md-synopsis-empty">Sinopse não cadastrada para esta obra.</span>';
+    }
+  }
 
   const rel = LIVROS.filter(
     (l) => l.categoria_nome === d.categoria_nome && l.titulo !== d.titulo,
   ).slice(0, 4);
-  document.getElementById("md-related").innerHTML =
-    rel.length === 0
-      ? '<p style="font-size:.8rem;color:var(--text-dim);font-style:italic;">Nenhuma obra relacionada</p>'
-      : rel
-          .map(
-            (
-              r,
-            ) => `<div class="md-related-item" onclick="openModal(LIVROS[${LIVROS.indexOf(r)}])">
-                    <div class="md-related-dot" style="background:${catHexStr(r.categoria_nome)};box-shadow:0 0 8px ${catHexStr(r.categoria_nome)}88;"></div>
-                    <div class="md-related-info"><strong>${r.titulo || "—"}</strong><span>${r.autor_nome || "—"}</span></div>
-                    <span class="sbadge ${statusClass(r.status)}">${r.status || "—"}</span>
-                  </div>`,
-          )
-          .join("");
+  const related = document.getElementById("md-related");
+  if (related) {
+    related.innerHTML =
+      rel.length === 0
+        ? '<p style="font-size:.8rem;color:var(--text-dim);font-style:italic;">Nenhuma obra relacionada</p>'
+        : rel
+            .map((r) => {
+              const idx = LIVROS.indexOf(r);
+              return `<button class="md-related-item" type="button" data-book-index="${idx}">
+                      <div class="md-related-dot" style="background:${catHexStr(r.categoria_nome)};box-shadow:0 0 8px ${catHexStr(r.categoria_nome)}88;"></div>
+                      <div class="md-related-info"><strong>${r.titulo || "—"}</strong><span>${r.autor_nome || "—"}</span></div>
+                      <span class="sbadge ${statusClass(r.status)}">${r.status || "—"}</span>
+                    </button>`;
+            })
+            .join("");
+  }
 
-  document.getElementById("modal-overlay").classList.add("open");
-  document.getElementById("modal-drawer").scrollTop = 0;
+  overlay.classList.add("open");
+  overlay.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+  drawer.scrollTop = 0;
+  drawer.querySelector(".md-scroll")?.scrollTo?.(0, 0);
 }
+
+window.openModal = openModal;
+window.closeModal = closeModal;
+
+
+/* ═══════════════════════════════════════════════════════════════
+           7.1 NOTIFICAÇÕES CÓSMICAS DO CATÁLOGO
+           Substitui alert() e estiliza mensagens PHP sem alterar o PHP.
+        ═══════════════════════════════════════════════════════════════ */
+function noticeTypeFromClass(el) {
+  if (!el) return "info";
+  if (el.classList.contains("alert-success")) return "success";
+  if (el.classList.contains("alert-danger")) return "danger";
+  if (el.classList.contains("alert-warning")) return "warning";
+  return "info";
+}
+
+function normalizeNoticeType(type) {
+  const t = String(type || "info").toLowerCase();
+  if (["success", "danger", "warning", "info"].includes(t)) return t;
+  return "info";
+}
+
+function escapeNoticeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function noticeMeta(type) {
+  const t = normalizeNoticeType(type);
+  const map = {
+    success: {
+      icon: "fa-circle-check",
+      label: "Reserva confirmada",
+      code: "OK · 204",
+    },
+    warning: {
+      icon: "fa-circle-info",
+      label: "Atenção orbital",
+      code: "WAIT · 302",
+    },
+    danger: {
+      icon: "fa-triangle-exclamation",
+      label: "Falha na transmissão",
+      code: "ERR · 503",
+    },
+    info: {
+      icon: "fa-satellite-dish",
+      label: "Central Andrômeda",
+      code: "PING · 101",
+    },
+  };
+  return map[t] || map.info;
+}
+
+function ensureAndromedaNoticeRoot() {
+  let root = document.getElementById("andromeda-notice-root");
+  if (!root) {
+    root = document.createElement("div");
+    root.id = "andromeda-notice-root";
+    root.setAttribute("aria-live", "polite");
+    root.setAttribute("aria-atomic", "false");
+    document.body.appendChild(root);
+  }
+  return root;
+}
+
+function buildAndromedaNoticeInner(message, type, closeClass) {
+  const meta = noticeMeta(type);
+  const cleanMessage = escapeNoticeHtml(String(message || "Transmissão recebida.").trim());
+  return `
+    <span class="andromeda-notice-corner corner-tl" aria-hidden="true"></span>
+    <span class="andromeda-notice-corner corner-br" aria-hidden="true"></span>
+    <span class="andromeda-notice-scan" aria-hidden="true"></span>
+    <div class="andromeda-notice-sigil" aria-hidden="true">
+      <i class="fa-solid ${meta.icon}"></i>
+    </div>
+    <div class="andromeda-notice-content">
+      <span class="andromeda-notice-kicker"><b>${meta.label}</b><em>${meta.code}</em></span>
+      <p>${cleanMessage}</p>
+    </div>
+    <button class="${closeClass}" type="button" aria-label="Fechar aviso"><i class="fa-solid fa-xmark"></i></button>
+    <span class="andromeda-notice-progress" aria-hidden="true"></span>
+  `;
+}
+
+function showAndromedaNotice(message, type = "info", options = {}) {
+  const t = normalizeNoticeType(type);
+  const root = ensureAndromedaNoticeRoot();
+  const duration = Number(options.duration || (t === "danger" ? 5600 : 4600));
+
+  const toast = document.createElement("div");
+  toast.className = `andromeda-notice andromeda-notice-${t}`;
+  toast.setAttribute("role", t === "danger" ? "alert" : "status");
+  toast.innerHTML = buildAndromedaNoticeInner(message, t, "andromeda-notice-close");
+
+  const close = () => {
+    toast.classList.remove("show");
+    toast.classList.add("hide");
+    window.setTimeout(() => toast.remove(), 420);
+  };
+
+  toast.querySelector(".andromeda-notice-close")?.addEventListener("click", close);
+  root.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("show"));
+  toast.style.setProperty("--notice-duration", `${duration}ms`);
+  window.setTimeout(close, duration);
+  return toast;
+}
+
+window.showAndromedaNotice = showAndromedaNotice;
+
+function enhanceServerReserveAlerts() {
+  document.querySelectorAll(".alert[role='alert']").forEach((el) => {
+    if (el.dataset.andromedaEnhanced === "1") return;
+    const type = noticeTypeFromClass(el);
+    const originalMessage = el.textContent.trim() || "Transmissão recebida.";
+
+    el.dataset.andromedaEnhanced = "1";
+    el.classList.add("cosmic-server-alert", `cosmic-server-alert-${type}`);
+    el.innerHTML = buildAndromedaNoticeInner(originalMessage, type, "cosmic-server-alert-close");
+
+    const close = el.querySelector(".cosmic-server-alert-close");
+    close?.addEventListener("click", () => {
+      el.classList.add("closing");
+      window.setTimeout(() => el.remove(), 420);
+    });
+
+    window.setTimeout(() => {
+      if (!document.body.contains(el)) return;
+      el.classList.add("closing");
+      window.setTimeout(() => el.remove(), 420);
+    }, 6400);
+  });
+}
+
+requestAnimationFrame(enhanceServerReserveAlerts);
+window.addEventListener("pageshow", enhanceServerReserveAlerts);
 
 document
   .getElementById("modal-close")
-  .addEventListener("click", () =>
-    document.getElementById("modal-overlay").classList.remove("open"),
-  );
+  ?.addEventListener("click", closeModal);
 
-document.getElementById("md-reserve").addEventListener("click", () => {
+document.getElementById("modal-overlay")?.addEventListener("click", (e) => {
+  if (e.target.id === "modal-overlay") closeModal();
+});
+
+document.addEventListener("click", (e) => {
+  const related = e.target.closest(".md-related-item[data-book-index]");
+  if (!related) return;
+  const book = LIVROS[Number(related.dataset.bookIndex)];
+  if (book) openModal(book);
+});
+
+document.getElementById("md-reserve")?.addEventListener("click", () => {
   if (!modalBook) return;
   const status = (modalBook.status || "").toLowerCase();
   if (!status.includes("indis")) {
-    alert("Somente livros indisponíveis podem ser reservados.");
+    showAndromedaNotice("Somente livros indisponíveis podem ser reservados.", "warning");
     return;
   }
   const form = document.getElementById("reserva-form");
@@ -1534,11 +1833,11 @@ function flyToCat(name) {
       },
     });
   } else if (name === "all" && activeView === "gal") {
-    camTzTarget = 96;
+    camTzTarget = ZOOM_HOME;
     gsap.to(cam, {
       tx: 0,
       ty: 18,
-      tz: 96,
+      tz: ZOOM_HOME,
       duration: 3.5,
       ease: "power3.inOut",
     });
@@ -1647,14 +1946,32 @@ function doSearch(q) {
       ease: "power3.inOut",
     });
   } else if (!q && activeView === "gal") {
-    camTzTarget = 96;
-    gsap.to(cam, { tx: 0, ty: 18, tz: 96, duration: 2, ease: "power3.out" });
+    camTzTarget = ZOOM_HOME;
+    gsap.to(cam, { tx: 0, ty: 18, tz: ZOOM_HOME, duration: 2, ease: "power3.out" });
     gsap.to(camLookDst, { x: 0, y: 0, z: 0, duration: 2, ease: "power3.out" });
   }
   if (activeView === "ed") buildEditorial();
 }
 
 let ecoMode = false;
+
+function syncDepthVisibility() {
+  const depth = document.getElementById("depth");
+  if (!depth) return;
+
+  const shouldShow = activeView === "gal" && !ecoMode;
+  depth.classList.toggle("is-visible", shouldShow);
+  depth.classList.toggle("is-hidden", !shouldShow);
+
+  // Fallback inline para vencer estados presos por GSAP/from(), troca de catálogo ou bfcache do navegador.
+  depth.style.opacity = shouldShow ? "1" : "0";
+  depth.style.visibility = shouldShow ? "visible" : "hidden";
+  depth.style.pointerEvents = shouldShow ? "auto" : "none";
+  depth.setAttribute("aria-hidden", shouldShow ? "false" : "true");
+
+  updateDepthUI(camTzTarget);
+}
+
 function setView(v) {
   if (ecoMode && v === "gal") toggleEcoMode();
   activeView = v;
@@ -1664,7 +1981,7 @@ function setView(v) {
     .getElementById("editorial-view")
     .classList.toggle("open", v === "ed");
   document.getElementById("canvas-dim").classList.toggle("dimmed", v !== "gal");
-  document.getElementById("depth").style.opacity = v === "gal" ? "1" : "0";
+  syncDepthVisibility();
   document.getElementById("hud-bot").style.opacity = v === "gal" ? "1" : "0.3";
   if (v === "ed") {
     buildEditorial();
@@ -1697,6 +2014,11 @@ document
   .getElementById("btn-ed")
   .addEventListener("click", () => setView("ed"));
 document.getElementById("btn-eco").addEventListener("click", toggleEcoMode);
+
+// Garante que a barra de profundidade já nasça visível no 3D,
+// sem depender de entrar no catálogo e voltar.
+syncDepthVisibility();
+window.addEventListener("pageshow", syncDepthVisibility);
 
 /* ═══════════════════════════════════════════════════════════════
            8.1 CARROSSEL DINÂMICO DO DESTAQUE DA SEMANA
@@ -1785,7 +2107,7 @@ function buildCatalogCarousel(filtered) {
         b.sinopse && b.sinopse.trim()
           ? b.sinopse.trim().substring(0, 210) + (b.sinopse.trim().length > 210 ? "…" : "")
           : "Uma obra aguardando sinopse no acervo cósmico da Biblioteca Andrômeda.";
-      return `<article class="ed-carousel-card ${i === edCarouselIndex ? "active" : ""}" data-i="${i}" style="--card-glow:${catHexStr(b.categoria_nome)}55">
+      return `<article class="ed-carousel-card ${i === edCarouselIndex ? "active" : ""}" data-i="${i}" data-book-index="${LIVROS.indexOf(b)}" role="button" tabindex="0" aria-label="Abrir dossiê de ${safeAttr(b.titulo || "obra")}" style="--card-glow:${catHexStr(b.categoria_nome)}55">
         <div class="ed-carousel-art">
           <canvas class="ed-carousel-canvas"
             data-i="${i}"
@@ -1842,18 +2164,12 @@ document.getElementById("ed-carousel-dots")?.addEventListener("click", (e) => {
 });
 
 document.getElementById("ed-carousel-track")?.addEventListener("click", (e) => {
+  if (performance.now() - lastCatalogModalOpen < 360) return;
   const track = e.currentTarget;
   if (track?.dataset.justDragged === "1") return;
-  const card = e.target.closest(".ed-carousel-card");
+  const card = e.target.closest(".ed-carousel-card[data-book-index]");
   if (!card) return;
-  const idx = Number(card.dataset.i);
-  if (idx !== edCarouselIndex) {
-    setCatalogCarouselIndex(idx);
-    startCatalogCarouselAuto();
-    return;
-  }
-  const book = edCarouselBooks[idx];
-  if (book) openModal(book);
+  openCatalogCardModal(card);
 });
 
 function enableHighlightCarouselDrag() {
@@ -1885,7 +2201,7 @@ function enableHighlightCarouselDrag() {
     if (!dragging) return;
     dragging = false;
     track.classList.remove("dragging");
-    if (track.hasPointerCapture(e.pointerId)) track.releasePointerCapture(e.pointerId);
+    if (track.hasPointerCapture?.(e.pointerId)) track.releasePointerCapture(e.pointerId);
     if (moved) {
       track.dataset.justDragged = "1";
       const cards = [...track.querySelectorAll(".ed-carousel-card")];
@@ -1953,7 +2269,7 @@ function enableCategoryDrag() {
       if (!dragging) return;
       dragging = false;
       track.classList.remove("dragging");
-      if (track.hasPointerCapture(e.pointerId)) track.releasePointerCapture(e.pointerId);
+      if (track.hasPointerCapture?.(e.pointerId)) track.releasePointerCapture(e.pointerId);
       if (moved) {
         track.dataset.justDragged = "1";
         setTimeout(() => delete track.dataset.justDragged, 120);
@@ -1962,8 +2278,116 @@ function enableCategoryDrag() {
 
     track.addEventListener("pointerup", endDrag);
     track.addEventListener("pointercancel", endDrag);
+    track.addEventListener("lostpointercapture", endDrag);
   });
 }
+
+let catalogTapCandidate = null;
+let lastCatalogModalOpen = 0;
+
+function resolveBookFromCatalogCard(card) {
+  if (!card) return null;
+  const byIndex = LIVROS[Number(card.dataset.bookIndex)];
+  if (byIndex) return byIndex;
+  if (card.classList.contains("ed-carousel-card")) {
+    return edCarouselBooks[Number(card.dataset.i)] || null;
+  }
+  return null;
+}
+
+function openCatalogCardModal(card) {
+  const book = resolveBookFromCatalogCard(card);
+  if (!book) return false;
+  lastCatalogModalOpen = performance.now();
+  openModal(book);
+  return true;
+}
+
+function isCatalogCardTapTarget(target) {
+  return target?.closest?.(
+    ".ed-book-card[data-book-index], .ed-carousel-card[data-book-index]",
+  );
+}
+
+function isCatalogControlTarget(target) {
+  return !!target?.closest?.(
+    ".ed-carousel-btn, .ed-carousel-dot, .ed-section-nav, #modal-overlay, input, textarea, select, a",
+  );
+}
+
+// Captura o tap antes dos carrosséis. Assim o drag continua funcionando,
+// mas um clique limpo em qualquer livro/destaque sempre abre o dossiê.
+document.addEventListener(
+  "pointerdown",
+  (e) => {
+    if (activeView !== "ed" || e.button !== 0 || isCatalogControlTarget(e.target)) return;
+    const card = isCatalogCardTapTarget(e.target);
+    if (!card) return;
+    catalogTapCandidate = {
+      card,
+      pointerId: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      t: performance.now(),
+    };
+  },
+  true,
+);
+
+document.addEventListener(
+  "pointerup",
+  (e) => {
+    if (!catalogTapCandidate || catalogTapCandidate.pointerId !== e.pointerId) return;
+    const tap = catalogTapCandidate;
+    catalogTapCandidate = null;
+    const moved = Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 8;
+    if (moved) return;
+    requestAnimationFrame(() => openCatalogCardModal(tap.card));
+  },
+  true,
+);
+
+document.addEventListener(
+  "click",
+  (e) => {
+    if (activeView !== "ed" || isCatalogControlTarget(e.target)) return;
+    const card = isCatalogCardTapTarget(e.target);
+    if (!card) return;
+
+    // Evita abrir duas vezes quando o pointerup já abriu o modal.
+    if (performance.now() - lastCatalogModalOpen < 360) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+
+    if (openCatalogCardModal(card)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  },
+  true,
+);
+
+function openBookCardFromDataset(card) {
+  const track = card.closest(".ed-scroll-wrapper");
+  if (track?.dataset.justDragged === "1") return;
+  openCatalogCardModal(card);
+}
+
+document.addEventListener("click", (e) => {
+  const card = e.target.closest(".ed-book-card[data-book-index]");
+  if (!card) return;
+  openBookCardFromDataset(card);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const card = e.target.closest?.(".ed-book-card[data-book-index], .ed-carousel-card[data-book-index]");
+  if (!card) return;
+  e.preventDefault();
+  openBookCardFromDataset(card);
+});
 
 /* ═══════════════════════════════════════════════════════════════
            9. EDITORIAL VIEW BUILDER COM SINOPSE
@@ -2018,7 +2442,7 @@ function buildEdSections(filtered, catFilter) {
                           ? b.sinopse.substring(0, 120) +
                             (b.sinopse.length > 120 ? "…" : "")
                           : "";
-                        return `<div class="ed-book-card" onclick="if(!this.closest('.ed-scroll-wrapper')?.dataset.justDragged){openModal(LIVROS[${LIVROS.indexOf(b)}])}">
+                        return `<div class="ed-book-card" data-book-index="${LIVROS.indexOf(b)}" role="button" tabindex="0" aria-label="Ver detalhes de ${safeAttr(b.titulo || "obra")}">
                           <div class="ed-book-art">
                             <canvas class="ed-card-canvas"
                               data-title="${safeAttr(b.titulo)}"
@@ -2082,8 +2506,95 @@ window.addEventListener("resize", () => {
            10. RENDER LOOP
         ═══════════════════════════════════════════════════════════════ */
 const clock = new THREE.Clock(),
-  bhNDC = new THREE.Vector3();
+  bhNDC = new THREE.Vector3(),
+  lookVec = new THREE.Vector3(),
+  orbitOffset = new THREE.Vector3(),
+  yawQ = new THREE.Quaternion(),
+  pitchQ = new THREE.Quaternion(),
+  pitchAxis = new THREE.Vector3(),
+  yAxis = new THREE.Vector3(0, 1, 0),
+  xAxis = new THREE.Vector3(1, 0, 0),
+  bhWorldPos = new THREE.Vector3(0, 0, 0);
+
+const bhLensState = { radius: 0, strength: 0 };
+const BH_LENS_LOCK = {
+  x: 0.5,
+  y: 0.5,
+  radius: 0.018,
+  strength: 0.0039,
+  centerTolerance: 0.42,
+};
 let lastTime = 0;
+
+function updateCategorySystemOrbits(dt, t = 0) {
+  const shouldOrbit = activeView === "gal" && activeFilter === "all" && !ecoMode;
+  const safeDt = Math.min(0.05, Math.max(0, dt || 0));
+
+  catMap.forEach((cd) => {
+    if (!cd || !Number.isFinite(cd.orbitRadius) || !Number.isFinite(cd.orbitAngle)) return;
+
+    // As trilhas orbitais aparecem só na leitura galáctica geral.
+    // Quando o usuário entra em um sistema, elas desaparecem junto com a lente.
+    if (cd.orbitGuide?.material) {
+      const targetOpacity = shouldOrbit ? cd.orbitGuideOpacity : 0;
+      cd.orbitGuide.material.opacity += (targetOpacity - cd.orbitGuide.material.opacity) * 0.055;
+      cd.orbitGuide.visible = cd.orbitGuide.material.opacity > 0.001;
+    }
+
+    if (!shouldOrbit) return;
+
+    // Movimento orbital real em torno do buraco negro.
+    // É lento, suave e acumulativo: nada salta de posição, mas em contemplação dá para sentir a mudança.
+    cd.orbitAngle = normalizeAngle(cd.orbitAngle + cd.systemOrbitSpeed * safeDt);
+
+    const orbitalFloat = Math.sin(t * cd.orbitFloatSpeed + cd.orbitPhase) * cd.orbitFloatAmp;
+    cd.pos.set(
+      Math.cos(cd.orbitAngle) * cd.orbitRadius,
+      cd.orbitHeight + orbitalFloat,
+      Math.sin(cd.orbitAngle) * cd.orbitRadius,
+    );
+
+    cd.star.position.copy(cd.pos);
+    cd.glow.position.copy(cd.pos);
+    cd.glow2.position.copy(cd.pos);
+    cd.neb.position.copy(cd.pos);
+
+    // Pulso mínimo para dar presença viva sem parecer videogame/cartoon.
+    const pulse = 1 + Math.sin(t * 0.42 + cd.orbitPhase) * 0.018;
+    cd.star.scale.setScalar(pulse);
+    cd.glow.material.opacity += ((0.88 + Math.sin(t * 0.34 + cd.orbitPhase) * 0.035) - cd.glow.material.opacity) * 0.025;
+    cd.glow2.material.opacity += ((0.235 + Math.sin(t * 0.29 + cd.orbitPhase) * 0.018) - cd.glow2.material.opacity) * 0.025;
+  });
+}
+
+function updateBlackHoleLens() {
+  // Trava final anti-bug:
+  // A lente não usa projeção da câmera nem distância real da câmera.
+  // Assim ela não escorrega ao arrastar/orbitar a galáxia e nunca nasce ao lado do buraco negro.
+  lensPass.uniforms.uBHPos.value.set(BH_LENS_LOCK.x, BH_LENS_LOCK.y);
+
+  const lookDistanceFromBH = Math.hypot(camLook.x, camLook.y, camLook.z);
+  const targetLookDistanceFromBH = Math.hypot(camLookDst.x, camLookDst.y, camLookDst.z);
+
+  const lensAllowed =
+    activeView === "gal" &&
+    activeFilter === "all" &&
+    !ecoMode &&
+    lookDistanceFromBH < BH_LENS_LOCK.centerTolerance &&
+    targetLookDistanceFromBH < 0.08;
+
+  if (lensAllowed) {
+    bhLensState.radius += (BH_LENS_LOCK.radius - bhLensState.radius) * 0.18;
+    bhLensState.strength += (BH_LENS_LOCK.strength - bhLensState.strength) * 0.18;
+  } else {
+    bhLensState.radius += (0 - bhLensState.radius) * 0.62;
+    bhLensState.strength += (0 - bhLensState.strength) * 0.62;
+  }
+
+  lensPass.uniforms.uBHR.value = bhLensState.radius;
+  lensPass.uniforms.uStr.value = bhLensState.strength;
+  lensPass.enabled = bhLensState.radius > 0.00038 || bhLensState.strength > 0.00018;
+}
 (function animate(now) {
   requestAnimationFrame(animate);
   if (ecoMode) return;
@@ -2094,6 +2605,21 @@ let lastTime = 0;
   if (galMat) galMat.uniforms.uT.value = t;
   if (galDustMat) galDustMat.uniforms.uT.value = t;
   if (diskMat) diskMat.uniforms.uT.value = t;
+  if (bhVisuals.group) {
+    bhVisuals.group.rotation.y = t * 0.018;
+    bhVisuals.rings.forEach((ring, i) => {
+      ring.rotation.z += (i % 2 === 0 ? 1 : -1) * (0.0014 + i * 0.00035);
+      ring.material.opacity += (((i === 0 ? 0.9 : i === 1 ? 0.58 : i === 2 ? 0.24 : 0.13) * (0.92 + 0.08 * Math.sin(t * 1.2 + i))) - ring.material.opacity) * 0.035;
+    });
+    bhVisuals.sprites.forEach((sp, i) => {
+      sp.material.opacity += (((i === 0 ? 0.22 : i === 1 ? 0.095 : 0.038) * (0.88 + 0.12 * Math.sin(t * 0.65 + i * 1.7))) - sp.material.opacity) * 0.035;
+      const base = i === 0 ? 16.0 : i === 1 ? 23.0 : 31.0;
+      sp.scale.setScalar(base * (0.97 + 0.025 * Math.sin(t * 0.9 + i)));
+    });
+    if (bhVisuals.jets) bhVisuals.jets.rotation.y = t * 0.025;
+  }
+  updateCategorySystemOrbits(dt, t);
+  if (lensPass?.uniforms?.uTime) lensPass.uniforms.uTime.value = t;
   cam.tz += (camTzTarget - cam.tz) * 0.08;
   baseCamPos.x += (cam.tx - baseCamPos.x) * 0.016;
   baseCamPos.y += (cam.ty - baseCamPos.y) * 0.016;
@@ -2105,34 +2631,15 @@ let lastTime = 0;
   galaxyOrbit.yaw += (galaxyOrbit.targetYaw - galaxyOrbit.yaw) * 0.085;
   galaxyOrbit.pitch += (galaxyOrbit.targetPitch - galaxyOrbit.pitch) * 0.085;
 
-  const lookVec = new THREE.Vector3(camLook.x, camLook.y, camLook.z);
-  const orbitOffset = baseCamPos.clone().sub(lookVec);
-  const yawQ = new THREE.Quaternion().setFromAxisAngle(
-    new THREE.Vector3(0, 1, 0),
-    galaxyOrbit.yaw,
-  );
-  const pitchAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(yawQ);
-  const pitchQ = new THREE.Quaternion().setFromAxisAngle(
-    pitchAxis,
-    galaxyOrbit.pitch,
-  );
+  lookVec.set(camLook.x, camLook.y, camLook.z);
+  orbitOffset.copy(baseCamPos).sub(lookVec);
+  yawQ.setFromAxisAngle(yAxis, galaxyOrbit.yaw);
+  pitchAxis.copy(xAxis).applyQuaternion(yawQ);
+  pitchQ.setFromAxisAngle(pitchAxis, galaxyOrbit.pitch);
   orbitOffset.applyQuaternion(yawQ).applyQuaternion(pitchQ);
   camera.position.copy(lookVec).add(orbitOffset);
   camera.lookAt(lookVec);
-  bhNDC.set(0, 0, 0).project(camera);
-  const bhOnScreen =
-    bhNDC.z > -1 &&
-    bhNDC.z < 1 &&
-    Math.abs(bhNDC.x) < 1.08 &&
-    Math.abs(bhNDC.y) < 1.08;
-  const lockBHCentre = activeView === "gal" && activeFilter === "all";
-  lensPass.uniforms.uBHPos.value.set(
-    lockBHCentre ? 0.5 : (bhNDC.x + 1) / 2,
-    lockBHCentre ? 0.5 : (bhNDC.y + 1) / 2,
-  );
-  const bhDist = Math.max(8, camera.position.distanceTo(new THREE.Vector3(0, 0, 0)));
-  lensPass.uniforms.uBHR.value = bhOnScreen ? Math.min(0.058, Math.max(0.02, 4.2 / bhDist)) : 0.0;
-  lensPass.uniforms.uStr.value = bhOnScreen ? Math.min(0.015, 1.45 / bhDist) : 0.0;
+  updateBlackHoleLens();
   bookObjs.forEach((b) => {
     b.oAng += b.oSpd * 0.005;
     const px = b.cd.pos.x + Math.cos(b.oAng) * b.oRad * Math.cos(b.tiltX),
@@ -2141,6 +2648,7 @@ let lastTime = 0;
     b._px = px;
     b._py = py;
     b._pz = pz;
+    if (b.orbitLine) b.orbitLine.position.copy(b.cd.pos);
     if (b.filtered && b.searched) {
       const fs = b.sz * b.currentScale;
       b.mesh.position.set(px, py, pz);
@@ -2170,7 +2678,7 @@ let lastTime = 0;
   });
   updateConstellations();
   updateDepthUI(cam.tz);
-  bloom.strength = 1.1 + 0.55 * (1 - (cam.tz - ZOOM_MIN) / (ZOOM_MAX - ZOOM_MIN));
+  bloom.strength = 1.02 + 0.46 * clamp(1 - (cam.tz - ZOOM_MIN) / (ZOOM_MAX - ZOOM_MIN), 0, 1);
   composer.render();
 })();
 
@@ -2178,7 +2686,7 @@ baseCamPos.set(0, 55, 220);
 camera.position.copy(baseCamPos);
 gsap.to(baseCamPos, {
   y: 22,
-  z: 96,
+  z: ZOOM_HOME,
   duration: 3.5,
   ease: "power3.out",
   delay: INTRO_DUR - 0.5,
@@ -2197,12 +2705,16 @@ gsap.from("#nav", {
   ease: "power3.out",
   delay: INTRO_DUR,
 });
-gsap.from("#hud-bot, #depth", {
-  opacity: 0,
-  duration: 1.4,
-  ease: "power3.out",
-  delay: INTRO_DUR + 0.5,
-});
+gsap.fromTo("#hud-bot, #depth",
+  { opacity: 0 },
+  {
+    opacity: 1,
+    duration: 1.4,
+    ease: "power3.out",
+    delay: INTRO_DUR + 0.5,
+    onComplete: syncDepthVisibility,
+  },
+);
 gsap.from("#scroll-hint", {
   opacity: 0,
   duration: 1,
@@ -2211,30 +2723,44 @@ gsap.from("#scroll-hint", {
     gsap.to("#scroll-hint", { opacity: 0, delay: 4, duration: 1.6 }),
 });
 
+// Fallback final: alguns navegadores preservam inline styles antigos ao voltar pelo histórico.
+gsap.delayedCall(INTRO_DUR + 2.2, syncDepthVisibility);
+requestAnimationFrame(syncDepthVisibility);
 
 function solicitarReserva(idLivro) {
-    if (ID_USUARIO_LOGADO === 0) {
-        alert("🛰️ Identidade não verificada. Por favor, faça login para entrar na fila.");
-        window.location.href = "login.php";
-        return;
-    }
+  if (typeof ID_USUARIO_LOGADO !== "undefined" && ID_USUARIO_LOGADO === 0) {
+    showAndromedaNotice(
+      "Identidade não verificada. Faça login para entrar na fila de reserva.",
+      "warning",
+      { duration: 3600 },
+    );
+    window.setTimeout(() => {
+      window.location.href = "login.php";
+    }, 1100);
+    return;
+  }
 
-    const fd = new FormData();
-    fd.append('acao', 'reservar');
-    fd.append('id_livro', idLivro);
+  const fd = new FormData();
+  fd.append("acao", "reservar");
+  fd.append("id_livro", idLivro);
 
-    fetch('reservas.php', {
-        method: 'POST',
-        body: fd
+  fetch("reservas.php", {
+    method: "POST",
+    body: fd,
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      const ok = data.status === "success";
+      showAndromedaNotice(
+        data.mensagem || (ok ? "Reserva registrada com sucesso." : "Não foi possível registrar a reserva."),
+        ok ? "success" : "warning",
+      );
+      if (ok) {
+        window.setTimeout(() => location.reload(), 1400);
+      }
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.status === 'success') {
-            alert("✨ " + data.mensagem);
-            location.reload(); // Recarrega para atualizar o status
-        } else {
-            alert("⚠️ " + data.mensagem);
-        }
-    })
-    .catch(err => console.error("Erro na transmissão estelar:", err));
+    .catch((err) => {
+      console.error("Erro na transmissão estelar:", err);
+      showAndromedaNotice("Falha na transmissão da reserva. Tente novamente.", "danger");
+    });
 }

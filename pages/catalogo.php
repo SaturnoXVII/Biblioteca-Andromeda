@@ -68,7 +68,7 @@ $totalCats   = count($categorias);
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/andromeda.css">
+    <link rel="stylesheet" href="../assets/css/andro.css">
 </head>
 
 <body>
@@ -123,7 +123,7 @@ $totalCats   = count($categorias);
         </div>
         <div class="nav-foot">
             <a href="intro.php" class="nav-item"><i class="fa-solid fa-rocket"></i><span>Início</span></a>
-            <a href="login.php" class="nav-item"><i class="fa-solid fa-right-from-bracket"></i><span>Sair</span></a>
+            <a href="logout.php" class="nav-item"><i class="fa-solid fa-right-from-bracket"></i><span>Sair</span></a>
         </div>
     </nav>
 
@@ -339,6 +339,6 @@ $totalCats   = count($categorias);
             if (e.target === this) fecharPainelReservas();
         });
     </script>
-    <script src="../assets/js/andromeda.js"></script>
+    <script src="../assets/js/andro.js"></script>
 </body>
 </html>
