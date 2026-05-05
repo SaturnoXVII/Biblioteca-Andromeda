@@ -233,8 +233,14 @@ $statusMap = [
     <div class="nav-sec">
         <a href="catalogo.php"   class="nav-item"><i class="fa-solid fa-layer-group"></i><span>Catálogo</span></a>
         <a href="perfil.php"     class="nav-item active"><i class="fa-solid fa-user-astronaut"></i><span>Meu Perfil</span></a>
-        <a href="emprestimos.php" class="nav-item"><i class="fa-solid fa-bookmark"></i><span>Empréstimos</span></a>
         <a href="reservas.php"   class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i><span>Reservas</span></a>
+        <?php if (isset($_SESSION['nivel_acesso']) && $_SESSION['nivel_acesso'] === 'admin'): ?>
+        <a href="adm.php" class="nav-item">
+            <i class="fa-solid fa-user-shield"></i>
+            Painel Admin
+        </a>
+    </li>
+<?php endif; ?>
     </div>
     <div class="nav-foot">
         <a href="index.php"  class="nav-item"><i class="fa-solid fa-rocket"></i><span>Início</span></a>
