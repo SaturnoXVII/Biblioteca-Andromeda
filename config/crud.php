@@ -48,6 +48,8 @@ function listarLivros($mysqli) {
     return $mysqli->query($sql)->fetch_all(MYSQLI_ASSOC);
 }
 
+
+
 function buscarLivroPorId($mysqli, $id) {
     $stmt = $mysqli->prepare("SELECT * FROM Livros WHERE id_livro = ?");
     $stmt->bind_param("i", $id);
