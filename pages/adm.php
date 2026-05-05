@@ -25,7 +25,7 @@ if ($action === 'novo_autor' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         'status'         => $_POST['status']         ?? '',
         'quantidade'     => $_POST['quantidade']     ?? '',
     ];
-    $novo_id = adicionarAutor($mysqli, $_POST['nome_autor'], $_POST['descricao_autor'], $_POST['nacionalidade_autor']);
+    $novo_id = adicionarAutor($mysqli, $_POST['nome'], $_POST['descricao'], $_POST['nacionalidade']);
     header("Location: adm.php?action=add&autor_id=" . $novo_id);
     exit;
 }
@@ -42,7 +42,7 @@ if ($action === 'nova_editora' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         'status'         => $_POST['status']         ?? '',
         'quantidade'     => $_POST['quantidade']     ?? '',
     ];
-    $novo_id = adicionarEditora($mysqli, $_POST['nome_editora'], $_POST['descricao_editora']);
+    $novo_id = adicionarEditora($mysqli, $_POST['nome'], $_POST['descricao']);
     header("Location: adm.php?action=add&editora_id=" . $novo_id);
     exit;
 }
@@ -257,7 +257,6 @@ if ($action === 'perfis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h2 class="ed-section-title">Livros Cadastrados</h2>
                 </div>
 
-<<<<<<< Updated upstream
                 <div class="acervo-toolbar animate-rise" style="animation-delay: 0.16s;">
                     <div class="acervo-search-wrap">
                         <span class="acervo-search-icon" aria-hidden="true">⌕</span>
@@ -278,9 +277,6 @@ if ($action === 'perfis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             
                 <div class="table-wrapper animate-rise" style="animation-delay: 0.24s;">
-=======
-                <div class="table-wrapper animate-rise" style="animation-delay: 0.2s;">
->>>>>>> Stashed changes
                     <div class="table-responsive">
                         <table class="cosmic-table">
                             <thead>
@@ -377,7 +373,7 @@ if ($action === 'perfis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <option value="">-- Selecione o Autor --</option>
                                     <?php foreach (listarAutores($mysqli) as $a): ?>
                                         <option value="<?= $a['id_autor'] ?>"
-                                            <?= ($a['id_autor'] == ($_GET['autor_id'] ?? $salvo['id_autor'] ?? '')) ? 'selected' : '' ?>>
+                                            <?= ($a['id_autor'] == ($_GET['id_autor'] ?? $salvo['id_autor'] ?? '')) ? 'selected' : '' ?>>
                                             <?= htmlspecialchars($a['nome']) ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -388,9 +384,9 @@ if ($action === 'perfis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div id="div_novo_autor" style="display:none; margin-top:16px; padding: 20px; background: rgba(255,255,255,0.02); border: 1px dashed var(--border-hairline); border-radius: 8px;">
                                 <h4 style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--am); margin-bottom: 12px; text-transform: uppercase;">Registrar Nova Identidade</h4>
                                 <form method="POST" action="adm.php?action=novo_autor">
-                                    <div class="form-group"><input type="text" name="nome_autor" class="cosmic-input" placeholder="Nome do autor" required></div>
-                                    <div class="form-group"><textarea name="descricao_autor" class="cosmic-input" placeholder="Descrição" rows="3"></textarea></div>
-                                    <div class="form-group"><input type="text" name="nacionalidade_autor" class="cosmic-input" placeholder="Nacionalidade"></div>
+                                    <div class="form-group"><input type="text" name="nome" class="cosmic-input" placeholder="Nome do autor" required></div>
+                                    <div class="form-group"><textarea name="descricao" class="cosmic-input" placeholder="Descrição" rows="3"></textarea></div>
+                                    <div class="form-group"><input type="text" name="nacionalidade" class="cosmic-input" placeholder="Nacionalidade"></div>
                                     <div style="display: flex; gap: 10px;">
                                         <button type="submit" class="btn-sec btn-sm" style="color: var(--am); border-color: var(--am);">Salvar autor</button>
                                         <button type="button" class="btn-sec btn-sm" onclick="toggleNovoAutor()">Cancelar</button>
@@ -419,7 +415,7 @@ if ($action === 'perfis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <option value="">-- Selecione a Editora --</option>
                                     <?php foreach (listarEditoras($mysqli) as $e): ?>
                                         <option value="<?= $e['id_editora'] ?>"
-                                            <?= ($e['id_editora'] == ($_GET['editora_id'] ?? $salvo['id_editora'] ?? '')) ? 'selected' : '' ?>>
+                                            <?= ($e['id_editora'] == ($_GET['id_editora'] ?? $salvo['id_editora'] ?? '')) ? 'selected' : '' ?>>
                                             <?= htmlspecialchars($e['nome']) ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -430,8 +426,8 @@ if ($action === 'perfis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div id="div_nova_editora" style="display:none; margin-top:16px; padding: 20px; background: rgba(255,255,255,0.02); border: 1px dashed var(--border-hairline); border-radius: 8px;">
                                 <h4 style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--am); margin-bottom: 12px; text-transform: uppercase;">Registrar Entidade Editora</h4>
                                 <form method="POST" action="adm.php?action=nova_editora">
-                                    <div class="form-group"><input type="text" name="nome_editora" class="cosmic-input" placeholder="Nome da editora" required></div>
-                                    <div class="form-group"><textarea name="descricao_editora" class="cosmic-input" placeholder="Descrição" rows="3"></textarea></div>
+                                    <div class="form-group"><input type="text" name="nome" class="cosmic-input" placeholder="Nome da editora" required></div>
+                                    <div class="form-group"><textarea name="descricao" class="cosmic-input" placeholder="Descrição" rows="3"></textarea></div>
                                     <div style="display: flex; gap: 10px;">
                                         <button type="submit" class="btn-sec btn-sm" style="color: var(--am); border-color: var(--am);">Salvar editora</button>
                                         <button type="button" class="btn-sec btn-sm" onclick="toggleNovaEditora()">Cancelar</button>
@@ -878,7 +874,6 @@ if ($action === 'perfis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="../assets/js/adm.js"></script>
     <script>
         // ─── Cursor Magnético ─────────────────────────────────────────────────
-<<<<<<< Updated upstream
         const cursor = document.getElementById('reticle');
         const dot = document.getElementById('reticle-dot');
 
@@ -957,9 +952,6 @@ if ($action === 'perfis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         }
 
-=======
-   
->>>>>>> Stashed changes
         // ─── Toast de Feedback ────────────────────────────────────────────────
         const toast = document.getElementById('toast');
         if (toast) {
