@@ -1,65 +1,79 @@
-<?php
-session_start();
-include "../config/conexao.php";
+<<?php
+require_once "../config/conexao.php";
+require_once "../config/sessao.php";
 
-$erro_msg = ""; // Variável adicionada para guardar o erro e não quebrar o layout
+iniciarSessaoSegura();
 
-// http://10.68.49.32/Biblioteca-Andromeda/
+$erro_msg = "";
 
-// Mudanças que fiz no banco:
-// - Mudei o tipo da coluna senha para varchar(255) para poder armazenar as senhas criptografadas usando password_hash, que gera uma string mais longa do que 6 caracteres.
+if (isset($_GET['sessao']) && $_GET['sessao'] === 'expirada') {
+    $erro_msg = "Sua sessão expirou. Faça login novamente.";
+}
+
+if (usuarioEstaLogado()) {
+    header("Location: catalogo.php");
+    exit;
+}
 
 // verifica se as informações foram enviadas
 if (isset($_POST['email']) && isset($_POST['senha'])) {
-    // se as informações enviadas estiverem vazias, mostra essa mensagem
+
     if (empty($_POST['email'])) {
         $erro_msg = "Preencha seu e-mail";
     } else if (empty($_POST['senha'])) {
         $erro_msg = "Preencha sua senha";
-    }
-    // senão, ele armazena as informações em variáveis e continua o processo de login
-    else {
-        $email = $_POST['email'];
+    } else {
+        $email = trim($_POST['email']);
         $senha = $_POST['senha'];
 
-        // Aqui substitui o código que jogava o email direto na query, agora ele vai guardar um espaço para o email usando o "?" e depois ele vai substituir esse espaço pelo valor da variável $email, usando o bind_param. Isso é importante para evitar ataques de SQL Injection
+        $sql = "SELECT 
+                    id_usuario,
+                    username,
+                    email,
+                    senha,
+                    nivel_acesso,
+                    nome,
+                    sobrenome,
+                    avatar,
+                    foto,
+                    tipo_login
+                FROM usuarios 
+                WHERE email = ?
+                LIMIT 1";
 
-        $sql = "SELECT * FROM usuarios WHERE email = ?";
         $stmt = $mysqli->prepare($sql);
 
-        // "s" indica que o parâmetro, no caso o email, é uma string (texto)
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        // Vai executar a consulta usando o email digitado no banco
-        $result = $stmt->get_result();
+        if (!$stmt) {
+            $erro_msg = "Erro interno ao preparar login.";
+        } else {
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
 
-        //    Se a consulta encontrar um usuário com esse email, ele pega os dados dele para verificar a senha
-        if ($result->num_rows == 1) {
-            $usuario = $result->fetch_assoc();
+            $result = $stmt->get_result();
 
-            //    A função do PHP password_verify compara a senha digitada pelo usuário com a senha criptofrafada do banco, se forem iguais ele conecta o usuário, se não, ele mostra a mensagem de erro. Isso é mais seguro do que armazenar as senhas em texto puro no banco, igual eu estava fazendo, porque mesmo que alguém consiga acessar o banco, ele não vai conseguir ver as senhas dos usuários
-            // Ela é usada em conjunto com a função password_hash, sem ela não é possivel decodificar a senha, porque o password_hash gera uma string diferente a cada vez que é executada, mesmo que a senha seja a mesma, por isso é necessário usar o password_verify para comparar a senha digitada com a senha criptofrafada do banco
-            if (password_verify($senha, $usuario['senha'])) {
+            if ($result->num_rows === 1) {
+                $usuario = $result->fetch_assoc();
 
-                // Inicia a sessão para "lembrar" do usuário nas outras páginas
-                if (!isset($_SESSION)) {
-                    session_start();
+                if (password_verify($senha, $usuario['senha'])) {
+
+                    criarSessaoUsuario($usuario);
+
+                    if ($usuario['nivel_acesso'] === 'admin') {
+                        header("Location: adm.php");
+                        exit;
+                    }
+
+                    header("Location: catalogo.php");
+                    exit;
+
+                } else {
+                    $erro_msg = "Acesso Negado: Credenciais inválidas.";
                 }
-                // Guarda as informações do usuário na sessão, para que elas possam ser acessadas em outras páginas
-                $_SESSION['id_usuario'] = $usuario['id_usuario'];
-                $_SESSION['nome'] = $usuario['nome'];
-                $_SESSION['nivel_acesso'] = $usuario['nivel_acesso'];
-
-                // Redireciona para o catalogo ou painel, dependendo do tipo do usuário
-                header("Location: catalogo.php");
-                exit;
             } else {
-                // Se a senha estiver incorreta
                 $erro_msg = "Acesso Negado: Credenciais inválidas.";
             }
-        } else {
-            // Se o e-mail não for encontrado
-            $erro_msg = "Acesso Negado: Credenciais inválidas.";
+
+            $stmt->close();
         }
     }
 }

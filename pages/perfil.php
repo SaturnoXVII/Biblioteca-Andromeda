@@ -6,6 +6,8 @@
 // ═══════════════════════════════════════════════════════════════
 session_start();
 require_once "../config/conexao.php"; // cria o $mysqli
+require_once "../config/sessao.php";
+protegerPagina();
 
 // ── Proteção de rota ─────────────────────────────────────────
 // Se não há id_usuario na sessão, o usuário não está logado.
@@ -107,6 +109,56 @@ function trocarSenha(mysqli $db, int $id, string $hashAtual, string $atual, stri
 /**
  * Retorna todos os empréstimos do usuário com título e autor do livro.
  */
+
+
+/**
+ * Retorna todas as avaliações feitas pelo usuário com os dados principais do livro.
+ */
+function buscarAvaliacoesUsuario(mysqli $db, int $idUsuario): array
+{
+    try {
+        $stmt = $db->prepare(
+        "SELECT A.id_avaliacao,
+                A.id_livro,
+                A.nota,
+                A.comentario,
+                A.data_avaliacao,
+                A.data_atualizacao,
+                L.titulo,
+                'Autor não informado' AS nome_autor,
+                'Acervo' AS categoria_nome
+         FROM avaliacoes A
+         INNER JOIN Livros L ON L.id_livro = A.id_livro
+         WHERE A.id_usuario = ?
+           AND A.status = 'ativo'
+         ORDER BY A.data_atualizacao DESC"
+        );
+    } catch (mysqli_sql_exception $e) {
+        return [];
+    }
+
+    if (!$stmt) {
+        return [];
+    }
+
+    $stmt->bind_param('i', $idUsuario);
+    try {
+        $stmt->execute();
+        $res = $stmt->get_result();
+    } catch (mysqli_sql_exception $e) {
+        $stmt->close();
+        return [];
+    }
+
+    $lista = [];
+    while ($row = $res->fetch_assoc()) {
+        $lista[] = $row;
+    }
+
+    $stmt->close();
+    return $lista;
+}
+
 function buscarEmprestimos(mysqli $db, int $idUsuario): array
 {
     $stmt = $db->prepare(
@@ -186,8 +238,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ═══════════════════════════════════════════════════════════════
 // BLOCO 4 — LEITURA DOS DADOS PARA EXIBIÇÃO
 // ═══════════════════════════════════════════════════════════════
-$usuario     = buscarUsuario($mysqli, $idUsuario);
-$emprestimos = buscarEmprestimos($mysqli, $idUsuario);
+$usuario           = buscarUsuario($mysqli, $idUsuario);
+$emprestimos       = buscarEmprestimos($mysqli, $idUsuario);
+$avaliacoesUsuario = buscarAvaliacoesUsuario($mysqli, $idUsuario);
 
 if (!$usuario) {
     session_destroy();
@@ -214,7 +267,7 @@ $statusMap = [
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="../assets/css/andromeda.css">
+    <link rel="stylesheet" href="../assets/css/andro.css">
     <link rel="stylesheet" href="../assets/css/perfil.css">
 </head>
 <body>
@@ -231,8 +284,14 @@ $statusMap = [
     <div class="nav-sec">
         <a href="catalogo.php"   class="nav-item"><i class="fa-solid fa-layer-group"></i><span>Catálogo</span></a>
         <a href="perfil.php"     class="nav-item active"><i class="fa-solid fa-user-astronaut"></i><span>Meu Perfil</span></a>
-        <a href="emprestimos.php" class="nav-item"><i class="fa-solid fa-bookmark"></i><span>Empréstimos</span></a>
         <a href="reservas.php"   class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i><span>Reservas</span></a>
+        <?php if (isset($_SESSION['nivel_acesso']) && $_SESSION['nivel_acesso'] === 'admin'): ?>
+        <a href="adm.php" class="nav-item">
+            <i class="fa-solid fa-user-shield"></i>
+            Painel Admin
+        </a>
+    </li>
+<?php endif; ?>
     </div>
     <div class="nav-foot">
         <a href="index.php"  class="nav-item"><i class="fa-solid fa-rocket"></i><span>Início</span></a>
@@ -282,10 +341,16 @@ $statusMap = [
                 <i class="fa-solid fa-lock me-2"></i> Alterar Senha
             </button>
         </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-emprestimos" type="button">
+        <li class="nav-item" role="presentation" >
+            <button class="nav-link" id="emprestimos" data-bs-toggle="tab" data-bs-target="#tab-emprestimos" type="button">
                 <i class="fa-solid fa-bookmark me-2"></i> Meus Empréstimos
                 <span class="badge bg-secondary ms-2"><?= count($emprestimos) ?></span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="avaliacoes" data-bs-toggle="tab" data-bs-target="#tab-avaliacoes" type="button">
+                <i class="fa-solid fa-star-half-stroke me-2"></i> Minhas Avaliações
+                <span class="badge bg-secondary ms-2"><?= count($avaliacoesUsuario) ?></span>
             </button>
         </li>
     </ul>
@@ -414,6 +479,60 @@ $statusMap = [
                             </tbody>
                         </table>
                     </div>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="tab-pane fade w-100" id="tab-avaliacoes">
+            <?php if (empty($avaliacoesUsuario)): ?>
+                <div class="form-card text-center py-5">
+                    <div class="empty-state-icon mx-auto mb-4">
+                        <i class="fa-solid fa-star-half-stroke"></i>
+                    </div>
+                    <p class="text-muted text-uppercase" style="font-family: var(--font-mono); letter-spacing: 1.5px; margin-bottom: 0;">
+                        Você ainda não avaliou nenhuma obra.
+                    </p>
+                    <a href="catalogo.php" class="btn btn-primary btn-glow mt-4">
+                        <i class="fa-solid fa-layer-group me-2"></i> Explorar catálogo
+                    </a>
+                </div>
+            <?php else: ?>
+                <div class="perfil-avaliacoes-grid">
+                    <?php foreach ($avaliacoesUsuario as $av): ?>
+                        <?php
+                            $nota = max(1, min(5, (int) $av['nota']));
+                            $estrelas = str_repeat('★', $nota) . str_repeat('☆', 5 - $nota);
+                        ?>
+                        <article class="perfil-avaliacao-card">
+                            <div class="perfil-avaliacao-top">
+                                <span class="perfil-avaliacao-cat"><?= $h($av['categoria_nome'] ?? 'Acervo') ?></span>
+                                <span class="perfil-avaliacao-date">
+                                    <?= date('d/m/Y', strtotime($av['data_atualizacao'] ?: $av['data_avaliacao'])) ?>
+                                </span>
+                            </div>
+
+                            <h3><?= $h($av['titulo']) ?></h3>
+                            <p class="perfil-avaliacao-author"><?= $h($av['nome_autor']) ?></p>
+
+                            <div class="perfil-avaliacao-stars" aria-label="Nota <?= $nota ?> de 5">
+                                <?= $estrelas ?>
+                            </div>
+
+                            <?php if (!empty($av['comentario'])): ?>
+                                <p class="perfil-avaliacao-comment">
+                                    <?= nl2br($h($av['comentario'])) ?>
+                                </p>
+                            <?php else: ?>
+                                <p class="perfil-avaliacao-comment perfil-avaliacao-muted">
+                                    Você avaliou esta obra sem deixar comentário.
+                                </p>
+                            <?php endif; ?>
+
+                            <a href="catalogo.php" class="perfil-avaliacao-link">
+                                Ver no catálogo <i class="fa-solid fa-arrow-right-long"></i>
+                            </a>
+                        </article>
+                    <?php endforeach; ?>
                 </div>
             <?php endif; ?>
         </div>

@@ -48,6 +48,8 @@ function listarLivros($mysqli) {
     return $mysqli->query($sql)->fetch_all(MYSQLI_ASSOC);
 }
 
+
+
 function buscarLivroPorId($mysqli, $id) {
     $stmt = $mysqli->prepare("SELECT * FROM Livros WHERE id_livro = ?");
     $stmt->bind_param("i", $id);
@@ -79,6 +81,9 @@ function adicionarLivro($mysqli, $titulo, $id_autor, $ano_publicacao, $id_catego
     $titulo, $id_autor, $ano_publicacao, $id_categoria,
     $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade, $capa
 );
+
+    $stmt->execute();
+    return $mysqli->insert_id;
 }
 
 function editarLivro($mysqli, $id_livro, $titulo, $id_autor, $ano_publicacao, $id_categoria, $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade, $capa) {
@@ -96,7 +101,7 @@ function editarLivro($mysqli, $id_livro, $titulo, $id_autor, $ano_publicacao, $i
             capa           = ?
          WHERE id_livro = ?"
     );
-    $stmt->bind_param("siiiisssisi",
+    $stmt->bind_param("siiiisisisi",
         $titulo, $id_autor, $ano_publicacao, $id_categoria,
         $id_editora, $numero_paginas, $origem_idioma, $status, $quantidade, $capa,
         $id_livro
@@ -178,7 +183,7 @@ function devolverLivro($mysqli, $id_emprestimo) {
     $id_livro = $emp['id_livro'];
 
     // 2. Atualiza status e data de devolução real
-    $data_hoje = date('y-m-d');
+    $data_hoje = date('Y-m-d');
     $mysqli->query("UPDATE emprestimos SET status_emprestimo = 'Devolvido', data_devolucao = '$data_hoje' WHERE id_emprestimo = $id_emprestimo");
 
     // 3. Devolve 1 unidade ao estoque

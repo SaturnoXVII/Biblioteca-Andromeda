@@ -1,51 +1,121 @@
 <?php
-if (!isset($_SESSION)) session_start();
-require '../vendor/autoload.php';
-require '../config/conexao.php';
+require_once "../config/conexao.php";
+require_once "../config/sessao.php";
 
-header('Content-Type: application/json');
+header("Content-Type: application/json");
 
-$input = json_decode(file_get_contents("php://input"));
+iniciarSessaoSegura();
 
-if (!isset($input->token)) {
-    echo json_encode(["status" => "error"]);
+$input = json_decode(file_get_contents("php://input"), true);
+
+if (!isset($input['token']) || empty($input['token'])) {
+    echo json_encode([
+        "status" => "error",
+        "message" => "Token não enviado."
+    ]);
     exit;
 }
 
-$client = new Google_Client([
-    'client_id' => '1080679226381-9jbho9u4m814nm8g3lavhf7qsofd70d3.apps.googleusercontent.com'
-]);
+$token = $input['token'];
+// Substitua pelo seu Client ID do Google, encontrado no console de APIs do Google
+$googleClientId = "1080679226381-9jbho9u4m814nm8g3lavhf7qsofd70d3.apps.googleusercontent.com";
+// Substitua pelo seu Token de acesso do Google, encontrado no console de APIs do Google
+$verifyUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" . urlencode($token);
 
-$payload = $client->verifyIdToken($input->token);
+$response = file_get_contents($verifyUrl);
 
-if (!$payload) {
-    echo json_encode(["status" => "error"]);
+if ($response === false) {
+    echo json_encode([
+        "status" => "error",
+        "message" => "Não foi possível validar o token Google."
+    ]);
     exit;
 }
 
-$google_id = $payload['sub'];
-$nome      = $payload['name'];
-$email     = $payload['email'];
-$foto      = $payload['picture'];
+$googleData = json_decode($response, true);
 
-// Verifica se já existe
-$check = $mysqli->prepare("SELECT * FROM usuarios WHERE google_id = ? OR email = ?");
-$check->bind_param("ss", $google_id, $email);
-$check->execute();
-$result = $check->get_result();
+if (!$googleData || !isset($googleData['aud']) || $googleData['aud'] !== $googleClientId) {
+    echo json_encode([
+        "status" => "error",
+        "message" => "Token Google inválido."
+    ]);
+    exit;
+}
+
+$googleSub = $googleData['sub'] ?? null;
+$email = $googleData['email'] ?? null;
+$nomeCompleto = $googleData['name'] ?? "";
+$fotoGoogle = $googleData['picture'] ?? null;
+
+if (!$googleSub || !$email) {
+    echo json_encode([
+        "status" => "error",
+        "message" => "Dados do Google incompletos."
+    ]);
+    exit;
+}
+
+$sql = "SELECT 
+            id_usuario,
+            username,
+            email,
+            senha,
+            nivel_acesso,
+            nome,
+            sobrenome,
+            avatar,
+            foto,
+            tipo_login,
+            google_sub
+        FROM usuarios
+        WHERE google_sub = ? OR email = ?
+        LIMIT 1";
+
+$stmt = $mysqli->prepare($sql);
+$stmt->bind_param("ss", $googleSub, $email);
+$stmt->execute();
+
+$result = $stmt->get_result();
+
+if ($result->num_rows !== 1) {
+    echo json_encode([
+        "status" => "not_registered",
+        "message" => "Usuário não cadastrado."
+    ]);
+    exit;
+}
+
 $usuario = $result->fetch_assoc();
 
-if ($usuario) {
-    // Já cadastrado → faz login
-    $_SESSION['user'] = $usuario;
-    echo json_encode(["status" => "ja_cadastrado"]);
-} else {
-    // Novo → devolve dados pro frontend preencher o form
-    echo json_encode([
-        "status"    => "novo_usuario",
-        "google_id" => $google_id,
-        "nome"      => $nome,
-        "email"     => $email,
-        "foto"      => $foto
-    ]);
+$update = "UPDATE usuarios
+           SET google_sub = ?,
+               google_id = ?,
+               foto = COALESCE(foto, ?),
+               tipo_login = 'google'
+           WHERE id_usuario = ?";
+
+$stmtUpdate = $mysqli->prepare($update);
+$stmtUpdate->bind_param(
+    "sssi",
+    $googleSub,
+    $googleSub,
+    $fotoGoogle,
+    $usuario['id_usuario']
+);
+$stmtUpdate->execute();
+
+$usuario['google_sub'] = $googleSub;
+$usuario['tipo_login'] = 'google';
+
+if (empty($usuario['foto']) && !empty($fotoGoogle)) {
+    $usuario['foto'] = $fotoGoogle;
 }
+
+criarSessaoUsuario($usuario);
+
+echo json_encode([
+    "status" => "success",
+    "nivel_acesso" => $usuario['nivel_acesso']
+]);
+exit;
+?>

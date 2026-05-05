@@ -3,6 +3,15 @@ session_start();
 include "../config/conexao.php";
 include "../config/crud.php";
 include "../includes/notificacoes.php";
+require_once "../config/sessao.php";
+protegerAdmin();
+
+
+
+$msg = '';
+$busca = '';
+
+
 
 $action = $_GET['action'] ?? 'listar';
 
@@ -18,7 +27,7 @@ if ($action === 'novo_autor' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         'status'         => $_POST['status']         ?? '',
         'quantidade'     => $_POST['quantidade']     ?? '',
     ];
-    $novo_id = adicionarAutor($mysqli, $_POST['nome_autor'], $_POST['descricao_autor'], $_POST['nacionalidade_autor']);
+    $novo_id = adicionarAutor($mysqli, $_POST['nome'], $_POST['descricao'], $_POST['nacionalidade']);
     header("Location: adm.php?action=add&autor_id=" . $novo_id);
     exit;
 }
@@ -35,7 +44,7 @@ if ($action === 'nova_editora' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         'status'         => $_POST['status']         ?? '',
         'quantidade'     => $_POST['quantidade']     ?? '',
     ];
-    $novo_id = adicionarEditora($mysqli, $_POST['nome_editora'], $_POST['descricao_editora']);
+    $novo_id = adicionarEditora($mysqli, $_POST['nome'], $_POST['descricao']);
     header("Location: adm.php?action=add&editora_id=" . $novo_id);
     exit;
 }
@@ -63,7 +72,7 @@ if ($action === 'devolver' && isset($_GET['id'])) {
 
 
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (in_array($action, ['add', 'edit']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $titulo         = $_POST['titulo'];
     $id_autor       = (int) $_POST['id_autor'];
     $ano_publicacao = (int) $_POST['ano_publicacao'];
@@ -109,6 +118,35 @@ if ($action === 'delete' && isset($_GET['id'])) {
     header("Location: adm.php");
     exit;
 }
+
+// ─── GERENCIAR PERFIS ─────────────────────────────────────────────────────────
+if ($action === 'perfis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $acao = $_POST['acao'] ?? '';
+    $uid  = (int)($_POST['uid'] ?? 0);
+
+    if ($uid === (int)$_SESSION['id_usuario']) {
+        $msg = 'Você não pode alterar seu próprio perfil.';
+    } else {
+        if ($acao === 'excluir') {
+            $stmt = $mysqli->prepare("DELETE FROM usuarios WHERE id_usuario = ? AND nivel_acesso != 'admin'");
+            $stmt->bind_param('i', $uid);
+            $stmt->execute();
+            $msg = $stmt->affected_rows
+                ? 'Explorador removido do sistema com sucesso.'
+                : 'Não foi possível remover (é admin ou não existe).';
+            $stmt->close();
+        } elseif ($acao === 'promover') {
+            $stmt = $mysqli->prepare("UPDATE usuarios SET nivel_acesso='admin' WHERE id_usuario = ? AND nivel_acesso = 'leitor'");
+            $stmt->bind_param('i', $uid);
+            $stmt->execute();
+            $msg = $stmt->affected_rows
+                ? 'Explorador promovido a Guardião com sucesso!'
+                : 'Usuário já é Guardião ou não existe.';
+            $stmt->close();
+        }
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -118,8 +156,8 @@ if ($action === 'delete' && isset($_GET['id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>O Cofre Cósmico | Acervo</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/andromeda.css">
-    <link rel="stylesheet" href="../assets/css/adm.css">
+    <link rel="stylesheet" href="../assets/css/andro.css">
+    <link rel="stylesheet" href="../assets/css/pgadm.css">
 </head>
 
 <body>
@@ -153,8 +191,8 @@ if ($action === 'delete' && isset($_GET['id'])) {
         <div class="nav-logo">
             <span class="nav-logo-text">Andrômeda</span>
         </div>
-        
-        
+
+
         <div class="nav-sec">
             <a href="catalogo.php" class="nav-item">
                 <i>🌌</i>
@@ -180,6 +218,10 @@ if ($action === 'delete' && isset($_GET['id'])) {
                 <i>⏳</i>
                 <span>Fila de Espera</span>
             </a>
+            <a href="adm.php?action=perfis" class="nav-item <?= $action === 'perfis' ? 'active' : '' ?>">
+                <i>👤</i>
+                <span>Perfis</span>
+            </a>
             <a href="logout.php" class="nav-item">
                 <i>🚪</i>
                 <span>Sair</span>
@@ -188,22 +230,24 @@ if ($action === 'delete' && isset($_GET['id'])) {
     </nav>
 
     <div id="editorial-view" class="open">
-        <header class="ed-header animate-rise">
-            <h1 class="ed-header-title">
-                <?php if (in_array($action, ['emprestimos', 'novo_emprestimo', 'registrar'])): ?>
-                    Registros <em>Cósmicos</em>
-                <?php else: ?>
-                    Controle do <em>Acervo</em>
-                <?php endif; ?>
-            </h1>
-            <p class="ed-header-desc">
-                <?php if (in_array($action, ['emprestimos', 'novo_emprestimo'])): ?>
-                    Gerenciamento dinâmico de transações, empréstimos e devoluções dos artefatos da biblioteca.
-                <?php else: ?>
-                    Painel principal do bibliotecário para catalogação, edição e expurgo de artefatos da matriz central.
-                <?php endif; ?>
-            </p>
-        </header>
+        <h1 class="ed-header-title">
+            <?php if (in_array($action, ['emprestimos', 'novo_emprestimo', 'registrar'])): ?>
+                Registros <em>Cósmicos</em>
+            <?php elseif ($action === 'perfis'): ?>
+                Guardiões & <em>Exploradores</em>
+            <?php else: ?>
+                Controle do <em>Acervo</em>
+            <?php endif; ?>
+        </h1>
+        <p class="ed-header-desc">
+            <?php if (in_array($action, ['emprestimos', 'novo_emprestimo'])): ?>
+                Gerenciamento dinâmico de transações, empréstimos e devoluções dos artefatos da biblioteca.
+            <?php elseif ($action === 'perfis'): ?>
+                Gerencie os membros da biblioteca — promova exploradores a guardiões ou remova perfis do sistema.
+            <?php else: ?>
+                Painel principal do bibliotecário para catalogação, edição e expurgo de artefatos da matriz central.
+            <?php endif; ?>
+        </p>
 
         <div class="ed-section" style="margin-top: 50px;">
 
@@ -214,8 +258,27 @@ if ($action === 'delete' && isset($_GET['id'])) {
                 <div class="ed-section-header animate-rise" style="animation-delay: 0.1s;">
                     <h2 class="ed-section-title">Livros Cadastrados</h2>
                 </div>
+
+                <div class="acervo-toolbar animate-rise" style="animation-delay: 0.16s;">
+                    <div class="acervo-search-wrap">
+                        <span class="acervo-search-icon" aria-hidden="true">⌕</span>
+                        <input
+                            type="search"
+                            id="acervoSearch"
+                            class="cosmic-input acervo-search-input"
+                            placeholder="Pesquisar no acervo por título, autor, categoria, editora, ano ou status..."
+                            autocomplete="off"
+                            aria-label="Pesquisar no acervo">
+                        <button type="button" id="clearAcervoSearch" class="acervo-search-clear" aria-label="Limpar pesquisa" hidden>×</button>
+                    </div>
+
+                    <div class="acervo-search-status" aria-live="polite">
+                        <span id="acervoSearchCount">0</span>
+                        <span>registros encontrados</span>
+                    </div>
+                </div>
             
-                <div class="table-wrapper animate-rise" style="animation-delay: 0.2s;">
+                <div class="table-wrapper animate-rise" style="animation-delay: 0.24s;">
                     <div class="table-responsive">
                         <table class="cosmic-table">
                             <thead>
@@ -243,7 +306,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
                                     </tr>
                                 <?php else: ?>
                                     <?php foreach ($lista as $index => $livro): ?>
-                                        <tr class="stagger-item" style="animation-delay: <?= 0.3 + ($index * 0.05) ?>s;">
+                                        <tr class="stagger-item" data-acervo-row style="animation-delay: <?= 0.3 + ($index * 0.05) ?>s;">
                                             <td style="font-weight: 600; color: var(--am3);"><?= htmlspecialchars($livro['titulo']) ?></td>
                                             <td><?= htmlspecialchars($livro['autor']) ?></td>
                                             <td><?= htmlspecialchars($livro['categoria']) ?></td>
@@ -269,6 +332,12 @@ if ($action === 'delete' && isset($_GET['id'])) {
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
+                                    <tr id="acervoNoResults" class="acervo-no-results" hidden>
+                                        <td colspan="8" class="empty-state">
+                                            <i>🔭</i>
+                                            <p>Nenhum artefato encontrado para essa busca.</p>
+                                        </td>
+                                    </tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
@@ -306,7 +375,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
                                     <option value="">-- Selecione o Autor --</option>
                                     <?php foreach (listarAutores($mysqli) as $a): ?>
                                         <option value="<?= $a['id_autor'] ?>"
-                                            <?= ($a['id_autor'] == ($_GET['autor_id'] ?? $salvo['id_autor'] ?? '')) ? 'selected' : '' ?>>
+                                            <?= ($a['id_autor'] == ($_GET['id_autor'] ?? $salvo['id_autor'] ?? '')) ? 'selected' : '' ?>>
                                             <?= htmlspecialchars($a['nome']) ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -317,9 +386,9 @@ if ($action === 'delete' && isset($_GET['id'])) {
                             <div id="div_novo_autor" style="display:none; margin-top:16px; padding: 20px; background: rgba(255,255,255,0.02); border: 1px dashed var(--border-hairline); border-radius: 8px;">
                                 <h4 style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--am); margin-bottom: 12px; text-transform: uppercase;">Registrar Nova Identidade</h4>
                                 <form method="POST" action="adm.php?action=novo_autor">
-                                    <div class="form-group"><input type="text" name="nome_autor" class="cosmic-input" placeholder="Nome do autor" required></div>
-                                    <div class="form-group"><textarea name="descricao_autor" class="cosmic-input" placeholder="Descrição" rows="3"></textarea></div>
-                                    <div class="form-group"><input type="text" name="nacionalidade_autor" class="cosmic-input" placeholder="Nacionalidade"></div>
+                                    <div class="form-group"><input type="text" name="nome" class="cosmic-input" placeholder="Nome do autor" required></div>
+                                    <div class="form-group"><textarea name="descricao" class="cosmic-input" placeholder="Descrição" rows="3"></textarea></div>
+                                    <div class="form-group"><input type="text" name="nacionalidade" class="cosmic-input" placeholder="Nacionalidade"></div>
                                     <div style="display: flex; gap: 10px;">
                                         <button type="submit" class="btn-sec btn-sm" style="color: var(--am); border-color: var(--am);">Salvar autor</button>
                                         <button type="button" class="btn-sec btn-sm" onclick="toggleNovoAutor()">Cancelar</button>
@@ -348,7 +417,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
                                     <option value="">-- Selecione a Editora --</option>
                                     <?php foreach (listarEditoras($mysqli) as $e): ?>
                                         <option value="<?= $e['id_editora'] ?>"
-                                            <?= ($e['id_editora'] == ($_GET['editora_id'] ?? $salvo['id_editora'] ?? '')) ? 'selected' : '' ?>>
+                                            <?= ($e['id_editora'] == ($_GET['id_editora'] ?? $salvo['id_editora'] ?? '')) ? 'selected' : '' ?>>
                                             <?= htmlspecialchars($e['nome']) ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -359,8 +428,8 @@ if ($action === 'delete' && isset($_GET['id'])) {
                             <div id="div_nova_editora" style="display:none; margin-top:16px; padding: 20px; background: rgba(255,255,255,0.02); border: 1px dashed var(--border-hairline); border-radius: 8px;">
                                 <h4 style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--am); margin-bottom: 12px; text-transform: uppercase;">Registrar Entidade Editora</h4>
                                 <form method="POST" action="adm.php?action=nova_editora">
-                                    <div class="form-group"><input type="text" name="nome_editora" class="cosmic-input" placeholder="Nome da editora" required></div>
-                                    <div class="form-group"><textarea name="descricao_editora" class="cosmic-input" placeholder="Descrição" rows="3"></textarea></div>
+                                    <div class="form-group"><input type="text" name="nome" class="cosmic-input" placeholder="Nome da editora" required></div>
+                                    <div class="form-group"><textarea name="descricao" class="cosmic-input" placeholder="Descrição" rows="3"></textarea></div>
                                     <div style="display: flex; gap: 10px;">
                                         <button type="submit" class="btn-sec btn-sm" style="color: var(--am); border-color: var(--am);">Salvar editora</button>
                                         <button type="button" class="btn-sec btn-sm" onclick="toggleNovaEditora()">Cancelar</button>
@@ -557,7 +626,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
                         </table>
                     </div>
                 </div>
-          
+
 
                 <!-- NOVO EMPRÉSTIMO                                             -->
 
@@ -605,7 +674,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
                     </div>
                 </form>
 
-            <?php elseif ($action === 'reservas'): 
+            <?php elseif ($action === 'reservas'):
                 $livros_indisponiveis = $mysqli->query("SELECT * FROM Livros WHERE quantidade = 0 ORDER BY titulo ASC")->fetch_all(MYSQLI_ASSOC) ?? [];
             ?>
                 <div class="ed-section-header animate-rise" style="animation-delay: 0.1s;">
@@ -619,7 +688,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
                         <p>Nenhuma fila de espera no momento.</p>
                     </div>
                 <?php else: ?>
-                    <?php foreach ($livros_indisponiveis as $livro): 
+                    <?php foreach ($livros_indisponiveis as $livro):
                         $reservas = listarReservasPorLivro($mysqli, $livro['id_livro']);
                         $emprestimos = listarEmprestimosPorLivro($mysqli, $livro['id_livro']);
                     ?>
@@ -660,7 +729,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
                                         <p style="color: var(--text-dim); font-size: 0.85rem; margin: 0;">Nenhuma unidade emprestada</p>
                                     <?php else: ?>
                                         <ul style="list-style: none; padding: 0; margin: 0;">
-                                            <?php foreach ($emprestimos as $e): 
+                                            <?php foreach ($emprestimos as $e):
                                                 $status_class = $e['status_emprestimo'] === 'Atrasado' ? '#ff6b6b' : '#4a90e2';
                                             ?>
                                                 <li style="padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem;">
@@ -676,6 +745,128 @@ if ($action === 'delete' && isset($_GET['id'])) {
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
+
+            <?php elseif ($action === 'perfis'):
+                $busca_perfis = trim($_GET['busca'] ?? '');
+                $param_perfis = "%$busca_perfis%";
+                $stmt = $mysqli->prepare(
+                    "SELECT id_usuario, nome, email, nivel_acesso
+         FROM usuarios
+         WHERE nome LIKE ? OR email LIKE ?
+         ORDER BY nome ASC"
+                );
+                $stmt->bind_param('ss', $param_perfis, $param_perfis);
+                $stmt->execute();
+                $usuarios = $stmt->get_result();
+                $stmt->close();
+            ?>
+
+                <div class="ed-section-header animate-rise" style="animation-delay: 0.1s;">
+                    <h2 class="ed-section-title">Guardiões & <em>Exploradores</em></h2>
+                </div>
+
+                <?php if ($msg): ?>
+                    <div class="cosmic-toast sucesso show" style="position:static; margin-bottom:20px; opacity:1;">
+                        <div class="toast-icon">✨</div>
+                        <div class="toast-content"><?= htmlspecialchars($msg) ?></div>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Barra de busca -->
+                <form method="GET" action="adm.php" class="animate-rise" style="animation-delay:0.15s; display:flex; gap:10px; margin-bottom:24px;">
+                    <input type="hidden" name="action" value="perfis">
+                    <input
+                        type="text"
+                        name="busca"
+                        class="cosmic-input"
+                        placeholder="Pesquisar por nome ou e-mail..."
+                        value="<?= htmlspecialchars($busca_perfis) ?>"
+                        style="flex:1;">
+                    <button type="submit" class="btn-sec">Buscar</button>
+                    <?php if ($busca_perfis): ?>
+                        <a href="adm.php?action=perfis" class="btn-action btn-cancel">Limpar</a>
+                    <?php endif; ?>
+                </form>
+
+                <!-- Tabela de usuários -->
+                <div class="table-wrapper animate-rise" style="animation-delay: 0.2s;">
+                    <div class="table-responsive">
+                        <table class="cosmic-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>E-mail</th>
+                                    <th>Tipo</th>
+                                    <th>Membro desde</th>
+                                    <th style="text-align:right;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $total = 0;
+                                while ($u = $usuarios->fetch_assoc()):
+                                    $total++;
+                                ?>
+                                    <tr class="stagger-item" style="animation-delay: <?= 0.25 + ($total * 0.05) ?>s;">
+                                        <td style="font-weight:600; color:var(--am3);"><?= htmlspecialchars($u['nome']) ?></td>
+                                        <td class="t-dim"><?= htmlspecialchars($u['email']) ?></td>
+                                        <td>
+                                            <?php if ($u['nivel_acesso'] === 'admin'): ?>
+                                                <span class="sbadge s-empr">Guardião</span>
+                                            <?php else: ?>
+                                                <span class="sbadge s-disp">Explorador</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        
+                                        <td>
+                                            <div class="action-group" style="justify-content:flex-end;">
+                                                <?php if ($u['id_usuario'] === (int)$_SESSION['id_usuario']): ?>
+                                                    <span class="t-dim t-mono" style="font-size:0.75rem;">(você)</span>
+
+                                                <?php elseif ($u['nivel_acesso'] === 'leitor'): ?>
+                                                    <!-- Promover -->
+                                                    <form method="POST" action="adm.php?action=perfis" style="display:inline"
+                                                        onsubmit="return confirm('Promover <?= htmlspecialchars(addslashes($u['nome'])) ?> a Guardião?')">
+                                                        <input type="hidden" name="acao" value="promover">
+                                                        <input type="hidden" name="uid" value="<?= $u['id_usuario'] ?>">
+                                                        <?php if ($busca_perfis): ?>
+                                                            <input type="hidden" name="busca" value="<?= htmlspecialchars($busca_perfis) ?>">
+                                                        <?php endif; ?>
+                                                        <button class="btn-action btn-edit">⬆️ Promover</button>
+                                                    </form>
+                                                    <!-- Excluir -->
+                                                    <form method="POST" action="adm.php?action=perfis" style="display:inline"
+                                                        onsubmit="return confirm('Remover <?= htmlspecialchars(addslashes($u['nome'])) ?> do sistema? Esta ação não pode ser desfeita.')">
+                                                        <input type="hidden" name="acao" value="excluir">
+                                                        <input type="hidden" name="uid" value="<?= $u['id_usuario'] ?>">
+                                                        <?php if ($busca_perfis): ?>
+                                                            <input type="hidden" name="busca" value="<?= htmlspecialchars($busca_perfis) ?>">
+                                                        <?php endif; ?>
+                                                        <button class="btn-action btn-delete">🗑️ Remover</button>
+                                                    </form>
+
+                                                <?php else: ?>
+                                                    <span class="t-dim t-mono" style="font-size:0.75rem;">— guardião —</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; ?>
+
+                                <?php if ($total === 0): ?>
+                                    <tr>
+                                        <td colspan="5" class="empty-state">
+                                            <i>🌌</i>
+                                            <p>Nenhum explorador encontrado com essa busca.</p>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+
 
             <?php endif; ?>
 
@@ -697,6 +888,69 @@ if ($action === 'delete' && isset($_GET['id'])) {
             document.querySelectorAll('a, button, select, input, textarea').forEach(el => {
                 el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
                 el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+            });
+        }
+
+        // ─── Pesquisa do Acervo ───────────────────────────────────────────────
+        const acervoSearch = document.getElementById('acervoSearch');
+        const clearAcervoSearch = document.getElementById('clearAcervoSearch');
+        const acervoRows = Array.from(document.querySelectorAll('[data-acervo-row]'));
+        const acervoNoResults = document.getElementById('acervoNoResults');
+        const acervoSearchCount = document.getElementById('acervoSearchCount');
+
+        function normalizarBusca(texto) {
+            return (texto || '')
+                .toString()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .trim();
+        }
+
+        function textoPesquisavelDaLinha(row) {
+            return Array.from(row.children)
+                .slice(0, -1) // ignora a coluna de ações para "Editar" e "Excluir" não aparecerem em todas as buscas
+                .map((cell) => cell.textContent)
+                .join(' ');
+        }
+
+        function filtrarAcervo() {
+            if (!acervoSearch) return;
+
+            const termo = normalizarBusca(acervoSearch.value);
+            let totalVisivel = 0;
+
+            acervoRows.forEach((row) => {
+                const baseBusca = normalizarBusca(textoPesquisavelDaLinha(row));
+                const encontrou = termo === '' || baseBusca.includes(termo);
+
+                row.hidden = !encontrou;
+                if (encontrou) totalVisivel++;
+            });
+
+            if (acervoSearchCount) {
+                acervoSearchCount.textContent = totalVisivel;
+            }
+
+            if (acervoNoResults) {
+                acervoNoResults.hidden = totalVisivel !== 0 || acervoRows.length === 0;
+            }
+
+            if (clearAcervoSearch) {
+                clearAcervoSearch.hidden = termo.length === 0;
+            }
+        }
+
+        if (acervoSearch) {
+            acervoSearch.addEventListener('input', filtrarAcervo);
+            filtrarAcervo();
+        }
+
+        if (clearAcervoSearch) {
+            clearAcervoSearch.addEventListener('click', () => {
+                acervoSearch.value = '';
+                acervoSearch.focus();
+                filtrarAcervo();
             });
         }
 

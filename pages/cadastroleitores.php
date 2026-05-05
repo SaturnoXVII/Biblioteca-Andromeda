@@ -31,7 +31,7 @@ if (isset($_POST['email'])) {
             ('$nome', '$sobrenome', '$email', '$nascimento', '$telefone', '$endereco', '$senha', '$google_id', '$foto')");
 
         $_SESSION['user'] = ['nome' => $nome, 'email' => $email, 'foto' => $foto];
-        header("Location: dashboard.php");
+        header("Location: catalogo.php");
         exit;
     }
 }

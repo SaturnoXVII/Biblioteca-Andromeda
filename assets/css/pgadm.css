@@ -436,3 +436,114 @@ input[type="date"]:focus::-webkit-calendar-picker-indicator {
     border-color: rgba(255, 255, 255, 0.2);
     transform: translateY(-2px);
 }
+/* ─── Barra de pesquisa do Acervo ─────────────────────────────────────────── */
+.acervo-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 18px;
+    margin: 18px 0 24px;
+    padding: 16px;
+    border: 1px solid var(--border-hairline);
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at 15% 0%, rgba(42, 162, 246, 0.16), transparent 35%),
+        radial-gradient(circle at 85% 100%, rgba(169, 96, 238, 0.12), transparent 38%),
+        rgba(2, 3, 5, 0.64);
+    box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(224, 240, 255, 0.03);
+    backdrop-filter: blur(18px);
+}
+
+.acervo-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.acervo-search-icon {
+    position: absolute;
+    left: 18px;
+    z-index: 2;
+    color: var(--am);
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    text-shadow: 0 0 18px rgba(42, 162, 246, 0.75);
+    pointer-events: none;
+}
+
+.acervo-search-input {
+    width: 100%;
+    min-height: 52px;
+    padding-left: 48px !important;
+    padding-right: 52px !important;
+    border-radius: 999px !important;
+    letter-spacing: 0.01em;
+}
+
+.acervo-search-input::-webkit-search-cancel-button {
+    appearance: none;
+}
+
+.acervo-search-clear {
+    position: absolute;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border: 1px solid rgba(224, 240, 255, 0.16);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--am3);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+}
+
+.acervo-search-clear:hover {
+    transform: scale(1.08) rotate(90deg);
+    border-color: rgba(42, 162, 246, 0.55);
+    background: rgba(42, 162, 246, 0.12);
+}
+
+.acervo-search-status {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+}
+
+#acervoSearchCount {
+    color: var(--am3);
+    font-size: 0.95rem;
+    text-shadow: 0 0 16px rgba(42, 162, 246, 0.55);
+}
+
+.acervo-no-results[hidden],
+tr[hidden] {
+    display: none !important;
+}
+
+@media (max-width: 760px) {
+    .acervo-toolbar {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 14px;
+    }
+
+    .acervo-search-status {
+        justify-content: center;
+        white-space: normal;
+        text-align: center;
+    }
+
+    .acervo-search-input {
+        min-height: 48px;
+        font-size: 0.86rem;
+    }
+}
