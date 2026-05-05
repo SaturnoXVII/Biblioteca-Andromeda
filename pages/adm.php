@@ -2,6 +2,8 @@
 session_start();
 include "../config/conexao.php";
 include "../config/crud.php";
+require_once "../config/sessao.php";
+protegerAdmin();
 
 $action = $_GET['action'] ?? 'listar';
 
@@ -118,7 +120,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
     <title>O Cofre Cósmico | Acervo</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/andro.css">
-    <link rel="stylesheet" href="../assets/css/adm.css">
+    <link rel="stylesheet" href="../assets/css/pgadm.css">
 </head>
 
 <body>
@@ -213,8 +215,27 @@ if ($action === 'delete' && isset($_GET['id'])) {
                 <div class="ed-section-header animate-rise" style="animation-delay: 0.1s;">
                     <h2 class="ed-section-title">Livros Cadastrados</h2>
                 </div>
+
+                <div class="acervo-toolbar animate-rise" style="animation-delay: 0.16s;">
+                    <div class="acervo-search-wrap">
+                        <span class="acervo-search-icon" aria-hidden="true">⌕</span>
+                        <input
+                            type="search"
+                            id="acervoSearch"
+                            class="cosmic-input acervo-search-input"
+                            placeholder="Pesquisar no acervo por título, autor, categoria, editora, ano ou status..."
+                            autocomplete="off"
+                            aria-label="Pesquisar no acervo">
+                        <button type="button" id="clearAcervoSearch" class="acervo-search-clear" aria-label="Limpar pesquisa" hidden>×</button>
+                    </div>
+
+                    <div class="acervo-search-status" aria-live="polite">
+                        <span id="acervoSearchCount">0</span>
+                        <span>registros encontrados</span>
+                    </div>
+                </div>
             
-                <div class="table-wrapper animate-rise" style="animation-delay: 0.2s;">
+                <div class="table-wrapper animate-rise" style="animation-delay: 0.24s;">
                     <div class="table-responsive">
                         <table class="cosmic-table">
                             <thead>
@@ -242,7 +263,7 @@ if ($action === 'delete' && isset($_GET['id'])) {
                                     </tr>
                                 <?php else: ?>
                                     <?php foreach ($lista as $index => $livro): ?>
-                                        <tr class="stagger-item" style="animation-delay: <?= 0.3 + ($index * 0.05) ?>s;">
+                                        <tr class="stagger-item" data-acervo-row style="animation-delay: <?= 0.3 + ($index * 0.05) ?>s;">
                                             <td style="font-weight: 600; color: var(--am3);"><?= htmlspecialchars($livro['titulo']) ?></td>
                                             <td><?= htmlspecialchars($livro['autor']) ?></td>
                                             <td><?= htmlspecialchars($livro['categoria']) ?></td>
@@ -268,6 +289,12 @@ if ($action === 'delete' && isset($_GET['id'])) {
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
+                                    <tr id="acervoNoResults" class="acervo-no-results" hidden>
+                                        <td colspan="8" class="empty-state">
+                                            <i>🔭</i>
+                                            <p>Nenhum artefato encontrado para essa busca.</p>
+                                        </td>
+                                    </tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
@@ -696,6 +723,69 @@ if ($action === 'delete' && isset($_GET['id'])) {
             document.querySelectorAll('a, button, select, input, textarea').forEach(el => {
                 el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
                 el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+            });
+        }
+
+        // ─── Pesquisa do Acervo ───────────────────────────────────────────────
+        const acervoSearch = document.getElementById('acervoSearch');
+        const clearAcervoSearch = document.getElementById('clearAcervoSearch');
+        const acervoRows = Array.from(document.querySelectorAll('[data-acervo-row]'));
+        const acervoNoResults = document.getElementById('acervoNoResults');
+        const acervoSearchCount = document.getElementById('acervoSearchCount');
+
+        function normalizarBusca(texto) {
+            return (texto || '')
+                .toString()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .trim();
+        }
+
+        function textoPesquisavelDaLinha(row) {
+            return Array.from(row.children)
+                .slice(0, -1) // ignora a coluna de ações para "Editar" e "Excluir" não aparecerem em todas as buscas
+                .map((cell) => cell.textContent)
+                .join(' ');
+        }
+
+        function filtrarAcervo() {
+            if (!acervoSearch) return;
+
+            const termo = normalizarBusca(acervoSearch.value);
+            let totalVisivel = 0;
+
+            acervoRows.forEach((row) => {
+                const baseBusca = normalizarBusca(textoPesquisavelDaLinha(row));
+                const encontrou = termo === '' || baseBusca.includes(termo);
+
+                row.hidden = !encontrou;
+                if (encontrou) totalVisivel++;
+            });
+
+            if (acervoSearchCount) {
+                acervoSearchCount.textContent = totalVisivel;
+            }
+
+            if (acervoNoResults) {
+                acervoNoResults.hidden = totalVisivel !== 0 || acervoRows.length === 0;
+            }
+
+            if (clearAcervoSearch) {
+                clearAcervoSearch.hidden = termo.length === 0;
+            }
+        }
+
+        if (acervoSearch) {
+            acervoSearch.addEventListener('input', filtrarAcervo);
+            filtrarAcervo();
+        }
+
+        if (clearAcervoSearch) {
+            clearAcervoSearch.addEventListener('click', () => {
+                acervoSearch.value = '';
+                acervoSearch.focus();
+                filtrarAcervo();
             });
         }
 

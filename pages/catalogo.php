@@ -3,8 +3,9 @@ session_start();
 require_once "../config/conexao.php";
 require_once "../config/dados.php";
 require_once "../config/crud.php";
+require_once "../config/sessao.php";
+protegerPagina();
 $mysqli->set_charset("utf8mb4");
-
 $reservaMessage = null;
 $reservaType = 'success';
 
@@ -73,9 +74,9 @@ $totalCats   = count($categorias);
 
 <body>
 
- 
-  
-</div>
+
+
+    </div>
 
     <div id="intro-cinematic">
         <div class="intro-mask">
@@ -88,9 +89,9 @@ $totalCats   = count($categorias);
     <div id="canvas-dim"></div>
     <div id="webgl"></div>
     <?php if ($reservaMessage): ?>
-    <div class="alert alert-<?= htmlspecialchars($reservaType, ENT_QUOTES, 'UTF-8') ?>" role="alert" style="position:fixed;top:80px;right:20px;z-index:2000;min-width:260px;padding:12px 16px;border-radius:4px;">
-        <?= htmlspecialchars($reservaMessage, ENT_QUOTES, 'UTF-8') ?>
-    </div>
+        <div class="alert alert-<?= htmlspecialchars($reservaType, ENT_QUOTES, 'UTF-8') ?>" role="alert" style="position:fixed;top:80px;right:20px;z-index:2000;min-width:260px;padding:12px 16px;border-radius:4px;">
+            <?= htmlspecialchars($reservaMessage, ENT_QUOTES, 'UTF-8') ?>
+        </div>
     <?php endif; ?>
 
     <div id="reticle">
@@ -118,7 +119,6 @@ $totalCats   = count($categorias);
         <div class="nav-sec">
             <a href="catalogo.php" class="nav-item active"><i class="fa-solid fa-layer-group"></i><span>Catálogo</span></a>
             <a href="perfil.php" class="nav-item"><i class="fa-solid fa-user-astronaut"></i><span>Meu Perfil</span></a>
-            <a href="emprestimos.php" class="nav-item"><i class="fa-solid fa-bookmark"></i><span>Empréstimos</span></a>
             <a href="#" class="nav-item" id="nav-reservas" onclick="event.preventDefault(); abrirPainelReservas();"><i class="fa-solid fa-clock-rotate-left"></i><span>Reservas</span></a>
         </div>
         <div class="nav-foot">
@@ -302,17 +302,16 @@ $totalCats   = count($categorias);
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         const LIVROS = <?php echo $livrosJson; ?>;
         const MINHAS_RESERVAS = <?php echo $minhasReservasJson; ?>;
-        
+
         function abrirPainelReservas() {
             const panel = document.getElementById('reservas-panel');
             const container = document.getElementById('reservas-lista-container');
-            
+
             if (MINHAS_RESERVAS.length === 0) {
                 container.innerHTML = '<p style="color:var(--text-dim); text-align:center; padding:20px;">Você não possui reservas ativas.</p>';
             } else {
@@ -330,15 +329,16 @@ $totalCats   = count($categorias);
             }
             panel.style.display = 'block';
         }
-        
+
         function fecharPainelReservas() {
             document.getElementById('reservas-panel').style.display = 'none';
         }
-        
+
         document.getElementById('reservas-panel').addEventListener('click', function(e) {
             if (e.target === this) fecharPainelReservas();
         });
     </script>
     <script src="../assets/js/andro.js"></script>
 </body>
+
 </html>

@@ -6,6 +6,8 @@
 // ═══════════════════════════════════════════════════════════════
 session_start();
 require_once "../config/conexao.php"; // cria o $mysqli
+require_once "../config/sessao.php";
+protegerPagina();
 
 // ── Proteção de rota ─────────────────────────────────────────
 // Se não há id_usuario na sessão, o usuário não está logado.
@@ -214,7 +216,7 @@ $statusMap = [
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="../assets/css/andromeda.css">
+    <link rel="stylesheet" href="../assets/css/andro.css">
     <link rel="stylesheet" href="../assets/css/perfil.css">
 </head>
 <body>
@@ -282,8 +284,8 @@ $statusMap = [
                 <i class="fa-solid fa-lock me-2"></i> Alterar Senha
             </button>
         </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-emprestimos" type="button">
+        <li class="nav-item" role="presentation" >
+            <button class="nav-link" id="emprestimos" data-bs-toggle="tab" data-bs-target="#tab-emprestimos" type="button">
                 <i class="fa-solid fa-bookmark me-2"></i> Meus Empréstimos
                 <span class="badge bg-secondary ms-2"><?= count($emprestimos) ?></span>
             </button>
