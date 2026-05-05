@@ -185,6 +185,42 @@ function devolverLivro($mysqli, $id_emprestimo) {
   $mysqli->query("UPDATE Livros SET quantidade = quantidade + 1, status = 'Disponível' WHERE id_livro = $id_livro");
 
 
+    //   verificar reservas e notificar
+    $stmt = $mysqli->prepare("
+        SELECT r.id_reserva,
+               u.email,
+               u.nome,
+               l.titulo
+        FROM reservas r
+        JOIN usuarios u ON u.id_usuario = r.id_usuario
+        JOIN Livros   l ON l.id_livro   = r.id_livro
+        WHERE r.id_livro       = ?
+          AND r.reserva_status = 'Aguardando'
+        ORDER BY r.data_reserva ASC
+        LIMIT 1
+    ");
+    $stmt->bind_param('i', $id_livro);
+    $stmt->execute();
+    $reserva = $stmt->get_result()->fetch_assoc();
+
+    if ($reserva) {
+        // Chama a função de email (definida em includes/notificacoes.php)
+        $emailEnviado = notificarLivroDisponivel(
+            $reserva['email'],
+            $reserva['nome'],
+            $reserva['titulo']
+        );
+
+        // Atualiza status da reserva
+        $novoStatus = $emailEnviado ? 'Notificado' : 'Aguardando';
+        $upd = $mysqli->prepare("
+            UPDATE reservas SET reserva_status = ? WHERE id_reserva = ?
+        ");
+        $upd->bind_param('si', $novoStatus, $reserva['id_reserva']);
+        $upd->execute();
+    }
+
+
   
 }
 

@@ -2,6 +2,7 @@
 session_start();
 include "../config/conexao.php";
 include "../config/crud.php";
+include "../includes/notificacoes.php";
 
 $action = $_GET['action'] ?? 'listar';
 
