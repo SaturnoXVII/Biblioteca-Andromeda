@@ -156,7 +156,7 @@ if ($action === 'perfis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>O Cofre Cósmico | Acervo</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/andro.css">
+    <link rel="stylesheet" href="../assets/css/andromeda.css">
     <link rel="stylesheet" href="../assets/css/pgadm.css">
 </head>
 

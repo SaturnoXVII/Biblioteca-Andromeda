@@ -59,7 +59,7 @@ function templateDisponibilidade(string $nome, string $titulo): string {
 
         <p>Acesse o sistema e confirme seu empréstimo. 
            <strong>Sua reserva pode expirar se não for retirada em breve.</strong></p>
-
+// tira essa parte
         <a href='http://localhost/biblioteca/'
            style='display: inline-block; margin-top: 8px; padding: 12px 28px;
                   background: #7c3aed; color: white; text-decoration: none;
