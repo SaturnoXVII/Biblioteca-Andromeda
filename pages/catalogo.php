@@ -451,11 +451,11 @@ $totalCats   = count($categorias);
                         </div>
 
                         <div class="estrelas-select md-stars-input" aria-label="Escolha sua nota">
-                            <label><input type="radio" name="nota" value="5" required><span>★</span></label>
-                            <label><input type="radio" name="nota" value="4"><span>★</span></label>
-                            <label><input type="radio" name="nota" value="3"><span>★</span></label>
-                            <label><input type="radio" name="nota" value="2"><span>★</span></label>
-                            <label><input type="radio" name="nota" value="1"><span>★</span></label>
+                            <label data-rating="1" title="1 estrela"><input type="radio" name="nota" value="1" required><span>★</span></label>
+                            <label data-rating="2" title="2 estrelas"><input type="radio" name="nota" value="2"><span>★</span></label>
+                            <label data-rating="3" title="3 estrelas"><input type="radio" name="nota" value="3"><span>★</span></label>
+                            <label data-rating="4" title="4 estrelas"><input type="radio" name="nota" value="4"><span>★</span></label>
+                            <label data-rating="5" title="5 estrelas"><input type="radio" name="nota" value="5"><span>★</span></label>
                         </div>
 
                         <textarea name="comentario" id="avaliacao-comentario" maxlength="1000" rows="4" placeholder="Conte o que você achou desta leitura..."></textarea>
@@ -546,6 +546,9 @@ $totalCats   = count($categorias);
         // ═══════════════════════════════════════════════════════
         // AVALIAÇÕES — renderização segura sem depender do andro.js
         // ═══════════════════════════════════════════════════════
+        let avUltimoLivroRenderizado = null;
+        let avFormularioEmUso = false;
+
         function avEscapeHTML(value) {
             return String(value ?? '')
                 .replace(/&/g, '&amp;')
@@ -571,6 +574,21 @@ $totalCats   = count($categorias);
         function avStars(nota) {
             const filled = Math.max(0, Math.min(5, Math.round(Number(nota) || 0)));
             return '★'.repeat(filled) + '☆'.repeat(5 - filled);
+        }
+
+        function avPintarEstrelas(valor) {
+            const nota = Math.max(0, Math.min(5, Number(valor) || 0));
+            document.querySelectorAll('#avaliacao-form .estrelas-select label').forEach(label => {
+                const input = label.querySelector('input[name="nota"]');
+                const itemValor = Number(input?.value || label.dataset.rating || 0);
+                label.classList.toggle('is-lit', itemValor <= nota);
+                label.classList.toggle('is-selected', itemValor === nota && nota > 0);
+            });
+        }
+
+        function avNotaSelecionada() {
+            const checked = document.querySelector('#avaliacao-form input[name="nota"]:checked');
+            return checked ? Number(checked.value) : 0;
         }
 
         function avDataPT(value) {
@@ -663,12 +681,24 @@ $totalCats   = count($categorias);
             if (currentLivro) currentLivro.textContent = livro ? `Você está avaliando: ${livro.titulo ?? livro.nome ?? 'obra selecionada'}` : 'Selecione uma obra no catálogo para avaliar.';
             if (submit) submit.disabled = !idLivro;
 
-            document.querySelectorAll('#avaliacao-form input[name="nota"]').forEach(input => {
-                input.checked = dados.minha ? Number(input.value) === Number(dados.minha.nota) : false;
-            });
+            const livroRenderKey = idLivro ? String(idLivro) : '';
+            const form = document.getElementById('avaliacao-form');
+            const focoDentroDoForm = form ? form.contains(document.activeElement) : false;
+            const podeSincronizarFormulario = livroRenderKey !== avUltimoLivroRenderizado || (!focoDentroDoForm && !avFormularioEmUso);
 
-            if (comentario) {
-                comentario.value = dados.minha?.comentario ?? '';
+            if (podeSincronizarFormulario) {
+                document.querySelectorAll('#avaliacao-form input[name="nota"]').forEach(input => {
+                    input.checked = dados.minha ? Number(input.value) === Number(dados.minha.nota) : false;
+                });
+
+                if (comentario) {
+                    comentario.value = dados.minha?.comentario ?? '';
+                }
+
+                avPintarEstrelas(dados.minha ? Number(dados.minha.nota) : 0);
+                avUltimoLivroRenderizado = livroRenderKey;
+            } else {
+                avPintarEstrelas(avNotaSelecionada());
             }
 
             if (comments) {
@@ -700,25 +730,78 @@ $totalCats   = count($categorias);
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('avaliacao-form');
             if (form) {
+                ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'touchstart', 'touchend'].forEach(evento => {
+                    form.addEventListener(evento, function(e) {
+                        e.stopPropagation();
+                    });
+                });
+
+                form.addEventListener('focusin', function() {
+                    avFormularioEmUso = true;
+                });
+
+                form.addEventListener('focusout', function() {
+                    setTimeout(() => {
+                        if (!form.contains(document.activeElement)) {
+                            avFormularioEmUso = false;
+                        }
+                    }, 80);
+                });
+
+                form.querySelectorAll('.estrelas-select label').forEach(label => {
+                    const input = label.querySelector('input[name="nota"]');
+                    const valor = Number(input?.value || label.dataset.rating || 0);
+
+                    label.addEventListener('mouseenter', function() {
+                        avPintarEstrelas(valor);
+                    });
+
+                    label.addEventListener('mouseleave', function() {
+                        avPintarEstrelas(avNotaSelecionada());
+                    });
+
+                    label.addEventListener('click', function() {
+                        if (!input) return;
+                        input.checked = true;
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                        avPintarEstrelas(valor);
+                    });
+                });
+
+                form.querySelectorAll('input[name="nota"]').forEach(input => {
+                    input.addEventListener('change', function() {
+                        avPintarEstrelas(Number(this.value));
+                    });
+                });
+
                 form.addEventListener('submit', function(e) {
                     const idLivro = document.getElementById('avaliacao-id-livro')?.value;
+                    const nota = form.querySelector('input[name="nota"]:checked');
+
                     if (!idLivro) {
                         e.preventDefault();
                         alert('Abra uma obra do catálogo antes de enviar a avaliação.');
+                        return;
+                    }
+
+                    if (!nota) {
+                        e.preventDefault();
+                        alert('Escolha uma nota de 1 a 5 estrelas antes de enviar.');
                     }
                 });
             }
 
-            const alvoModal = document.getElementById('modal-overlay');
             const tituloModal = document.getElementById('md-title');
+            const autorModal = document.getElementById('md-author');
             const tituloPainel = document.getElementById('bp-title');
+            const autorPainel = document.getElementById('bp-author');
 
-            [alvoModal, tituloModal, tituloPainel].filter(Boolean).forEach(el => {
+            [tituloModal, autorModal, tituloPainel, autorPainel].filter(Boolean).forEach(el => {
                 new MutationObserver(() => setTimeout(renderAvaliacoesAndromeda, 60))
-                    .observe(el, { attributes: true, childList: true, characterData: true, subtree: true });
+                    .observe(el, { childList: true, characterData: true, subtree: true });
             });
 
-            document.addEventListener('click', () => setTimeout(renderAvaliacoesAndromeda, 120), true);
+            // Não renderize no clique global: isso reiniciava as estrelas e o textarea enquanto o leitor interagia.
             setTimeout(renderAvaliacoesAndromeda, 300);
         });
 

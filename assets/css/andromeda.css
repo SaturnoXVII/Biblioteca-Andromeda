@@ -2863,12 +2863,25 @@ body.modal-open #webgl canvas {
 
 .estrelas-select {
   display: inline-flex;
-  flex-direction: row-reverse;
+  flex-direction: row;
   gap: 0.28rem;
+  align-items: center;
+  user-select: none;
+}
+
+.estrelas-select label {
+  position: relative;
+  display: inline-flex;
+  cursor: none !important;
 }
 
 .estrelas-select input {
-  display: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: none !important;
 }
 
 .estrelas-select span {
@@ -2884,10 +2897,9 @@ body.modal-open #webgl canvas {
 }
 
 .estrelas-select label:hover span,
-.estrelas-select label:hover ~ label span,
-.estrelas-select input:checked ~ span,
-.estrelas-select label:has(input:checked) span,
-.estrelas-select label:has(input:checked) ~ label span {
+.estrelas-select label.is-lit span,
+.estrelas-select label.is-selected span,
+.estrelas-select input:focus-visible + span {
   color: var(--am);
   filter: drop-shadow(0 0 12px rgba(42, 162, 246, 0.78));
   transform: translateY(-1px) scale(1.04);
