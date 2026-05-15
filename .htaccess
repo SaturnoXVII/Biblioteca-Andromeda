@@ -1,0 +1,85 @@
+Options -Indexes
+
+RewriteEngine On
+RewriteBase /Biblioteca-Andromeda/
+DirectoryIndex pages/intro.php
+
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/intro\.php[\s?] [NC]
+RewriteRule ^intro\.php$ /Biblioteca-Andromeda/ [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/login\.php[\s?] [NC]
+RewriteRule ^login\.php$ /Biblioteca-Andromeda/login [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/logout\.php[\s?] [NC]
+RewriteRule ^logout\.php$ /Biblioteca-Andromeda/logout [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/catalogo\.php[\s?] [NC]
+RewriteRule ^catalogo\.php$ /Biblioteca-Andromeda/catalogo [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/perfil\.php[\s?] [NC]
+RewriteRule ^perfil\.php$ /Biblioteca-Andromeda/perfil [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/adm\.php[\s?] [NC]
+RewriteRule ^adm\.php$ /Biblioteca-Andromeda/adm [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/cadastroleitores\.php[\s?] [NC]
+RewriteRule ^cadastroleitores\.php$ /Biblioteca-Andromeda/cadastro-leitores [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/cadastroLeitores\.php[\s?] [NC]
+RewriteRule ^cadastroLeitores\.php$ /Biblioteca-Andromeda/cadastro-leitores [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/pages/intro\.php[\s?] [NC]
+RewriteRule ^pages/intro\.php$ /Biblioteca-Andromeda/ [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/pages/login\.php[\s?] [NC]
+RewriteRule ^pages/login\.php$ /Biblioteca-Andromeda/login [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/pages/logout\.php[\s?] [NC]
+RewriteRule ^pages/logout\.php$ /Biblioteca-Andromeda/logout [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/pages/catalogo\.php[\s?] [NC]
+RewriteRule ^pages/catalogo\.php$ /Biblioteca-Andromeda/catalogo [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/pages/perfil\.php[\s?] [NC]
+RewriteRule ^pages/perfil\.php$ /Biblioteca-Andromeda/perfil [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/pages/adm\.php[\s?] [NC]
+RewriteRule ^pages/adm\.php$ /Biblioteca-Andromeda/adm [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/pages/cadastroleitores\.php[\s?] [NC]
+RewriteRule ^pages/cadastroleitores\.php$ /Biblioteca-Andromeda/cadastro-leitores [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/pages/cadastroLeitores\.php[\s?] [NC]
+RewriteRule ^pages/cadastroLeitores\.php$ /Biblioteca-Andromeda/cadastro-leitores [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/pages/callback\.php[\s?] [NC]
+RewriteRule ^pages/callback\.php$ /Biblioteca-Andromeda/callback [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+Biblioteca-Andromeda/pages/salvar_avaliacao\.php[\s?] [NC]
+RewriteRule ^pages/salvar_avaliacao\.php$ /Biblioteca-Andromeda/salvar-avaliacao [R=301,L]
+
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+RewriteRule ^$ pages/intro.php [L]
+RewriteRule ^inicio/?$ pages/intro.php [L]
+RewriteRule ^intro/?$ pages/intro.php [L]
+RewriteRule ^login/?$ pages/login.php [L]
+RewriteRule ^logout/?$ pages/logout.php [L]
+RewriteRule ^catalogo/?$ pages/catalogo.php [L]
+RewriteRule ^perfil/?$ pages/perfil.php [L]
+RewriteRule ^adm/?$ pages/adm.php [L]
+RewriteRule ^cadastro-leitores/?$ pages/cadastroleitores.php [L]
+RewriteRule ^cadastroleitores/?$ pages/cadastroleitores.php [L]
+RewriteRule ^callback/?$ pages/callback.php [L]
+RewriteRule ^salvar-avaliacao/?$ pages/salvar_avaliacao.php [L]
+
+<FilesMatch "^(composer\.json|composer\.lock|README\.md|\.gitignore|\.gitattributes)$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^(conexao|crud|dados|mailer|sessao)\.php$">
+    Require all denied
+</FilesMatch>

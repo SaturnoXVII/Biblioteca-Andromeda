@@ -1,0 +1,441 @@
+[
+  {
+    "id": 0,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Antes que qualquer coisa tivesse nome, havia o Conhecimento.",
+    "expression": "thinking",
+    "side": "right",
+    "next": 1
+  },
+
+  {
+    "id": 1,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Ele não precisava de recipiente. Era puro. Era livre.",
+    "expression": "thinking",
+    "side": "right",
+    "next": 2
+  },
+
+  {
+    "id": 2,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Era anterior até mesmo à ideia de existir.",
+    "expression": "thinking",
+    "side": "right",
+    "next": 3
+  },
+
+  {
+    "id": 3,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Então o Universo decidiu que algo tão precioso merecia um lar à altura.",
+    "expression": "thinking",
+    "side": "right",
+    "next": 4
+  },
+
+  {
+    "id": 4,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "E dobrou o espaço com a delicadeza que apenas o infinito possui.",
+    "expression": "thinking",
+    "side": "right",
+    "next": 5
+  },
+
+  {
+    "id": 5,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Foi assim que este lugar nasceu entre as constelações.",
+    "expression": "thinking",
+    "side": "right",
+    "next": 6
+  },
+
+  {
+    "id": 6,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "A Biblioteca Andrômeda não pertence a nenhum mundo em particular.",
+    "expression": "thinking",
+    "side": "right",
+    "next": 7
+  },
+
+  {
+    "id": 7,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Ela existe entre o que é... e o que ainda pode ser.",
+    "expression": "thinking",
+    "side": "right",
+    "next": 8
+  },
+
+  {
+    "id": 8,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "E por que gatos? Ótima pergunta.",
+    "expression": "thinking",
+    "side": "left",
+    "next": 9
+  },
+
+  {
+    "id": 9,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Porque a gente já sabe de tudo.",
+    "expression": "thinking",
+    "side": "left",
+    "next": 10
+  },
+
+  {
+    "id": 10,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Não precisamos aprender. A gente simplesmente... é.",
+    "expression": "thinking",
+    "side": "left",
+    "next": 11
+  },
+
+  {
+    "id": 11,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Os humanos acham que ficamos olhando pro nada.",
+    "expression": "thinking",
+    "side": "left",
+    "next": 12
+  },
+
+  {
+    "id": 12,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Mas estamos lendo dimensões que vocês ainda nem nomearam.",
+    "expression": "thinking",
+    "side": "left",
+    "next": 13
+  },
+
+  {
+    "id": 13,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "A Lyra finge que está dormindo.",
+    "expression": "thinking",
+    "side": "left",
+    "next": 14
+  },
+
+  {
+    "id": 14,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Mas ela está catalogando memórias de estrelas extintas com os olhos fechados.",
+    "expression": "thinking",
+    "side": "left",
+    "next": 15
+  },
+
+  {
+    "id": 15,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Eu prefiro ficar de olho aberto. Muito mais divertido.",
+    "expression": "thinking",
+    "side": "left",
+    "next": 16
+  },
+
+  {
+    "id": 16,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Percorro os corredores. Sinto o cheiro dos livros novos.",
+    "expression": "thinking",
+    "side": "left",
+    "next": 17
+  },
+
+  {
+    "id": 17,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "E consigo perceber quando um escolhido está chegando...",
+    "expression": "thinking",
+    "side": "left",
+    "next": 18
+  },
+
+  {
+    "id": 18,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Antes mesmo dele saber disso.",
+    "expression": "thinking",
+    "side": "left",
+    "next": 19
+  },
+
+  {
+    "id": 19,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "A lua minguante... essa é minha parte favorita.",
+    "expression": "happy",
+    "side": "left",
+    "next": 20
+  },
+
+  {
+    "id": 20,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "A Biblioteca não aparece para qualquer um.",
+    "expression": "happy",
+    "side": "left",
+    "next": 21
+  },
+
+  {
+    "id": 21,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Ela não é uma livraria comum.",
+    "expression": "happy",
+    "side": "left",
+    "next": 22
+  },
+
+  {
+    "id": 22,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Só durante a lua minguante o véu fica fino o suficiente.",
+    "expression": "happy",
+    "side": "left",
+    "next": 23
+  },
+
+  {
+    "id": 23,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Fino como a asa de um inseto cósmico.",
+    "expression": "happy",
+    "side": "left",
+    "next": 24
+  },
+
+  {
+    "id": 24,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "E então... a porta aparece.",
+    "expression": "happy",
+    "side": "left",
+    "next": 25
+  },
+
+  {
+    "id": 25,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Pode surgir no fim de uma rua comum.",
+    "expression": "happy",
+    "side": "left",
+    "next": 26
+  },
+
+  {
+    "id": 26,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Ou numa escada que leva para um andar impossível.",
+    "expression": "happy",
+    "side": "left",
+    "next": 27
+  },
+
+  {
+    "id": 27,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Uma vez ela apareceu dentro de um armário velho.",
+    "expression": "happy",
+    "side": "left",
+    "next": 28
+  },
+
+  {
+    "id": 28,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Não me pergunte como.",
+    "expression": "happy",
+    "side": "left",
+    "next": 29
+  },
+
+  {
+    "id": 29,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Eu fico à direita da entrada. Lyra fica à esquerda.",
+    "expression": "happy",
+    "side": "left",
+    "next": 30
+  },
+
+  {
+    "id": 30,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Nós olhamos para o visitante... e sabemos.",
+    "expression": "happy",
+    "side": "left",
+    "next": 31
+  },
+
+  {
+    "id": 31,
+    "background": "library",
+    "speaker": "Orion",
+    "text": "Nós sempre sabemos.",
+    "expression": "happy",
+    "side": "left",
+    "next": 32
+  },
+
+  {
+    "id": 32,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Já vi chegarem pastoras e rainhas.",
+    "expression": "neutral",
+    "side": "right",
+    "next": 33
+  },
+
+  {
+    "id": 33,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Crianças que não sabiam ler. Velhos que já haviam esquecido quase tudo.",
+    "expression": "neutral",
+    "side": "right",
+    "next": 34
+  },
+
+  {
+    "id": 34,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "O que os une não é inteligência. Nem mérito.",
+    "expression": "neutral",
+    "side": "right",
+    "next": 35
+  },
+
+  {
+    "id": 35,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "É a necessidade genuína.",
+    "expression": "neutral",
+    "side": "right",
+    "next": 36
+  },
+
+  {
+    "id": 36,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Aquela que nasce num lugar onde nenhuma outra resposta cabe.",
+    "expression": "neutral",
+    "side": "right",
+    "next": 37
+  },
+
+  {
+    "id": 37,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Eles chegam... e eu os acompanho pelos corredores.",
+    "expression": "neutral",
+    "side": "right",
+    "next": 38
+  },
+
+  {
+    "id": 38,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Os corredores mudam conforme o destino de cada visitante.",
+    "expression": "neutral",
+    "side": "right",
+    "next": 39
+  },
+
+  {
+    "id": 39,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Ninguém entra no lugar errado aqui.",
+    "expression": "neutral",
+    "side": "right",
+    "next": 40
+  },
+
+  {
+    "id": 40,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "E ninguém leva aquilo que não lhe pertence.",
+    "expression": "neutral",
+    "side": "right",
+    "next": 41
+  },
+
+  {
+    "id": 41,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Quando partem, raramente conseguem explicar o que viram.",
+    "expression": "neutral",
+    "side": "right",
+    "next": 42
+  },
+
+  {
+    "id": 42,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "Dizem apenas que sabiam que precisavam estar aqui.",
+    "expression": "neutral",
+    "side": "right",
+    "next": 43
+  },
+
+  {
+    "id": 43,
+    "background": "cosmic-library",
+    "speaker": "Lyra",
+    "text": "E isso... é suficiente.",
+    "expression": "neutral",
+    "side": "right",
+    "next": null
+  }
+]

@@ -1,0 +1,579 @@
+/* ═══════════════════════════════════════════════════
+   cadleitores.css / login.css — Avalon · Auth Pages
+   ═══════════════════════════════════════════════════ */
+:root {
+  --am:  #2aa2f6;
+  --am2: #14599d;
+  --am3: #e0f0ff;
+  --accent: #a960ee;
+
+  --void:       #020305;
+  --void-glass: rgba(2, 3, 5, 0.72);
+  --border-hairline: rgba(42, 162, 246, 0.15);
+
+  --text-main: #fdfcf0;
+  --text-dim:  rgba(253, 252, 240, 0.48);
+
+  --font-display: "Cormorant Garamond", serif;
+  --font-sans:    "Montserrat", sans-serif;
+  --font-mono:    "Space Mono", monospace;
+}
+
+/* ── Reset ───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--void);
+  font-family: var(--font-sans);
+  color: var(--text-main);
+  cursor: none !important;
+  font-size: 15px;
+  overflow: hidden;
+}
+
+/* ── Fundo WebGL ─────────────────────────────────── */
+#webgl {
+  position: fixed; inset: 0; z-index: 1;
+}
+
+/* ── Grain overlay ───────────────────────────────── */
+#grain {
+  position: fixed; inset: 0; z-index: 8;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+  opacity: 0.32; mix-blend-mode: overlay;
+}
+
+/* ── Cursor magnético ────────────────────────────── */
+#reticle, #reticle-dot {
+  position: fixed; pointer-events: none;
+  top: 0; left: 0;
+  transform: translate3d(-50%, -50%, 0);
+}
+#reticle {
+  z-index: 9500; width: 36px; height: 36px; opacity: 0.85;
+  transition: width .2s, height .2s, opacity .2s;
+}
+#reticle svg { width: 100%; height: 100%; }
+
+#reticle.hover { width: 52px; height: 52px; }
+#reticle.click { width: 22px; height: 22px; opacity: 1; }
+#reticle.click .ret-ring { stroke: var(--accent); }
+
+.ret-ring {
+  stroke: rgba(42,162,246,.85); stroke-width: 1.2; fill: none;
+  transition: stroke .3s;
+}
+.ret-cross {
+  stroke: rgba(42,162,246,.45); stroke-width: .8;
+  transition: stroke .3s, opacity .3s;
+}
+#reticle.hover .ret-ring  { stroke: var(--am3); }
+#reticle.hover .ret-cross { opacity: 1; }
+
+#reticle-dot {
+  z-index: 9501; width: 4px; height: 4px; border-radius: 50%;
+  background: var(--am3); box-shadow: 0 0 8px var(--am);
+  transition: width .15s, height .15s;
+}
+#reticle.hover ~ #reticle-dot { width: 2px; height: 2px; }
+
+/* ── Layout central ──────────────────────────────── */
+.auth-wrapper {
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 20px; gap: 0;
+}
+
+/* ── Título flutuante acima do card ──────────────── */
+.auth-float-title {
+  text-align: center;
+  margin-bottom: 28px;
+  position: relative;
+}
+
+/* marca principal */
+.auth-brand {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 6vw, 4.6rem);
+  font-weight: 300;
+  letter-spacing: .35em;
+  text-transform: uppercase;
+  color: var(--text-main);
+  line-height: 1;
+  display: block;
+
+  /* glow duplo: azul + branco sutil */
+  text-shadow:
+    0 0 40px rgba(42,162,246,.55),
+    0 0 90px rgba(42,162,246,.2),
+    0 2px 0 rgba(255,255,255,.06);
+
+  /* reveal */
+  opacity: 0;
+  transform: translateY(18px) scaleX(.96);
+  transition: opacity .9s .15s cubic-bezier(.16,1,.3,1),
+              transform .9s .15s cubic-bezier(.16,1,.3,1);
+}
+.auth-brand.reveal { opacity: 1; transform: translateY(0) scaleX(1); }
+
+/* linha decorativa sob a marca */
+.auth-brand-line {
+  display: block;
+  margin: 10px auto 12px;
+  width: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--am), transparent);
+  transition: width 1s .7s cubic-bezier(.16,1,.3,1);
+}
+.auth-brand.reveal ~ .auth-brand-line { width: 160px; }
+
+/* subtítulo */
+.auth-subtitle {
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  line-height: 1.5;
+  opacity: 0;
+  transition: opacity .7s .85s;
+}
+.auth-subtitle.reveal { opacity: 1; }
+
+/* ── Auth Card (sem header dentro) ───────────────── */
+.auth-card {
+  width: 100%; max-width: 420px;
+  background: var(--void-glass);
+  backdrop-filter: blur(32px) saturate(1.4);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid var(--border-hairline);
+  border-radius: 16px;
+  padding: 38px 44px;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 40px 90px rgba(0,0,0,.85),
+    inset 0 1px 0 rgba(42,162,246,.12);
+
+  /* reveal */
+  opacity: 0; transform: translateY(22px) scale(.985);
+  transition: opacity .7s .5s cubic-bezier(.16,1,.3,1),
+              transform .7s .5s cubic-bezier(.16,1,.3,1);
+}
+.auth-card.reveal { opacity: 1; transform: translateY(0) scale(1); }
+
+/* linha de luz no topo do card */
+.auth-card::before {
+  content: "";
+  position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--am) 50%, transparent);
+  opacity: .45;
+}
+
+/* brilho de canto */
+.auth-card::after {
+  content: "";
+  position: absolute; top: -80px; right: -80px;
+  width: 220px; height: 220px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(42,162,246,.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Header (oculto — título foi para fora) ────── */
+.auth-header { display: none; }
+
+/* ── Inputs Bootstrap override ───────────────────── */
+.form-control {
+  background: rgba(255,255,255,.03) !important;
+  border: 1px solid var(--border-hairline) !important;
+  border-radius: 8px !important;
+  color: var(--text-main) !important;
+  font-family: var(--font-sans) !important;
+  font-size: .82rem !important;
+  padding: 12px 16px !important;
+  letter-spacing: .03em;
+  height: auto !important;
+  width: 100% !important; /* CORREÇÃO: Força a largura igual à do botão */
+  display: block !important; /* CORREÇÃO: Garante o comportamento de bloco */
+  box-sizing: border-box !important; /* CORREÇÃO: Impede que o padding quebre o layout */
+  cursor: none !important;
+  transition: border-color .3s, box-shadow .3s, background .3s !important;
+}
+.form-control::placeholder {
+  color: var(--text-dim) !important;
+  font-size: .65rem !important;
+  letter-spacing: .14em;
+  font-family: var(--font-mono) !important;
+  text-transform: uppercase;
+}
+.form-control:focus {
+  background: rgba(42,162,246,.05) !important;
+  border-color: var(--am) !important;
+  box-shadow: 0 0 18px rgba(42,162,246,.18) !important;
+  color: var(--text-main) !important; outline: none !important;
+}
+.form-control:hover { border-color: rgba(42,162,246,.32) !important; }
+
+input[type="date"] { color-scheme: dark; }
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(60%) sepia(80%) saturate(400%) hue-rotate(185deg);
+  cursor: none; opacity: .7;
+}
+
+/* ── Form groups ─────────────────────────────────── */
+.form-group { margin-bottom: 14px; position: relative; }
+
+/* ── Password toggle ─────────────────────────────── */
+.pass-wrap { 
+  position: relative; 
+  display: block; /* CORREÇÃO: Mantém o empacotador estruturado */
+  width: 100%; /* CORREÇÃO: Alinha a base para o ícone */
+}
+.pass-toggle {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--text-dim);
+  cursor: none !important; font-size: .9rem; padding: 0; line-height: 1;
+  transition: color .2s; z-index: 2;
+}
+.pass-toggle:hover { color: var(--am); }
+
+/* ── Botão primário ─────────────────────────────── */
+.btn-prim {
+  display: block; width: 100%;
+  margin-top: 24px; padding: 15px;
+  cursor: none !important;
+  background: linear-gradient(135deg, var(--am), var(--am2));
+  border: 1px solid rgba(42,162,246,.4);
+  border-radius: 8px;
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: .76rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 700;
+  transition: all .3s; position: relative; overflow: hidden;
+}
+.btn-prim::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.08) 0%, transparent 50%);
+  pointer-events: none;
+}
+.btn-prim:hover {
+  background: linear-gradient(135deg, var(--am2), var(--am));
+  box-shadow: 0 0 30px rgba(42,162,246,.4), 0 10px 28px rgba(0,0,0,.5);
+  transform: translateY(-2px); border-color: var(--am);
+}
+.btn-prim:active { transform: translateY(0); }
+
+/* ── Erro PHP (Estilo HUD Sci-Fi) ────────────────── */
+.auth-error {
+  margin-bottom: 20px;
+  padding: 12px 18px;
+  border-radius: 4px; /* Bordas um pouco mais retas dão um ar mais digital */
+  background: linear-gradient(90deg, rgba(255, 51, 102, 0.15) 0%, rgba(255, 51, 102, 0.02) 100%);
+  border: 1px solid rgba(255, 51, 102, 0.15);
+  border-left: 3px solid #ff3366; /* Barra lateral de destaque */
+  color: #ff9eb5; /* Um vermelho mais suave/rosado para leitura confortável */
+  font-family: var(--font-mono); 
+  font-size: 0.65rem; /* Levemente menor para caber melhor */
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase; /* Deixa com mais cara de painel de navegação */
+  display: flex; 
+  align-items: center; 
+  gap: 14px;
+  box-shadow: 0 4px 20px rgba(255, 51, 102, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.auth-error i { 
+  color: #ff3366;
+  font-size: 0.85rem;
+  text-shadow: 0 0 12px rgba(255, 51, 102, 0.8); /* Brilho neon no ícone */
+}
+
+/* Mantém a animação existente */
+.reveal-error {
+  animation: slideDownError 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideDownError {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* ── Links ──────────────────────────────────────── */
+.auth-links {
+  margin-top: 22px; text-align: center;
+  font-family: var(--font-mono); font-size: .68rem; letter-spacing: .08em;
+  color: var(--text-dim);
+}
+.auth-links a {
+  color: var(--am); text-decoration: none; cursor: none !important;
+  border-bottom: 1px solid rgba(42,162,246,.28); padding-bottom: 1px;
+  transition: color .2s, border-color .2s;
+}
+.auth-links a:hover { color: var(--am3); border-color: var(--am3); }
+
+/* ── Divider (cadastro) ──────────────────────────── */
+.form-section-label {
+  font-family: var(--font-mono); font-size: .58rem;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: var(--am); margin: 18px 0 12px;
+  display: flex; align-items: center; gap: 10px;
+}
+.form-section-label::after {
+  content: ""; flex: 1; height: 1px; background: var(--border-hairline);
+}
+
+/* ── Row gap override ────────────────────────────── */
+.row { --bs-gutter-x: 12px; }
+
+/* ── Responsive ─────────────────────────────────── */
+@media (max-width: 520px) {
+  .auth-card { padding: 28px 20px; }
+  .auth-brand { font-size: 2.4rem; letter-spacing: .22em; }
+  html, body { overflow: auto; }
+  .auth-wrapper { align-items: flex-start; padding: 40px 16px 40px; justify-content: flex-start; }
+  .auth-float-title { margin-bottom: 20px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BOTÃO GOOGLE — LOGIN E CADASTRO DE LEITOR
+   Pode colocar no login.css, cadleitores.css ou em auth-google.css
+═══════════════════════════════════════════════════════════════ */
+
+.google-auth-area {
+    width: 100%;
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Linha "ou continue com" */
+.auth-divider {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: rgba(224, 240, 255, 0.52);
+    font-family: "Space Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(42, 162, 246, 0.38),
+        transparent
+    );
+}
+
+.auth-divider span {
+    white-space: nowrap;
+    text-shadow: 0 0 14px rgba(42, 162, 246, 0.25);
+}
+
+
+.g_id_signin {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+    padding: 12px 0;
+    border:none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    transition: all 0.3s;
+    cursor: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════
+   Notificações Andrômeda + validação de campos
+   ═══════════════════════════════════════════════════ */
+.form-control.is-invalid-cosmic {
+  border-color: rgba(255, 51, 102, 0.72) !important;
+  background: rgba(255, 51, 102, 0.055) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 51, 102, 0.18),
+    0 0 24px rgba(255, 51, 102, 0.14) !important;
+}
+
+.auth-error {
+  margin-bottom: 20px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(255, 51, 102, 0.15) 0%, rgba(255, 51, 102, 0.025) 100%);
+  border: 1px solid rgba(255, 51, 102, 0.18);
+  border-left: 3px solid #ff3366;
+  color: #ff9eb5;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  line-height: 1.45;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 4px 20px rgba(255, 51, 102, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.auth-error i {
+  color: #ff3366;
+  font-size: 0.85rem;
+  text-shadow: 0 0 12px rgba(255, 51, 102, 0.8);
+}
+
+.reveal-error {
+  animation: slideDownError 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideDownError {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.andromeda-alert-layer {
+  position: fixed;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9200;
+  width: min(92vw, 460px);
+  pointer-events: none;
+}
+
+.andromeda-alert {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 18px;
+  border-radius: 12px;
+  background: rgba(2, 3, 5, 0.82);
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+  border: 1px solid rgba(42, 162, 246, 0.26);
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.72),
+    0 0 38px rgba(42, 162, 246, 0.16),
+    inset 0 1px 0 rgba(224, 240, 255, 0.08);
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+  line-height: 1.55;
+  text-transform: uppercase;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-18px) scale(0.96);
+  animation: andromedaAlertIn 0.55s cubic-bezier(.16, 1, .3, 1) forwards;
+}
+
+.andromeda-alert::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 50%, rgba(42, 162, 246, 0.18), transparent 34%),
+    radial-gradient(circle at 88% 0%, rgba(169, 96, 238, 0.12), transparent 42%);
+  pointer-events: none;
+}
+
+.andromeda-alert::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--am), transparent);
+  opacity: 0.7;
+}
+
+.andromeda-alert-icon {
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(42, 162, 246, 0.35);
+  background: rgba(42, 162, 246, 0.08);
+  box-shadow:
+    0 0 18px rgba(42, 162, 246, 0.24),
+    inset 0 0 12px rgba(42, 162, 246, 0.08);
+  color: var(--am3);
+  font-size: 0.76rem;
+}
+
+.andromeda-alert-message {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+}
+
+.andromeda-alert.success {
+  border-color: rgba(42, 162, 246, 0.34);
+}
+
+.andromeda-alert.error {
+  border-color: rgba(255, 51, 102, 0.34);
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.72),
+    0 0 38px rgba(255, 51, 102, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.andromeda-alert.error .andromeda-alert-icon {
+  border-color: rgba(255, 51, 102, 0.45);
+  background: rgba(255, 51, 102, 0.08);
+  box-shadow:
+    0 0 18px rgba(255, 51, 102, 0.22),
+    inset 0 0 12px rgba(255, 51, 102, 0.08);
+  color: #ff6b91;
+}
+
+.andromeda-alert.leaving {
+  animation: andromedaAlertOut 0.45s cubic-bezier(.7, 0, .84, 0) forwards;
+}
+
+@keyframes andromedaAlertIn {
+  from { opacity: 0; transform: translateY(-18px) scale(0.96); filter: blur(6px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes andromedaAlertOut {
+  from { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  to { opacity: 0; transform: translateY(-14px) scale(0.97); filter: blur(5px); }
+}
+
+@media (max-width: 520px) {
+  .andromeda-alert-layer {
+    top: 18px;
+    width: calc(100vw - 28px);
+  }
+
+  .andromeda-alert {
+    padding: 13px 14px;
+    font-size: 0.62rem;
+  }
+
+  .andromeda-alert-icon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+  }
+}
